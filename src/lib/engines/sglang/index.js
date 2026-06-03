@@ -97,9 +97,15 @@ function synthesizeOmni() {
   throw new Error("sglang omni synthesis not supported in this slice");
 }
 
+// Contract: EngineAdapter.capabilities(recipe). Extract the block, then delegate
+// to the block-level helper (also exported for direct/test use).
+function capabilities(recipe) {
+  return sglangCapabilities(recipe?.engines?.sglang || {});
+}
+
 export default defineEngine({
   id: "sglang",
   synthesize,
   synthesizeOmni,
-  capabilities: sglangCapabilities,
+  capabilities,
 });

@@ -30,6 +30,13 @@ test("adapter id and capabilities", () => {
   assert.equal(caps.pd, false);
 });
 
+test("adapter.capabilities takes the full recipe (contract), extracting the block", () => {
+  // The EngineAdapter contract is capabilities(recipe); the named helper takes a block.
+  const fromRecipe = sglang.capabilities(RECIPE);
+  assert.deepEqual(fromRecipe, sglangCapabilities(BLOCK));
+  assert.deepEqual(fromRecipe.strategies, ["single_node_tp", "multi_node_tp"]);
+});
+
 test("single_node_tp renders --tp = gpu_count and --model-path", () => {
   const r = resolveCommandForEngine("sglang", RECIPE, "default", "single_node_tp", "h200", [], STRATEGIES, TAXONOMY, [], 1, null);
   assert.equal(r.deployType, "single_node");
