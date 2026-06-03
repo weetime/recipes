@@ -1,0 +1,25 @@
+# hand-authored slice — P2 transformer will generate this
+engine: sglang
+model_id: deepseek-ai/DeepSeek-V3
+min_version: "0.4.6"
+serve_binary: "python3 -m sglang.launch_server"
+base_args:
+  - "--trust-remote-code"
+variants:
+  default:
+    precision: bf16
+strategies:
+  single_node_tp: {}
+  multi_node_tp:
+    extra:
+      - "--nnodes"
+      - "{NNODES}"
+      - "--node-rank"
+      - "{RANK}"
+      - "--dist-init-addr"
+      - "$HEAD_IP:5000"
+features:
+  reasoning:
+    args: ["--reasoning-parser", "deepseek-r1"]
+  tool_calling:
+    args: ["--tool-call-parser", "deepseek"]
