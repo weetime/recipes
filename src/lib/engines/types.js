@@ -33,5 +33,8 @@ export function defineEngine(adapter) {
   if (typeof adapter.synthesizeOmni !== "function") {
     throw new Error(`engine '${adapter.id}' must implement synthesizeOmni()`);
   }
+  if (typeof adapter.capabilities !== "function") {
+    throw new Error(`engine '${adapter.id}' must implement capabilities()`);
+  }
   return adapter;
 }
