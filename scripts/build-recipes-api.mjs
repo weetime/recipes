@@ -520,8 +520,7 @@ for (const file of findYamlFiles(modelsDir)) {
   for (const { variantKey, variantModelId, recommended } of promotedRenderings) {
     const variantCfg = r.variants?.[variantKey] || {};
     const { model_id: _vMid, json: _vJson, ...variantCore } = variantCfg;
-    // eslint-disable-next-line no-unused-vars
-    const { engines: _eng, default_engine: _de, ...rWithoutEngines } = r;
+    const { engines: _engines, default_engine: _default_engine, ...rWithoutEngines } = r;
     const promoted = {
       ...rWithoutEngines,  // share meta/features/guide/etc. with the parent
       hf_id: variantModelId,
