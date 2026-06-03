@@ -1,8 +1,9 @@
 import vllm from "./vllm/index.js";
+import sglang from "./sglang/index.js";
 
 // engine id → adapter. Add an engine by importing its adapter and adding it
 // here; nothing else in the build/render path needs to change.
-const REGISTRY = { [vllm.id]: vllm };
+const REGISTRY = { [vllm.id]: vllm, [sglang.id]: sglang };
 
 // vLLM is the site's primary engine and the first-load default everywhere.
 export const DEFAULT_ENGINE = "vllm";

@@ -35,7 +35,7 @@ test("registry exposes vllm as the default engine", () => {
 });
 
 test("unknown engine id throws", () => {
-  assert.throws(() => getEngine("sglang"), /unknown engine: sglang/);
+  assert.throws(() => getEngine("triton"), /unknown engine: triton/);
 });
 
 test("resolveCommandForEngine('vllm', …) is identical to resolveCommand(…)", () => {

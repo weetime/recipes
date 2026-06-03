@@ -5,6 +5,8 @@ import { createPortal } from "react-dom";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { Copy, Check, Terminal, Gauge, Sparkles, ChevronDown, Package, Info, Zap, Globe, Wrench, Brain } from "lucide-react";
 import { resolveCommand, recommendStrategy, isPrecisionCompatible, isHardwareSupported, fitsSingleNode, isHardwareScalable, variantRunsOnHardware, pickFittingVariant, pickDefaultHardware, resolveSingleNodeTp, computeDockerMeta, buildDockerRun, resolveOmniCommand } from "@/lib/command-synthesis";
+import { resolveCommandForEngine } from "@/lib/engines/index.js";
+import { engineList, engineSources } from "@/lib/engine-ui";
 import { resolveOmniTasks } from "@/lib/omni-tasks";
 import { TooltipProvider, InfoTip } from "@/components/ui/tooltip";
 import { detectPlaceholdersAll, substitute, substituteEnv, loadEndpoints, saveEndpoint, clearEndpoints } from "@/lib/cluster-endpoints";
@@ -329,6 +331,22 @@ export function CommandBuilder({ recipe, strategies, taxonomy }) {
   // ── State ──
   const [variant, setVariant] = useState(searchParams.get("variant") || "default");
 
+  // ── Engine ── pluggable inference engine (vLLM / SGLang). Most recipes have
+  // no `engines` block → engineList returns ["vllm"] and the Engine pill row is
+  // hidden. `sources` maps the active engine to its variant/strategy/feature
+  // options + defaults so the rows below stay engine-aware.
+  const engineIds = engineList(recipe);
+  const [engine, setEngine] = useState(
+    () => searchParams.get("engine") || recipe.default_engine || "vllm"
+  );
+  const sources = engineSources(recipe, engine);
+  // Active engine's variant/feature config maps, used by the rows below. For
+  // vLLM these are the recipe's top-level fields; for any other engine they
+  // come from the engines.<id> block. Hoisted here to avoid repeating the
+  // ternary across the Variant/Features JSX.
+  const activeVariantsMap = engine === "vllm" ? (recipe.variants || {}) : (recipe.engines?.[engine]?.variants || {});
+  const activeFeaturesMap = engine === "vllm" ? (recipe.features || {}) : (recipe.engines?.[engine]?.features || {});
+
   // Active omni task — drives the `vllm serve --omni` model_id swap (Wan2.2's
   // T2V/I2V/TI2V) and the cURL endpoint/body shown in the Try-it popover.
   const [omniTask, setOmniTask] = useState(() => {
@@ -646,7 +664,7 @@ export function CommandBuilder({ recipe, strategies, taxonomy }) {
 
   const recommended = useMemo(() => recommendStrategy(recipe, hwProfile, nodeCount), [recipe, hwProfile, nodeCount]);
 
-  const compatibleStrategies = useMemo(() => {
+  const vllmCompatibleStrategies = useMemo(() => {
     return (recipe.compatible_strategies || []).filter((s) => {
       const strat = strategies[s];
       if (!strat) return false;
@@ -656,9 +674,11 @@ export function CommandBuilder({ recipe, strategies, taxonomy }) {
     });
   }, [recipe, strategies, nodeCount]);
 
+  const compatibleStrategies = engine === "vllm" ? vllmCompatibleStrategies : sources.strategies;
+
   // PD now sizes each pool independently, so the "2× model VRAM on one node"
   // concern that used to invalidate pd_cluster on small GPUs no longer applies.
-  const activeStrategy = strategyOverride || recommended;
+  const activeStrategy = strategyOverride || (engine === "vllm" ? recommended : sources.defaultStrategy);
 
   // Effective TP under single_node_tp, via the shared resolver so the hint
   // is perfectly in sync with the generated command. The resolver accepts
@@ -686,9 +706,9 @@ export function CommandBuilder({ recipe, strategies, taxonomy }) {
           decode: { nodes: pdDecodeNodes, rank: pdDecodeRank },
         }
         : null;
-      return resolveCommand(recipe, variant, activeStrategy, hwId, features, strategies, taxonomy, advArgs, nodeCount, pdNodes);
+      return resolveCommandForEngine(engine, recipe, variant, activeStrategy, hwId, features, strategies, taxonomy, advArgs, nodeCount, pdNodes);
     },
-    [recipe, variant, activeStrategy, hwId, features, advanced, advancedById, strategies, taxonomy, nodeCount, pdPrefillNodes, pdDecodeNodes, pdPrefillRank, pdDecodeRank]
+    [engine, recipe, variant, activeStrategy, hwId, features, advanced, advancedById, strategies, taxonomy, nodeCount, pdPrefillNodes, pdDecodeNodes, pdPrefillRank, pdDecodeRank]
   );
 
   // Visual feedback when any rendered command changes. Covers single-node
@@ -1366,6 +1386,44 @@ export function CommandBuilder({ recipe, strategies, taxonomy }) {
 
         {/* ── Configuration ── */}
         <div className="rounded-xl border border-border divide-y divide-border">
+          {/* Engine (only shown when the recipe ships >1 inference engine) */}
+          {engineIds.length > 1 && (
+            <ConfigRow label="Engine">
+              <PillGroup>
+                {engineIds.map((id) => (
+                  <Pill
+                    key={id}
+                    active={engine === id}
+                    onClick={() => {
+                      setEngine(id);
+                      const src = engineSources(recipe, id);
+                      // Engine switch resets selections to the new engine's
+                      // defaults; mirror those resets to the URL so a shared/
+                      // reloaded link rehydrates the right state (matching
+                      // selectStrategy/selectVariant/toggleFeature conventions).
+                      const strategyReset = !src.strategies.includes(strategyOverride);
+                      if (strategyReset) setStrategyOverride("");
+                      const nextVariant = src.variants.includes(variant)
+                        ? variant
+                        : src.defaultVariant;
+                      if (nextVariant !== variant) setVariant(nextVariant);
+                      setFeatures(src.defaultFeatures);
+                      const defaultEngine = recipe.default_engine || "vllm";
+                      syncUrl({
+                        engine: id === defaultEngine ? "" : id,
+                        ...(strategyReset ? { strategy: "" } : {}),
+                        variant: nextVariant,
+                        features: featuresToUrl(src.defaultFeatures, hwId),
+                      });
+                    }}
+                  >
+                    {id === "vllm" ? "vLLM" : id === "sglang" ? "SGLang" : id}
+                  </Pill>
+                ))}
+              </PillGroup>
+            </ConfigRow>
+          )}
+
           {/* Hardware (first — user's fixed constraint, grouped by brand) */}
           <ConfigRow label="Hardware">
             <div className="space-y-1.5">
@@ -1431,11 +1489,12 @@ export function CommandBuilder({ recipe, strategies, taxonomy }) {
             hint="VRAM shown is the minimum to LOAD the model (weights + CUDA/vLLM runtime overhead, ≈ params × bytes × 1.2). It's not a serving budget — long context or large batch typically needs 1.5–2× more for KV cache."
           >
             <PillGroup>
-              {Object.entries(recipe.variants || {}).map(([key, v]) => {
+              {Object.entries(activeVariantsMap).map(([key, v]) => {
                 // On non-scalable hardware (single-GPU workstation) a variant
                 // that doesn't fit has nowhere to shard — disable it instead of
-                // rendering a command that can't run.
-                const disabled = !hwScalable && !variantRunsOnHardware(hwProfile, v);
+                // rendering a command that can't run. (vLLM-only: SGLang blocks
+                // don't carry VRAM/precision metadata so we never gate them.)
+                const disabled = engine === "vllm" && !hwScalable && !variantRunsOnHardware(hwProfile, v);
                 return (
                   <Pill
                     key={key}
@@ -1447,12 +1506,14 @@ export function CommandBuilder({ recipe, strategies, taxonomy }) {
                         ? `${(v.label || v.precision)?.toUpperCase()} needs ${v.vram_minimum_gb} GB but ${hwProfile.display_name || "this hardware"} has ${hwProfile.vram_gb} GB and can't scale out — pick a smaller-footprint variant`
                         : [
                             v.description,
-                            `Min ${v.vram_minimum_gb} GB to load — add KV cache for serving. Scale out via multi-node if needed.`,
+                            v.vram_minimum_gb && `Min ${v.vram_minimum_gb} GB to load — add KV cache for serving. Scale out via multi-node if needed.`,
                           ].filter(Boolean).join("\n\n")
                     }
                   >
-                    <span className="font-mono font-semibold">{(v.label || v.precision)?.toUpperCase()}</span>
-                    <span className="text-muted-foreground ml-1.5 font-mono">{v.vram_minimum_gb} GB</span>
+                    <span className="font-mono font-semibold">{(v.label || v.precision || key)?.toUpperCase()}</span>
+                    {v.vram_minimum_gb && (
+                      <span className="text-muted-foreground ml-1.5 font-mono">{v.vram_minimum_gb} GB</span>
+                    )}
                   </Pill>
                 );
               })}
@@ -1573,10 +1634,10 @@ export function CommandBuilder({ recipe, strategies, taxonomy }) {
           )}
 
           {/* Features */}
-          {Object.keys(recipe.features || {}).length > 0 && (
+          {Object.keys(activeFeaturesMap).length > 0 && (
             <ConfigRow label="Features">
               <PillGroup>
-                {Object.entries(recipe.features || {}).map(([key, f]) => (
+                {Object.entries(activeFeaturesMap).map(([key, f]) => (
                   <Pill
                     key={key}
                     active={features.includes(key)}

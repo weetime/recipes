@@ -32,6 +32,7 @@ import {
   buildDockerArgv,
 } from "../src/lib/command-synthesis.js";
 import { resolveCommandForEngine } from "../src/lib/engines/index.js";
+import { attachEngines } from "../src/lib/engines/sglang-join.js";
 
 const ROOT = process.cwd();
 const PUBLIC = path.join(ROOT, "public");
@@ -448,6 +449,9 @@ for (const file of findYamlFiles(modelsDir)) {
     hfRepo = parts[parts.length - 1].replace(/\.(yaml|yml)$/, "");
     r.hf_id = `${hfOrg}/${hfRepo}`;
   }
+  // Attach the engines map (vLLM descriptor + SGLang block) when present so the
+  // JSON API carries it. No-op for models without an SGLang block.
+  attachEngines(r);
   // Replace the raw `model.install` config with the synthesized commands so
   // JSON consumers see the rendered one-liners (pip + docker) plus any
   // `extras` from `dependencies`. The raw toggle config is internal-only.
@@ -516,8 +520,9 @@ for (const file of findYamlFiles(modelsDir)) {
   for (const { variantKey, variantModelId, recommended } of promotedRenderings) {
     const variantCfg = r.variants?.[variantKey] || {};
     const { model_id: _vMid, json: _vJson, ...variantCore } = variantCfg;
+    const { engines: _engines, default_engine: _default_engine, ...rWithoutEngines } = r;
     const promoted = {
-      ...r,  // share meta/features/guide/etc. with the parent
+      ...rWithoutEngines,  // share meta/features/guide/etc. with the parent
       hf_id: variantModelId,
       meta: { ...r.meta, derived_from: parentHfId, variant: variantKey },
       model: { ...r.model, model_id: variantModelId },

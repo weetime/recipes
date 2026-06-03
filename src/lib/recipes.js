@@ -1,6 +1,7 @@
 import fs from "fs";
 import path from "path";
 import yaml from "js-yaml";
+import { attachEngines } from "./engines/sglang-join.js";
 
 let cache = null;
 
@@ -36,7 +37,7 @@ function parseRecipe(filePath) {
     const dates = loadHfDates();
     raw.hf_released = dates[raw.hf_id] || null;
   }
-  return raw;
+  return attachEngines(raw);
 }
 
 function findYamlFiles(dir) {
