@@ -69,12 +69,13 @@ function synthesize(recipe, variantKey, strategyName, hwId, enabledFeatures, _st
 
   const isMulti = strategyName.startsWith("multi_node_") && nodeCount > 1;
   if (isMulti) {
-    const tp = gpuCount * nodeCount;
+    const tp = (block.tp_by_hardware?.[hwId] ?? gpuCount) * nodeCount;
     const headArgs = buildArgs(block, tp, strat.extra, { nnodes: nodeCount, rank: 0 }, featureArgs, advancedArgs);
     const workerArgs = buildArgs(block, tp, strat.extra, { nnodes: nodeCount, rank: 1 }, featureArgs, advancedArgs);
     return {
       deployType: "multi_node",
       nodeCount,
+      tp,
       headCommand: formatCommand(serveBinary, modelId, headArgs),
       workerCommand: formatCommand(serveBinary, modelId, workerArgs),
       headArgv: formatArgv(serveBinary, modelId, headArgs),
@@ -83,10 +84,11 @@ function synthesize(recipe, variantKey, strategyName, hwId, enabledFeatures, _st
     };
   }
 
-  const tp = gpuCount;
-  const args = buildArgs(block, tp, strat.extra, { nnodes: 1, rank: 0 }, featureArgs, advancedArgs);
+  const baseTp = block.tp_by_hardware?.[hwId] ?? gpuCount;
+  const args = buildArgs(block, baseTp, strat.extra, { nnodes: 1, rank: 0 }, featureArgs, advancedArgs);
   return {
     deployType: "single_node",
+    tp: baseTp,
     command: formatCommand(serveBinary, modelId, args),
     argv: formatArgv(serveBinary, modelId, args),
     env: {},
