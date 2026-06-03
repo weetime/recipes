@@ -93,3 +93,8 @@ features:
 
 - SGLang 具体 flag(reasoning/tool-call parser 名、多节点 `--dist-init-addr` 端口)以 SGLang 官方文档为准,实现时核对。
 - 全量 transformer(P2)、`upstream/sglang/` vendor、sync CI(P5)、SGLang DEP/EP/PD、SGLang-only 模型进站——切片验证通过后各自独立 PR。
+
+### 切片实现中 review 发现、留给 P2 的具体 follow-up
+
+- **`featuresToUrl` 引擎感知**(`CommandBuilder.jsx`)。它把当前 features 与 `defaultFeaturesFor(hw)`(读 vLLM 的 `recipe.features`/`opt_in_features`)比较来决定是否写 `?features=`。两个切片模型的 vLLM/SGLang feature key 集合恰好一致且 opt-in 为空,所以**目前是巧合正确**;若未来某个 SGLang 块的 feature/opt-in 集与 vLLM 分叉,SGLang 下切换 feature 会写出错误的 URL 参数(命令本身仍正确,仅 URL 持久化错)。需让默认比较引擎感知。
+- **挂载恢复(mount-restore)是 vLLM 形状的**(`CommandBuilder.jsx`)。`?engine=sglang` deep-link + localStorage 存了 per-recipe `rs.strategy` 时,恢复逻辑用 vLLM 的 `compatible_strategies` 校验并设 `strategyOverride`。共享 id(如 `multi_node_tp`)无害;vLLM 独有 id(`pd_cluster`/`tep`/`dep`)会回落到 SGLang 的 `single_node_tp`,不崩但可能 misfire。需让恢复引擎感知。两者都不阻塞切片(命令渲染正确)。
