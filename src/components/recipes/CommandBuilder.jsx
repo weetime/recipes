@@ -340,6 +340,12 @@ export function CommandBuilder({ recipe, strategies, taxonomy }) {
     () => searchParams.get("engine") || recipe.default_engine || "vllm"
   );
   const sources = engineSources(recipe, engine);
+  // Active engine's variant/feature config maps, used by the rows below. For
+  // vLLM these are the recipe's top-level fields; for any other engine they
+  // come from the engines.<id> block. Hoisted here to avoid repeating the
+  // ternary across the Variant/Features JSX.
+  const activeVariantsMap = engine === "vllm" ? (recipe.variants || {}) : (recipe.engines?.[engine]?.variants || {});
+  const activeFeaturesMap = engine === "vllm" ? (recipe.features || {}) : (recipe.engines?.[engine]?.features || {});
 
   // Active omni task — drives the `vllm serve --omni` model_id swap (Wan2.2's
   // T2V/I2V/TI2V) and the cURL endpoint/body shown in the Try-it popover.
@@ -1483,7 +1489,7 @@ export function CommandBuilder({ recipe, strategies, taxonomy }) {
             hint="VRAM shown is the minimum to LOAD the model (weights + CUDA/vLLM runtime overhead, ≈ params × bytes × 1.2). It's not a serving budget — long context or large batch typically needs 1.5–2× more for KV cache."
           >
             <PillGroup>
-              {Object.entries(engine === "vllm" ? (recipe.variants || {}) : (recipe.engines?.[engine]?.variants || {})).map(([key, v]) => {
+              {Object.entries(activeVariantsMap).map(([key, v]) => {
                 // On non-scalable hardware (single-GPU workstation) a variant
                 // that doesn't fit has nowhere to shard — disable it instead of
                 // rendering a command that can't run. (vLLM-only: SGLang blocks
@@ -1628,10 +1634,10 @@ export function CommandBuilder({ recipe, strategies, taxonomy }) {
           )}
 
           {/* Features */}
-          {Object.keys(engine === "vllm" ? (recipe.features || {}) : (recipe.engines?.[engine]?.features || {})).length > 0 && (
+          {Object.keys(activeFeaturesMap).length > 0 && (
             <ConfigRow label="Features">
               <PillGroup>
-                {Object.entries(engine === "vllm" ? (recipe.features || {}) : (recipe.engines?.[engine]?.features || {})).map(([key, f]) => (
+                {Object.entries(activeFeaturesMap).map(([key, f]) => (
                   <Pill
                     key={key}
                     active={features.includes(key)}
