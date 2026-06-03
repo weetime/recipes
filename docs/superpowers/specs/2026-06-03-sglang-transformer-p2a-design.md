@@ -97,3 +97,4 @@
 - 硬件名映射表以 `taxonomy.yaml` 实际 id 为准,实现时核对(尤其 AMD / GB NVL4 命名)。
 - 上游 `generated/` 的版本号排序:形如 `v0.5.10` > `v0.5.8` > `v0.5.6`,需按 semver 数值比较(`v0.5.10` 不能被字符串比较判成小于 `v0.5.8`)。
 - transformer 与 `attachEngines` 的关系不变:transformer 只产出 `engines/sglang/` 文件,join(`sglang-join.js`)逻辑沿用切片不动。
+- **实现期发现**:当前上游 `generated/` 里所有 config 都标 `nodes: single`(无一个 `multi`),所以 transformer/adapter 的多节点分支目前是 dead code(仅单测覆盖)。后果:像 GLM-5.1 这种 H100 tp=32 的会渲染成单节点 `--tp 32`(实为 4 节点),忠实镜像了上游(尚不完整)的标注。忠实多节点 tp 留 P2 后续(可由 `tp / gpus_per_node` 推 node 数,或等上游补 `nodes: multi`)。
