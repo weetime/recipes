@@ -48,16 +48,16 @@ export function modelToBlock(model, version) {
   let hasMulti = false;
   for (const [hwName, hwCfg] of Object.entries(model.hardware || {})) {
     const taxoId = HW_NAME_MAP[hwName];
-    const configs = hwCfg.configurations || [];
+    const configs = hwCfg?.configurations || [];
     // Prefer an exact "default" config; some models name them "default-kv-fp8"
     // etc., so fall back to the first "default"-prefixed config.
-    const def = configs.find((c) => c.name === "default")
-      || configs.find((c) => typeof c.name === "string" && c.name.startsWith("default"));
+    const def = configs.find((c) => c && c.name === "default")
+      || configs.find((c) => c && typeof c.name === "string" && c.name.startsWith("default"));
     if (def) {
       if (taxoId && def.engine?.tp != null) block.tp_by_hardware[taxoId] = def.engine.tp;
       if (!precision && def.attributes?.quantization) precision = def.attributes.quantization;
     }
-    if (configs.some((c) => c.attributes?.nodes === "multi")) hasMulti = true;
+    if (configs.some((c) => c?.attributes?.nodes === "multi")) hasMulti = true;
   }
   if (precision) block.variants.default.precision = precision;
   if (hasMulti) block.strategies.multi_node_tp = { extra: MULTI_NODE_EXTRA };
@@ -76,8 +76,9 @@ export function modelToBlock(model, version) {
 export function transform({ versionDocs, recipeHfIds }) {
   const byPath = new Map();
   for (const { version, doc } of versionDocs) {
-    for (const fam of doc.families || []) {
-      for (const model of fam.models || []) {
+    for (const fam of doc?.families || []) {
+      for (const model of fam?.models || []) {
+        if (!model?.model_path) continue;
         const prev = byPath.get(model.model_path);
         if (!prev || compareVersions(version, prev.version) > 0) {
           byPath.set(model.model_path, { model, version });

@@ -96,3 +96,19 @@ test("HW_NAME_MAP covers the common NVIDIA + AMD ids", () => {
     assert.ok(Object.values(HW_NAME_MAP).includes(id), `${id} is a mapping target`);
   }
 });
+
+test("transform tolerates malformed/empty upstream entries without crashing", () => {
+  const versionDocs = [
+    { version: "v0.5.6", doc: null },                              // whole doc null
+    { version: "v0.5.8", doc: { families: [null, { models: [null, {
+      name: "X", model_path: "Qwen/Qwen3.6-35B-A3B",
+      attributes: { llm: { tool_parser: "qwen3_coder", reasoning_parser: "qwen3" } },
+      hardware: { H200: null, B200: { configurations: [null, { name: "default", attributes: { quantization: "bf16" }, engine: { tp: 2 } }] } },
+    }] }] } },
+  ];
+  const recipeHfIds = new Set(["Qwen/Qwen3.6-35B-A3B"]);
+  let res;
+  assert.doesNotThrow(() => { res = transform({ versionDocs, recipeHfIds }); });
+  assert.equal(res.blocks.length, 1);
+  assert.deepEqual(res.blocks[0].block.tp_by_hardware, { b200: 2 }); // H200:null skipped, B200 default used
+});
