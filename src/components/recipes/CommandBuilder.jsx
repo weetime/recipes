@@ -1040,7 +1040,7 @@ export function CommandBuilder({ recipe, strategies, taxonomy }) {
   // mirroring their adapter, rather than vLLM's resolveSingleNodeTp.
   const summaryTp = engine === "vllm"
     ? effectiveTp
-    : (hwProfile?.gpu_count || 1) * (result.deployType === "multi_node" ? nodeCount : 1);
+    : (result.tp ?? (hwProfile?.gpu_count || 1) * (result.deployType === "multi_node" ? nodeCount : 1));
   const strategyPart = engine !== "vllm"
     ? `TP=${summaryTp}`
     : result.deployType === "pd_cluster"
