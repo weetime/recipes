@@ -1391,11 +1391,24 @@ export function CommandBuilder({ recipe, strategies, taxonomy }) {
                     onClick={() => {
                       setEngine(id);
                       const src = engineSources(recipe, id);
-                      if (!src.strategies.includes(strategyOverride)) setStrategyOverride("");
-                      if (!src.variants.includes(variant)) setVariant(src.defaultVariant);
+                      // Engine switch resets selections to the new engine's
+                      // defaults; mirror those resets to the URL so a shared/
+                      // reloaded link rehydrates the right state (matching
+                      // selectStrategy/selectVariant/toggleFeature conventions).
+                      const strategyReset = !src.strategies.includes(strategyOverride);
+                      if (strategyReset) setStrategyOverride("");
+                      const nextVariant = src.variants.includes(variant)
+                        ? variant
+                        : src.defaultVariant;
+                      if (nextVariant !== variant) setVariant(nextVariant);
                       setFeatures(src.defaultFeatures);
                       const defaultEngine = recipe.default_engine || "vllm";
-                      syncUrl({ engine: id === defaultEngine ? "" : id });
+                      syncUrl({
+                        engine: id === defaultEngine ? "" : id,
+                        ...(strategyReset ? { strategy: "" } : {}),
+                        variant: nextVariant,
+                        features: featuresToUrl(src.defaultFeatures, hwId),
+                      });
                     }}
                   >
                     {id === "vllm" ? "vLLM" : id === "sglang" ? "SGLang" : id}
