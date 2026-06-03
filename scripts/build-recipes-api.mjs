@@ -27,11 +27,11 @@ import {
   isHardwareScalable,
   pickFittingVariant,
   pdFitsSingleNode,
-  resolveCommand,
   computeDockerMeta,
   buildDockerRun,
   buildDockerArgv,
 } from "../src/lib/command-synthesis.js";
+import { resolveCommandForEngine } from "../src/lib/engines/index.js";
 
 const ROOT = process.cwd();
 const PUBLIC = path.join(ROOT, "public");
@@ -170,8 +170,8 @@ function pickPdNodes(hwProfile, variant) {
 function renderCommand(recipe, variantKey, strategy, hwId, nodeCount, features, strategies, taxonomy, pdNodes = null) {
   let result;
   try {
-    result = resolveCommand(
-      recipe, variantKey, strategy, hwId, features, strategies, taxonomy, [], nodeCount, pdNodes
+    result = resolveCommandForEngine(
+      "vllm", recipe, variantKey, strategy, hwId, features, strategies, taxonomy, [], nodeCount, pdNodes
     );
   } catch (e) {
     console.warn(`  ⚠ command synthesis failed for ${recipe.hf_id} / ${variantKey} / ${strategy}: ${e.message}`);
