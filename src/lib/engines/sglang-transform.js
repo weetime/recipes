@@ -49,7 +49,10 @@ export function modelToBlock(model, version) {
   for (const [hwName, hwCfg] of Object.entries(model.hardware || {})) {
     const taxoId = HW_NAME_MAP[hwName];
     const configs = hwCfg.configurations || [];
-    const def = configs.find((c) => c.name === "default");
+    // Prefer an exact "default" config; some models name them "default-kv-fp8"
+    // etc., so fall back to the first "default"-prefixed config.
+    const def = configs.find((c) => c.name === "default")
+      || configs.find((c) => typeof c.name === "string" && c.name.startsWith("default"));
     if (def) {
       if (taxoId && def.engine?.tp != null) block.tp_by_hardware[taxoId] = def.engine.tp;
       if (!precision && def.attributes?.quantization) precision = def.attributes.quantization;

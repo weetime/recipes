@@ -54,6 +54,24 @@ test("modelToBlock drops a feature when its parser is null/absent", () => {
   assert.deepEqual(b.features, {});
 });
 
+test("modelToBlock falls back to a default-prefixed config when no exact 'default'", () => {
+  const m = {
+    name: "Nemotron-Super",
+    model_path: "nvidia/Nemotron-Super",
+    attributes: { llm: { tool_parser: "nemotron", reasoning_parser: null } },
+    hardware: {
+      H200: { configurations: [
+        { name: "default-kv-fp8", attributes: { nodes: "single", quantization: "fp8" }, engine: { tp: 4 } },
+        { name: "default-kv-bf16", attributes: { nodes: "single", quantization: "bf16" }, engine: { tp: 8 } },
+      ] },
+    },
+  };
+  const b = modelToBlock(m, "v0.5.8");
+  assert.deepEqual(b.tp_by_hardware, { h200: 4 });        // first default-prefixed config wins
+  assert.equal(b.variants.default.precision, "fp8");
+  assert.deepEqual(b.features.tool_calling.args, ["--tool-call-parser", "nemotron"]);
+});
+
 test("transform: latest-wins across versions, overlap-only, logs skips", () => {
   const versionDocs = [
     { version: "v0.5.8", doc: { families: [{ models: [
