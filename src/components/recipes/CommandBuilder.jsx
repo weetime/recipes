@@ -395,13 +395,16 @@ export function CommandBuilder({ recipe, strategies, taxonomy }) {
     }
 
     const rs = loadRecipeState(recipe.hf_id);
+    // Restore against the ACTIVE engine's options (engine comes from the URL at
+    // mount), so a vLLM-only strategy/feature in localStorage doesn't get
+    // restored under SGLang. For vLLM these sources equal the old vLLM fields.
+    const restoreSrc = engineSources(recipe, engine);
     if (!searchParams.get("strategy") && rs.strategy &&
-        (recipe.compatible_strategies || []).includes(rs.strategy)) {
+        restoreSrc.strategies.includes(rs.strategy)) {
       setStrategyOverride(rs.strategy);
     }
     if (!searchParams.get("features") && Array.isArray(rs.features)) {
-      const recipeFeatures = Object.keys(recipe.features || {});
-      setFeatures(rs.features.filter((f) => recipeFeatures.includes(f)));
+      setFeatures(rs.features.filter((f) => restoreSrc.features.includes(f)));
     }
     // Resolve the hardware this mount actually settles on (URL > restored pref
     // > default) so the non-scalable fixups below see the right profile.
@@ -525,11 +528,19 @@ export function CommandBuilder({ recipe, strategies, taxonomy }) {
   // hardware (e.g. GB200's 4-GPU trays make --mm-encoder-tp-mode data unnecessary).
   const defaultFeaturesFor = useCallback(
     (hw) => {
+      // Non-vLLM engines draw defaults from their own block (features minus the
+      // block's opt_in_features); the per-hardware opt-in is vLLM-only. This
+      // also fixes featuresToUrl below, which diffs against these defaults.
+      if (engine !== "vllm") {
+        const block = recipe.engines?.[engine] || {};
+        const optIn = new Set(block.opt_in_features || []);
+        return Object.keys(block.features || {}).filter((f) => !optIn.has(f));
+      }
       const optIn = new Set(recipe.opt_in_features || []);
       for (const f of recipe.hardware_opt_in_features?.[hw] || []) optIn.add(f);
       return Object.keys(recipe.features || {}).filter((f) => !optIn.has(f));
     },
-    [recipe]
+    [recipe, engine]
   );
 
   // Encode a features array for the URL: returns "" (which syncUrl deletes)
@@ -1025,14 +1036,27 @@ export function CommandBuilder({ recipe, strategies, taxonomy }) {
   // `2× H200 · TP=16 · BF16`, `H200 · PD cluster · FP8`.
   const hwDisplay = hwProfile?.display_name || hwId;
   const hwPart = nodeCount > 1 ? `${nodeCount}× ${hwDisplay}` : hwDisplay;
-  const strategyPart = result.deployType === "pd_cluster"
-    ? "PD cluster"
-    : result.deployType === "multi_node"
-      ? (strategies[activeStrategy]?.display_name || activeStrategy)
-      : effectiveTp
-        ? `TP=${effectiveTp}`
-        : (strategies[activeStrategy]?.display_name || activeStrategy);
-  const precisionPart = currentVariant.precision?.toUpperCase();
+  // Non-vLLM engines compute TP from gpu_count (× nodes when multi-node),
+  // mirroring their adapter, rather than vLLM's resolveSingleNodeTp.
+  const summaryTp = engine === "vllm"
+    ? effectiveTp
+    : (hwProfile?.gpu_count || 1) * (result.deployType === "multi_node" ? nodeCount : 1);
+  const strategyPart = engine !== "vllm"
+    ? `TP=${summaryTp}`
+    : result.deployType === "pd_cluster"
+      ? "PD cluster"
+      : result.deployType === "multi_node"
+        ? (strategies[activeStrategy]?.display_name || activeStrategy)
+        : effectiveTp
+          ? `TP=${effectiveTp}`
+          : (strategies[activeStrategy]?.display_name || activeStrategy);
+  // Precision for non-vLLM engines comes from the engine block's variant, not
+  // vLLM's recipe.variants (which is why the SGLang tab previously showed FP8
+  // under a BF16 selection).
+  const summaryVariant = engine === "vllm"
+    ? currentVariant
+    : (recipe.engines?.[engine]?.variants?.[variant] || {});
+  const precisionPart = summaryVariant.precision?.toUpperCase();
   const configSummary = [hwPart, strategyPart, precisionPart].filter(Boolean).join(" · ");
 
   // Upstream `vllm/vllm-openai:latest` (and recent pinned tags) ship CUDA 13
