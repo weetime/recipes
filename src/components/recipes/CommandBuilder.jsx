@@ -697,14 +697,17 @@ export function CommandBuilder({ recipe, strategies, taxonomy }) {
   // auto-fit from `variant.vram_minimum_gb` vs per-GPU VRAM.
   const hwGpuCount = typeof hwProfile.gpu_count === "number" ? hwProfile.gpu_count : 1;
   const effectiveTp = resolveSingleNodeTp(recipe, currentVariant, hwProfile, activeStrategy);
+  // vLLM-only hints: effectiveTp / vram_minimum_gb come from the vLLM recipe and
+  // the flag is vLLM's (--tensor-parallel-size). For non-vLLM engines the adapter
+  // already derives nodes/tp, so these would mislabel a correct SGLang command.
   const showGpuUsageHint =
-    nodeCount === 1 && activeStrategy === "single_node_tp" && effectiveTp < hwGpuCount;
+    engine === "vllm" && nodeCount === 1 && activeStrategy === "single_node_tp" && effectiveTp < hwGpuCount;
 
   const isSingleNode = nodeCount === 1 && typeof activeStrategy === "string" && activeStrategy.startsWith("single_node_");
   const needGb = currentVariant?.vram_minimum_gb;
   const availGb = hwProfile.vram_gb;
   const vramShortfall =
-    isSingleNode && typeof needGb === "number" && typeof availGb === "number" && availGb > 0 && needGb > availGb
+    engine === "vllm" && isSingleNode && typeof needGb === "number" && typeof availGb === "number" && availGb > 0 && needGb > availGb
       ? { needGb, availGb, gpuCount: hwGpuCount, hwName: hwProfile.display_name || hwId }
       : null;
 
@@ -1035,12 +1038,15 @@ export function CommandBuilder({ recipe, strategies, taxonomy }) {
   // Format: `<hw> · <parallelism> · <precision>` — e.g. `H200 · TP=8 · BF16`,
   // `2× H200 · TP=16 · BF16`, `H200 · PD cluster · FP8`.
   const hwDisplay = hwProfile?.display_name || hwId;
-  const hwPart = nodeCount > 1 ? `${nodeCount}× ${hwDisplay}` : hwDisplay;
+  // For non-vLLM engines the Nodes row is hidden and the component `nodeCount`
+  // state stays 1; the adapter is the source of truth, so read result.nodeCount.
+  const summaryNodes = engine === "vllm" ? nodeCount : (result.nodeCount || 1);
+  const hwPart = summaryNodes > 1 ? `${summaryNodes}× ${hwDisplay}` : hwDisplay;
   // Non-vLLM engines compute TP from gpu_count (× nodes when multi-node),
   // mirroring their adapter, rather than vLLM's resolveSingleNodeTp.
   const summaryTp = engine === "vllm"
     ? effectiveTp
-    : (result.tp ?? (hwProfile?.gpu_count || 1) * (result.deployType === "multi_node" ? nodeCount : 1));
+    : (result.tp ?? (hwProfile?.gpu_count || 1) * (result.deployType === "multi_node" ? (result.nodeCount || 1) : 1));
   const strategyPart = engine !== "vllm"
     ? `TP=${summaryTp}`
     : result.deployType === "pd_cluster"
@@ -1544,7 +1550,10 @@ export function CommandBuilder({ recipe, strategies, taxonomy }) {
             </PillGroup>
           </ConfigRow>
 
-          {/* Strategy */}
+          {/* Strategy — hidden for a non-vLLM engine exposing a single strategy
+              (SGLang's lone single_node_tp), which would otherwise mislabel a
+              derived multi-node command. vLLM is unaffected. */}
+          {(engine === "vllm" || compatibleStrategies.length > 1) && (
           <ConfigRow label="Strategy">
             <PillGroup>
               {compatibleStrategies.map((s) => {
@@ -1584,9 +1593,12 @@ export function CommandBuilder({ recipe, strategies, taxonomy }) {
               );
             })()}
           </ConfigRow>
+          )}
 
-          {/* Nodes — two number inputs for PD (one per pool), pills otherwise */}
-          {activeStrategy === "pd_cluster" ? (
+          {/* Nodes — vLLM only. SGLang derives node count from tp vs gpu_count,
+              so it's a consequence (not a choice); it surfaces via the
+              config-summary header + Head/Worker command tabs. */}
+          {engine === "vllm" && (activeStrategy === "pd_cluster" ? (
             <ConfigRow
               label="Nodes"
               hint="Each pool (prefill / decode) sizes independently. Total cluster = prefill_nodes + decode_nodes. For Kimi-K2.5 on GB200 the production pattern is prefill=1, decode=4."
@@ -1655,7 +1667,7 @@ export function CommandBuilder({ recipe, strategies, taxonomy }) {
                 })}
               </PillGroup>
             </ConfigRow>
-          )}
+          ))}
 
           {/* Features */}
           {Object.keys(activeFeaturesMap).length > 0 && (
