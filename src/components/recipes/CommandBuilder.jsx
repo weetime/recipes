@@ -697,14 +697,17 @@ export function CommandBuilder({ recipe, strategies, taxonomy }) {
   // auto-fit from `variant.vram_minimum_gb` vs per-GPU VRAM.
   const hwGpuCount = typeof hwProfile.gpu_count === "number" ? hwProfile.gpu_count : 1;
   const effectiveTp = resolveSingleNodeTp(recipe, currentVariant, hwProfile, activeStrategy);
+  // vLLM-only hints: effectiveTp / vram_minimum_gb come from the vLLM recipe and
+  // the flag is vLLM's (--tensor-parallel-size). For non-vLLM engines the adapter
+  // already derives nodes/tp, so these would mislabel a correct SGLang command.
   const showGpuUsageHint =
-    nodeCount === 1 && activeStrategy === "single_node_tp" && effectiveTp < hwGpuCount;
+    engine === "vllm" && nodeCount === 1 && activeStrategy === "single_node_tp" && effectiveTp < hwGpuCount;
 
   const isSingleNode = nodeCount === 1 && typeof activeStrategy === "string" && activeStrategy.startsWith("single_node_");
   const needGb = currentVariant?.vram_minimum_gb;
   const availGb = hwProfile.vram_gb;
   const vramShortfall =
-    isSingleNode && typeof needGb === "number" && typeof availGb === "number" && availGb > 0 && needGb > availGb
+    engine === "vllm" && isSingleNode && typeof needGb === "number" && typeof availGb === "number" && availGb > 0 && needGb > availGb
       ? { needGb, availGb, gpuCount: hwGpuCount, hwName: hwProfile.display_name || hwId }
       : null;
 
