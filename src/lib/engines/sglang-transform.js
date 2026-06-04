@@ -2,8 +2,10 @@
  * Pure mapping from sgl-cookbook generated model configs to our engines/sglang
  * block schema. No IO — scripts/sync-sglang.mjs does the reading/writing.
  *
- * P2a scope: TP only. Uses each hardware's `default` named configuration;
- * dp/ep/PD/speculative (non-default) configs are ignored.
+ * Scope: TP only. Uses each hardware's `default` named configuration;
+ * dp/ep/PD/speculative (non-default) configs are ignored. Multi-node is NOT
+ * encoded here — the SGLang adapter derives it at render time from
+ * tp_by_hardware vs the hardware's gpu_count.
  */
 
 // Upstream hardware name → our taxonomy.yaml hardware id. Names not listed are
@@ -14,9 +16,6 @@ export const HW_NAME_MAP = {
   GB200: "gb200", GB300: "gb300",
   MI300X: "mi300x", MI325X: "mi325x", MI355X: "mi355x",
 };
-
-// Multi-node TP flag template; {NNODES}/{RANK} are filled by the sglang adapter.
-const MULTI_NODE_EXTRA = ["--nnodes", "{NNODES}", "--node-rank", "{RANK}", "--dist-init-addr", "$HEAD_IP:5000"];
 
 // Numeric semver-ish compare for "v0.5.10" style tags (so v0.5.10 > v0.5.8).
 export function compareVersions(a, b) {
@@ -45,7 +44,6 @@ export function modelToBlock(model, version) {
   };
 
   let precision = null;
-  let hasMulti = false;
   for (const [hwName, hwCfg] of Object.entries(model.hardware || {})) {
     const taxoId = HW_NAME_MAP[hwName];
     const configs = hwCfg?.configurations || [];
@@ -57,10 +55,8 @@ export function modelToBlock(model, version) {
       if (taxoId && def.engine?.tp != null) block.tp_by_hardware[taxoId] = def.engine.tp;
       if (!precision && def.attributes?.quantization) precision = def.attributes.quantization;
     }
-    if (configs.some((c) => c?.attributes?.nodes === "multi")) hasMulti = true;
   }
   if (precision) block.variants.default.precision = precision;
-  if (hasMulti) block.strategies.multi_node_tp = { extra: MULTI_NODE_EXTRA };
 
   const llm = model.attributes?.llm || {};
   if (llm.tool_parser) block.features.tool_calling = { args: ["--tool-call-parser", llm.tool_parser] };

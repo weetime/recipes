@@ -37,15 +37,15 @@ test("modelToBlock maps parsers, per-hw tp, precision, single-node", () => {
   assert.deepEqual(b.features.reasoning.args, ["--reasoning-parser", "qwen3"]);
 });
 
-test("modelToBlock adds multi_node_tp when any config is nodes:multi", () => {
+test("modelToBlock never emits multi_node_tp, even for nodes:multi (derived at render)", () => {
   const m = { ...MODEL, hardware: { B200: { configurations: [
     { name: "default", attributes: { nodes: "multi", quantization: "fp8" }, engine: { tp: 16, extra_args: [] } },
   ] } } };
   const b = modelToBlock(m, "v0.5.10");
-  assert.ok(b.strategies.multi_node_tp, "multi_node_tp present");
-  assert.deepEqual(b.strategies.multi_node_tp.extra, ["--nnodes", "{NNODES}", "--node-rank", "{RANK}", "--dist-init-addr", "$HEAD_IP:5000"]);
+  assert.equal(b.strategies.multi_node_tp, undefined);    // multi-node is derived by the adapter, not the block
+  assert.deepEqual(b.strategies.single_node_tp, {});
   assert.equal(b.variants.default.precision, "fp8");
-  assert.deepEqual(b.tp_by_hardware, { b200: 16 });
+  assert.deepEqual(b.tp_by_hardware, { b200: 16 });       // tp is still captured faithfully
 });
 
 test("modelToBlock drops a feature when its parser is null/absent", () => {
