@@ -54,16 +54,43 @@ test("enabled feature args append to the command", () => {
   assert.ok(r.command.endsWith("--reasoning-parser deepseek-r1"), r.command);
 });
 
-test("multi_node_tp renders head + worker with total TP and rank substitution", () => {
-  const r = resolveCommandForEngine("sglang", RECIPE, "default", "multi_node_tp", "h200", [], STRATEGIES, TAXONOMY, [], 2, null);
+test("derived multi-node: tp > gpu_count renders head/worker with upstream tp (default extra)", () => {
+  // Block carries ONLY single_node_tp; the strategyName passed is single_node_tp,
+  // yet tp(32) > gpu_count(8) ⇒ the adapter renders multi-node from MULTI_NODE_EXTRA.
+  const block = { ...BLOCK, strategies: { single_node_tp: {} }, tp_by_hardware: { h100: 32 } };
+  const recipe = { model: { model_id: "deepseek-ai/DeepSeek-V3" }, engines: { sglang: block } };
+  const tax = { hardware_profiles: { h100: { gpu_count: 8, vram_gb: 640, brand: "NVIDIA", generation: "hopper" } } };
+  const r = resolveCommandForEngine("sglang", recipe, "default", "single_node_tp", "h100", [], STRATEGIES, tax, [], 1, null);
   assert.equal(r.deployType, "multi_node");
-  assert.equal(r.nodeCount, 2);
-  // total TP = tp_by_hardware.h200 * nodeCount = 4*2 = 8; head rank 0, worker rank 1
-  assert.ok(r.headCommand.includes("--tp 8"), r.headCommand);
-  assert.ok(r.headCommand.includes("--nnodes 2"), r.headCommand);
+  assert.equal(r.nodeCount, 4);           // ceil(32 / 8)
+  assert.equal(r.tp, 32);                 // upstream value, NOT × nodes
+  assert.ok(r.headCommand.includes("--tp 32"), r.headCommand);
+  assert.ok(r.headCommand.includes("--nnodes 4"), r.headCommand);
   assert.ok(r.headCommand.includes("--node-rank 0"), r.headCommand);
   assert.ok(r.headCommand.includes("--dist-init-addr $HEAD_IP:5000"), r.headCommand);
   assert.ok(r.workerCommand.includes("--node-rank 1"), r.workerCommand);
+  assert.ok(r.workerCommand.includes("--nnodes 4"), r.workerCommand);
+  assert.ok(r.workerCommand.includes("--tp 32"), r.workerCommand);
+});
+
+test("derived multi-node: a block's explicit multi_node_tp.extra overrides the default", () => {
+  const block = {
+    ...BLOCK,
+    strategies: { single_node_tp: {}, multi_node_tp: { extra: ["--nnodes", "{NNODES}", "--node-rank", "{RANK}", "--dist-init-addr", "$HEAD_IP:9999"] } },
+    tp_by_hardware: { h100: 16 },
+  };
+  const recipe = { model: { model_id: "deepseek-ai/DeepSeek-V3" }, engines: { sglang: block } };
+  const tax = { hardware_profiles: { h100: { gpu_count: 8, vram_gb: 640, brand: "NVIDIA", generation: "hopper" } } };
+  const r = resolveCommandForEngine("sglang", recipe, "default", "single_node_tp", "h100", [], STRATEGIES, tax, [], 1, null);
+  assert.equal(r.nodeCount, 2);           // ceil(16 / 8)
+  assert.ok(r.headCommand.includes("--dist-init-addr $HEAD_IP:9999"), r.headCommand);
+});
+
+test("the caller's nodeCount is ignored: tp <= gpu_count stays single-node", () => {
+  // BLOCK.tp_by_hardware.h200 = 4, gpu_count 8 ⇒ single node even though nodeCount=2 is passed.
+  const r = resolveCommandForEngine("sglang", RECIPE, "default", "single_node_tp", "h200", [], STRATEGIES, TAXONOMY, [], 2, null);
+  assert.equal(r.deployType, "single_node");
+  assert.equal(r.tp, 4);
 });
 
 test("synthesizeOmni throws (sglang omni not supported in slice)", () => {

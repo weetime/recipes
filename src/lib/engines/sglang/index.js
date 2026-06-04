@@ -68,31 +68,34 @@ export function sglangCapabilities(block) {
 }
 
 // Synthesize an SGLang launch command. Signature matches the EngineAdapter
-// contract; vLLM-specific args (the strategies catalog, advancedArgs position,
-// pdNodes) that SGLang doesn't use are accepted and ignored where N/A.
-function synthesize(recipe, variantKey, strategyName, hwId, enabledFeatures, _strategies, taxonomy, advancedArgs = [], nodeCount = 1, _pdNodes = null) {
+// contract; vLLM-specific args (the strategies catalog, pdNodes) that SGLang
+// doesn't use are accepted and ignored. The caller's nodeCount is ALSO ignored:
+// node count is a consequence of (tp_by_hardware, gpu_count), derived here.
+function synthesize(recipe, variantKey, strategyName, hwId, enabledFeatures, _strategies, taxonomy, advancedArgs = [], _nodeCount = 1, _pdNodes = null) {
   const block = recipe?.engines?.sglang;
   if (!block) throw new Error("sglang adapter: recipe has no engines.sglang block");
   const modelId = block.model_id || recipe.model?.model_id || "unknown";
   const serveBinary = block.serve_binary || "python3 -m sglang.launch_server";
-  const hwProfile = taxonomy?.hardware_profiles?.[hwId] || {};
-  const gpuCount = typeof hwProfile.gpu_count === "number" ? hwProfile.gpu_count : 1;
 
-  const strat = block.strategies?.[strategyName] || block.strategies?.single_node_tp || {};
   const featureArgs = [];
   for (const f of enabledFeatures || []) {
     const fa = block.features?.[f]?.args;
     if (fa) featureArgs.push(...fa);
   }
 
-  const isMulti = strategyName.startsWith("multi_node_") && nodeCount > 1;
-  if (isMulti) {
-    const tp = (block.tp_by_hardware?.[hwId] ?? gpuCount) * nodeCount;
-    const headArgs = buildArgs(block, tp, strat.extra, { nnodes: nodeCount, rank: 0 }, featureArgs, advancedArgs);
-    const workerArgs = buildArgs(block, tp, strat.extra, { nnodes: nodeCount, rank: 1 }, featureArgs, advancedArgs);
+  const { tp, nodes } = deriveSglangNodes(block, hwId, taxonomy);
+
+  if (nodes > 1) {
+    // Derived multi-node (nodes from deriveSglangNodes, not strategyName). A block
+    // may pin its own dist flags via strategies.multi_node_tp.extra (the explicit
+    // upstream path); otherwise the adapter default applies, regardless of which
+    // strategy name was passed. tp is the upstream value — never × nodes.
+    const extra = block.strategies?.multi_node_tp?.extra ?? MULTI_NODE_EXTRA;
+    const headArgs = buildArgs(block, tp, extra, { nnodes: nodes, rank: 0 }, featureArgs, advancedArgs);
+    const workerArgs = buildArgs(block, tp, extra, { nnodes: nodes, rank: 1 }, featureArgs, advancedArgs);
     return {
       deployType: "multi_node",
-      nodeCount,
+      nodeCount: nodes,
       tp,
       headCommand: formatCommand(serveBinary, modelId, headArgs),
       workerCommand: formatCommand(serveBinary, modelId, workerArgs),
@@ -102,11 +105,11 @@ function synthesize(recipe, variantKey, strategyName, hwId, enabledFeatures, _st
     };
   }
 
-  const baseTp = block.tp_by_hardware?.[hwId] ?? gpuCount;
-  const args = buildArgs(block, baseTp, strat.extra, { nnodes: 1, rank: 0 }, featureArgs, advancedArgs);
+  const strat = block.strategies?.[strategyName] || block.strategies?.single_node_tp || {};
+  const args = buildArgs(block, tp, strat.extra, { nnodes: 1, rank: 0 }, featureArgs, advancedArgs);
   return {
     deployType: "single_node",
-    tp: baseTp,
+    tp,
     command: formatCommand(serveBinary, modelId, args),
     argv: formatArgv(serveBinary, modelId, args),
     env: {},
