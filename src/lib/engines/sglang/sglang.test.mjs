@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import sglang, { sglangCapabilities } from "./index.js";
+import sglang, { sglangCapabilities, deriveSglangNodes } from "./index.js";
 import { resolveCommandForEngine } from "../index.js";
 
 // Minimal recipe carrying an sglang engine block, mirroring what the join attaches.
@@ -81,4 +81,41 @@ test("falls back to gpu_count when hwId is absent from tp_by_hardware", () => {
   const r = resolveCommandForEngine("sglang", RECIPE, "default", "single_node_tp", "h100", [], STRATEGIES, tax, [], 1, null);
   assert.equal(r.tp, 8);
   assert.ok(r.command.includes("--tp 8"), r.command);
+});
+
+const TAX_MULTI = {
+  hardware_profiles: {
+    h100: { gpu_count: 8, vram_gb: 640, brand: "NVIDIA", generation: "hopper" },
+    h200: { gpu_count: 8, vram_gb: 1128, brand: "NVIDIA", generation: "hopper" },
+  },
+};
+
+test("deriveSglangNodes: tp > gpu_count → ceil(tp/gpu) nodes, tp unchanged", () => {
+  const block = { tp_by_hardware: { h100: 32 } };
+  assert.deepEqual(deriveSglangNodes(block, "h100", TAX_MULTI), { tp: 32, nodes: 4, gpuCount: 8 });
+});
+
+test("deriveSglangNodes: tp == gpu_count → single node", () => {
+  const block = { tp_by_hardware: { h100: 8 } };
+  assert.deepEqual(deriveSglangNodes(block, "h100", TAX_MULTI), { tp: 8, nodes: 1, gpuCount: 8 });
+});
+
+test("deriveSglangNodes: tp < gpu_count → single node", () => {
+  const block = { tp_by_hardware: { h100: 4 } };
+  assert.deepEqual(deriveSglangNodes(block, "h100", TAX_MULTI), { tp: 4, nodes: 1, gpuCount: 8 });
+});
+
+test("deriveSglangNodes: missing tp falls back to gpu_count (single node)", () => {
+  const block = { tp_by_hardware: {} };
+  assert.deepEqual(deriveSglangNodes(block, "h200", TAX_MULTI), { tp: 8, nodes: 1, gpuCount: 8 });
+});
+
+test("deriveSglangNodes: non-divisible tp rounds nodes up, keeps upstream tp", () => {
+  const block = { tp_by_hardware: { h100: 12 } };
+  assert.deepEqual(deriveSglangNodes(block, "h100", TAX_MULTI), { tp: 12, nodes: 2, gpuCount: 8 });
+});
+
+test("deriveSglangNodes: null/undefined block falls back to gpu_count (single node)", () => {
+  assert.deepEqual(deriveSglangNodes(null, "h100", TAX_MULTI), { tp: 8, nodes: 1, gpuCount: 8 });
+  assert.deepEqual(deriveSglangNodes(undefined, "h200", TAX_MULTI), { tp: 8, nodes: 1, gpuCount: 8 });
 });

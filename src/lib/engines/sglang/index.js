@@ -1,5 +1,23 @@
 import { defineEngine } from "../types.js";
 
+// Canonical SGLang multi-node dist flags; {NNODES}/{RANK} are filled per command
+// by buildArgs. Owned here (not the transformer) so the derived multi-node path
+// works without any block change; a block may override via
+// strategies.multi_node_tp.extra.
+const MULTI_NODE_EXTRA = ["--nnodes", "{NNODES}", "--node-rank", "{RANK}", "--dist-init-addr", "$HEAD_IP:5000"];
+
+// Derive node count from the block's per-hardware TP against the hardware's
+// gpu_count (taxonomy). tp_by_hardware is upstream ground truth and is returned
+// unchanged; nodes = max(1, ceil(tp / gpu_count)). A missing tp falls back to
+// gpu_count (→ single node). Exported for direct unit testing.
+export function deriveSglangNodes(block, hwId, taxonomy) {
+  const hwProfile = taxonomy?.hardware_profiles?.[hwId] || {};
+  const gpuCount = typeof hwProfile.gpu_count === "number" && hwProfile.gpu_count > 0 ? hwProfile.gpu_count : 1;
+  const tp = block?.tp_by_hardware?.[hwId] ?? gpuCount;
+  const nodes = Math.max(1, Math.ceil(tp / gpuCount));
+  return { tp, nodes, gpuCount };
+}
+
 // Pair each `--flag value` on one line with `\` continuations, mirroring the
 // vLLM command formatter so the rendered SGLang command reads the same way.
 function formatCommand(serveBinary, modelId, args) {
