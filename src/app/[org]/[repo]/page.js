@@ -9,11 +9,9 @@ import { loadTaxonomy } from "@/lib/taxonomy";
 import { resolveRecipePlatforms } from "@/lib/platforms";
 import { getProviderLogo, getProviderLogoClass } from "@/lib/providers";
 import { CommandBuilder } from "@/components/recipes/CommandBuilder";
+import { EngineAwareGuide } from "@/components/recipes/EngineAwareGuide";
 import { DeployDialog } from "@/components/recipes/DeployDialog";
 import { HuggingFaceIcon } from "@/components/icons/PlatformLogos";
-import Markdown from "react-markdown";
-import remarkGfm from "remark-gfm";
-import rehypeSlug from "rehype-slug";
 import { Badge } from "@/components/ui/badge";
 import { Cpu, Layers, Pencil, Bug, ExternalLink } from "lucide-react";
 
@@ -80,7 +78,6 @@ export default async function RecipePage({ params }) {
 
   const strategies = loadStrategies();
   const taxonomy = loadTaxonomy();
-  const guide = recipe.guide || "";
   const logo = getProviderLogo(recipe.hf_org);
 
   // Per-recipe platform opt-in. Each entry is either a bare id ("modal") or
@@ -211,16 +208,11 @@ export default async function RecipePage({ params }) {
 
       {/* ── Reference sections ── */}
       <section className="space-y-2">
-        {guide && (
+        {(recipe.guide || Object.values(recipe.engines ?? {}).some((e) => e?.guide)) && (
           <Accordion title="Guide" defaultOpen>
-            <div className="guide-content">
-              <Markdown
-                remarkPlugins={[remarkGfm]}
-                rehypePlugins={[rehypeSlug]}
-              >
-                {guide}
-              </Markdown>
-            </div>
+            <Suspense fallback={null}>
+              <EngineAwareGuide recipe={recipe} defaultEngine={recipe.default_engine || "vllm"} />
+            </Suspense>
           </Accordion>
         )}
 

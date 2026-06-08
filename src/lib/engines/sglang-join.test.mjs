@@ -18,3 +18,18 @@ test("attachEngines is a no-op for a model with no sglang block", () => {
   assert.equal(out.engines, undefined);
   assert.equal(out.default_engine, undefined);
 });
+
+test("attachEngines reads an authored SGLang guide into engines.sglang.guide", () => {
+  const recipe = { hf_id: "zai-org/GLM-5.1", model: { model_id: "zai-org/GLM-5.1", min_vllm_version: "0.19.1" } };
+  const out = attachEngines(recipe);
+  assert.equal(typeof out.engines.sglang.guide, "string");
+  assert.ok(out.engines.sglang.guide.includes("sglang.launch_server"), "guide carries the launch command prose");
+  assert.ok(out.engines.sglang.guide.includes("GLM-5.1"), "guide is the GLM-5.1 authored prose");
+});
+
+test("attachEngines leaves guide unset when no authored SGLang guide exists", () => {
+  const recipe = { hf_id: "deepseek-ai/DeepSeek-V3.2", model: { model_id: "deepseek-ai/DeepSeek-V3.2", min_vllm_version: "0.11.1" } };
+  const out = attachEngines(recipe);
+  assert.ok(out.engines.sglang, "sglang block still attached");
+  assert.equal(out.engines.sglang.guide, undefined);
+});
