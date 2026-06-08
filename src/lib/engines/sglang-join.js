@@ -27,7 +27,7 @@ export function attachEngines(recipe) {
   // writes there, so they survive upstream re-syncs). Merge onto the block when
   // present; absent leaves block.guide unset and the UI shows a fallback notice.
   const guidePath = path.join(SGLANG_GUIDES_DIR, `${hfId}.md`);
-  if (fs.existsSync(guidePath)) {
+  if (fs.existsSync(guidePath) && block && typeof block === "object") {
     block.guide = fs.readFileSync(guidePath, "utf8");
   }
   recipe.engines = {
