@@ -7453,7 +7453,7 @@
   "zai-org/GLM-5.1-FP8/strategies/multi_node_tp_pp.json": "1017eb49fa5802bef7e87185b1ea7b58822a7ed51d4c6f42858371f7257d875a",
   "zai-org/GLM-5.1-FP8/strategies/pd_cluster.json": "66d7353df0f3f84d4c2cb3068bfee37782fad43cec44bcf6d006083449ad52dd",
   "zai-org/GLM-5.1-FP8/strategies/single_node_tep.json": "0a319a798c870123b3457712814cde0f56ae7181b301e7e8f729b5f292a12e61",
-  "zai-org/GLM-5.1.json": "837eb64091f8e36bdfb8b640cd4d708311d9f1e18a45a0da3139e44d14a459c8",
+  "zai-org/GLM-5.1.json": "aa74a186579b4401ca74446b6fece616dde10e61431831b8677782c132626682",
   "zai-org/GLM-5.1/hw/b200.json": "ea56022e69acabc7faa84b55f1ef0af402a35307ce385ee8c0ae9345633f2e36",
   "zai-org/GLM-5.1/hw/b200/strategies/multi_node_dep.json": "57d928ff1ed90171504c4e9664e876ff5a7c64fe1254bafd88405a0fe30fdaad",
   "zai-org/GLM-5.1/hw/b200/strategies/multi_node_tep.json": "29611ea758e3e08d881d075911fa010f33c54d90d1ca044c4788c49c448c8fc4",
