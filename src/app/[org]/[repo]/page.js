@@ -210,7 +210,9 @@ export default async function RecipePage({ params }) {
       <section className="space-y-2">
         {(recipe.guide || recipe.engines?.sglang?.guide) && (
           <Accordion title="Guide" defaultOpen>
-            <EngineAwareGuide recipe={recipe} defaultEngine={recipe.default_engine || "vllm"} />
+            <Suspense fallback={null}>
+              <EngineAwareGuide recipe={recipe} defaultEngine={recipe.default_engine || "vllm"} />
+            </Suspense>
           </Accordion>
         )}
 

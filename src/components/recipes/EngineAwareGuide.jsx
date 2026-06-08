@@ -6,10 +6,15 @@ import remarkGfm from "remark-gfm";
 import rehypeSlug from "rehype-slug";
 import { pickGuide } from "@/lib/guide";
 
+// Proper display names for engines (the naive capitalize of "sglang" → "Sglang").
+const ENGINE_LABELS = { vllm: "vLLM", sglang: "SGLang" };
+
 // Engine-aware Guide body. Reads the same ?engine= param CommandBuilder uses so
 // the guide toggles instantly with the Engine pill. Renders the active engine's
 // guide markdown, or — for a non-vLLM engine that has no authored guide yet — a
 // short notice instead of (misleadingly) the vLLM guide.
+// MUST be rendered inside a <Suspense> boundary by the caller: useSearchParams()
+// without one corrupts the RSC flight payload on statically-generated routes.
 export function EngineAwareGuide({ recipe, defaultEngine = "vllm" }) {
   const searchParams = useSearchParams();
   const engine = searchParams.get("engine") || defaultEngine || "vllm";
@@ -26,7 +31,7 @@ export function EngineAwareGuide({ recipe, defaultEngine = "vllm" }) {
   }
 
   if (engine !== "vllm") {
-    const label = engine.charAt(0).toUpperCase() + engine.slice(1);
+    const label = ENGINE_LABELS[engine] || engine.charAt(0).toUpperCase() + engine.slice(1);
     return (
       <p className="text-sm text-muted-foreground leading-relaxed">
         No {label}-specific guide yet for this model — the command above is the
