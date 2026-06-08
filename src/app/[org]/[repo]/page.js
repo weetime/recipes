@@ -208,7 +208,7 @@ export default async function RecipePage({ params }) {
 
       {/* ── Reference sections ── */}
       <section className="space-y-2">
-        {(recipe.guide || recipe.engines?.sglang?.guide) && (
+        {(recipe.guide || Object.values(recipe.engines ?? {}).some((e) => e?.guide)) && (
           <Accordion title="Guide" defaultOpen>
             <Suspense fallback={null}>
               <EngineAwareGuide recipe={recipe} defaultEngine={recipe.default_engine || "vllm"} />
