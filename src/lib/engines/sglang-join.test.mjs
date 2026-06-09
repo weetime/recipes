@@ -28,7 +28,10 @@ test("attachEngines reads an authored SGLang guide into engines.sglang.guide", (
 });
 
 test("attachEngines leaves guide unset when no authored SGLang guide exists", () => {
-  const recipe = { hf_id: "deepseek-ai/DeepSeek-V3.2", model: { model_id: "deepseek-ai/DeepSeek-V3.2", min_vllm_version: "0.11.1" } };
+  // Wan2.2 has an SGLang block but (deliberately) no authored guide — the LLM-chat
+  // guide template doesn't fit a text-to-video diffusion model, so it stays on the
+  // fallback notice. (Most other blocks now ship a guide.)
+  const recipe = { hf_id: "Wan-AI/Wan2.2-T2V-A14B-Diffusers", model: { model_id: "Wan-AI/Wan2.2-T2V-A14B-Diffusers", min_vllm_version: "0.11.1" } };
   const out = attachEngines(recipe);
   assert.ok(out.engines.sglang, "sglang block still attached");
   assert.equal(out.engines.sglang.guide, undefined);
