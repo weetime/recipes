@@ -12,7 +12,7 @@ guide covers serving it with **SGLang** using either the native FP8 checkpoint
 - **DeepGEMM (FP8):** required for MQA logits computation (FP8 MoE kernels).
 
   ```bash
-  uv pip install git+https://github.com/deepseek-ai/DeepGEMM.git@v2.1.1.post3 --no-build-isolation
+  python3 -m pip install git+https://github.com/deepseek-ai/DeepGEMM.git@v2.1.1.post3 --no-build-isolation
   ```
 
 - `--trust-remote-code` is required (the model ships custom modeling code).
