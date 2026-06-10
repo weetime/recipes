@@ -16,7 +16,7 @@ export function loadPlatforms() {
 // Resolve a recipe's `meta.platforms` list against the catalog. Entries may be
 // either a bare id ("modal") to use the catalog default, or an object
 // ({ id: "modal", install, url, blurb }) to override individual fields for
-// recipes that ship their own deploy script (e.g. Google/gemma4-modal.py).
+// recipes that ship their own deploy script (e.g. google/gemma4-modal.py).
 export function resolveRecipePlatforms(entries) {
   if (!Array.isArray(entries) || entries.length === 0) return [];
   const catalog = loadPlatforms();
