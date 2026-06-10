@@ -14,17 +14,29 @@ const GEN_DIR = path.join(ROOT, "upstream", "sglang", "data", "models", "generat
 const MODELS_DIR = path.join(ROOT, "models");
 const OUT_DIR = path.join(ROOT, "engines", "sglang");
 
-// Existing vLLM recipe hf_ids (org/repo from the models/ tree) for overlap.
-function recipeHfIds() {
+// Scan the models/ tree once: collect existing vLLM recipe hf_ids (org/repo)
+// for overlap, plus an authoritative precision per checkpoint model_id. Precision
+// is a property of the on-disk checkpoint, so the hand-verified recipe overrides
+// any stale `quantization` in the upstream SGLang cookbook (see modelToBlock).
+function scanRecipes() {
   const ids = new Set();
+  const precisionByModelId = new Map();
   for (const org of fs.readdirSync(MODELS_DIR)) {
     const orgDir = path.join(MODELS_DIR, org);
     if (!fs.statSync(orgDir).isDirectory()) continue;
     for (const f of fs.readdirSync(orgDir)) {
-      if (f.endsWith(".yaml") || f.endsWith(".yml")) ids.add(`${org}/${f.replace(/\.(yaml|yml)$/, "")}`);
+      if (!(f.endsWith(".yaml") || f.endsWith(".yml"))) continue;
+      ids.add(`${org}/${f.replace(/\.(yaml|yml)$/, "")}`);
+      let rec;
+      try { rec = yaml.load(fs.readFileSync(path.join(orgDir, f), "utf8")); } catch { continue; }
+      const baseId = rec?.model?.model_id;
+      for (const v of Object.values(rec?.variants || {})) {
+        const eff = v?.model_id || baseId;          // checkpoint this variant serves
+        if (eff && v?.precision) precisionByModelId.set(eff, v.precision);
+      }
     }
   }
-  return ids;
+  return { ids, precisionByModelId };
 }
 
 // Read every generated/v*/*.yaml as { version, doc }.
@@ -46,7 +58,8 @@ function versionDocs() {
 }
 
 const docs = versionDocs();
-const { blocks, skipped } = transform({ versionDocs: docs, recipeHfIds: recipeHfIds() });
+const { ids: recipeIds, precisionByModelId } = scanRecipes();
+const { blocks, skipped } = transform({ versionDocs: docs, recipeHfIds: recipeIds, recipePrecisionByModelId: precisionByModelId });
 
 // Warn about upstream hardware names we don't have a taxonomy mapping for.
 const knownHw = new Set(Object.keys(HW_NAME_MAP));

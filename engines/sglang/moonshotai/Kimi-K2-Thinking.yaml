@@ -10,7 +10,7 @@ tp_by_hardware:
   b200: 8
 variants:
   default:
-    precision: fp8
+    precision: int4
 strategies:
   single_node_tp: {}
 features:

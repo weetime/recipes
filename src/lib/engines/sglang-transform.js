@@ -30,7 +30,15 @@ export function compareVersions(a, b) {
 
 // One upstream model → one block. Single `default` variant (quantized siblings
 // are separate upstream models with their own model_path).
-export function modelToBlock(model, version) {
+//
+// `recipePrecision` (optional): the authoritative precision for this exact
+// checkpoint, read from the matching vLLM recipe variant. Precision is a
+// property of the on-disk checkpoint — the engine can't change it — so when the
+// recipe (which is hand-verified) disagrees with the upstream SGLang cookbook's
+// `quantization` field, the recipe wins. (Upstream occasionally carries a stale
+// or template `fp8` for INT4/BF16 checkpoints, e.g. Kimi-K2-Thinking,
+// stepfun-ai/Step-3.5-Flash.) When they agree, this is a no-op.
+export function modelToBlock(model, version, recipePrecision) {
   const block = {
     engine: "sglang",
     model_id: model.model_path,
@@ -56,7 +64,10 @@ export function modelToBlock(model, version) {
       if (!precision && def.attributes?.quantization) precision = def.attributes.quantization;
     }
   }
-  if (precision) block.variants.default.precision = precision;
+  // Recipe precision is authoritative for the checkpoint (see above); fall back
+  // to the upstream-derived value only when the recipe doesn't supply one.
+  const resolvedPrecision = recipePrecision || precision;
+  if (resolvedPrecision) block.variants.default.precision = resolvedPrecision;
 
   const llm = model.attributes?.llm || {};
   if (llm.tool_parser) block.features.tool_calling = { args: ["--tool-call-parser", llm.tool_parser] };
@@ -69,7 +80,7 @@ export function modelToBlock(model, version) {
  * @param {{versionDocs: {version:string, doc:any}[], recipeHfIds: Set<string>}} input
  * @returns {{blocks: {hfId:string, block:any}[], skipped: string[]}}
  */
-export function transform({ versionDocs, recipeHfIds }) {
+export function transform({ versionDocs, recipeHfIds, recipePrecisionByModelId }) {
   const byPath = new Map();
   for (const { version, doc } of versionDocs) {
     for (const fam of doc?.families || []) {
@@ -86,7 +97,8 @@ export function transform({ versionDocs, recipeHfIds }) {
   const skipped = [];
   for (const [modelPath, { model, version }] of byPath) {
     if (!recipeHfIds.has(modelPath)) { skipped.push(modelPath); continue; }
-    blocks.push({ hfId: modelPath, block: modelToBlock(model, version) });
+    const recipePrecision = recipePrecisionByModelId?.get(modelPath);
+    blocks.push({ hfId: modelPath, block: modelToBlock(model, version, recipePrecision) });
   }
   skipped.sort();
   return { blocks, skipped };
