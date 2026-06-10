@@ -12,7 +12,7 @@ tp_by_hardware:
   mi355x: 4
 variants:
   default:
-    precision: fp8
+    precision: bf16
 strategies:
   single_node_tp: {}
 features:

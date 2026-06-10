@@ -72,6 +72,32 @@ test("modelToBlock falls back to a default-prefixed config when no exact 'defaul
   assert.deepEqual(b.features.tool_calling.args, ["--tool-call-parser", "nemotron"]);
 });
 
+test("modelToBlock: recipe precision overrides a stale upstream quantization", () => {
+  // Upstream says fp8, but the recipe (authoritative for the checkpoint) says int4.
+  const m = { ...MODEL, hardware: { H200: { configurations: [
+    { name: "default", attributes: { quantization: "fp8" }, engine: { tp: 8 } },
+  ] } } };
+  const b = modelToBlock(m, "v0.5.10", "int4");
+  assert.equal(b.variants.default.precision, "int4");
+});
+
+test("modelToBlock: falls back to upstream precision when recipe supplies none", () => {
+  const b = modelToBlock(MODEL, "v0.5.10", undefined);
+  assert.equal(b.variants.default.precision, "bf16");   // upstream value retained
+});
+
+test("transform: threads recipePrecisionByModelId to the matching block", () => {
+  const versionDocs = [
+    { version: "v0.5.10", doc: { families: [{ models: [
+      { ...MODEL, hardware: { H200: { configurations: [{ name: "default", attributes: { quantization: "fp8" }, engine: { tp: 8 } }] } } },
+    ] }] } },
+  ];
+  const recipeHfIds = new Set(["Qwen/Qwen3.6-35B-A3B"]);
+  const recipePrecisionByModelId = new Map([["Qwen/Qwen3.6-35B-A3B", "int4"]]);
+  const { blocks } = transform({ versionDocs, recipeHfIds, recipePrecisionByModelId });
+  assert.equal(blocks[0].block.variants.default.precision, "int4");
+});
+
 test("transform: latest-wins across versions, overlap-only, logs skips", () => {
   const versionDocs = [
     { version: "v0.5.8", doc: { families: [{ models: [
