@@ -89,7 +89,7 @@ export default async function OrgPage({ params }) {
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",
     itemListElement: [
-      { "@type": "ListItem", position: 1, name: "vLLM Recipes", item: siteUrl },
+      { "@type": "ListItem", position: 1, name: "Model Recipes", item: siteUrl },
       { "@type": "ListItem", position: 2, name: displayName, item: `${siteUrl}/${org}` },
     ],
   };

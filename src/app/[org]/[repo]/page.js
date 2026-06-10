@@ -112,7 +112,7 @@ export default async function RecipePage({ params }) {
       "@context": "https://schema.org",
       "@type": "BreadcrumbList",
       itemListElement: [
-        { "@type": "ListItem", position: 1, name: "vLLM Recipes", item: siteUrl },
+        { "@type": "ListItem", position: 1, name: "Model Recipes", item: siteUrl },
         { "@type": "ListItem", position: 2, name: recipe.meta.provider, item: `${siteUrl}/${recipe.hf_org}` },
         { "@type": "ListItem", position: 3, name: recipe.hf_repo, item: recipeUrl },
       ],

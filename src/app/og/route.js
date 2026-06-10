@@ -10,7 +10,7 @@ export const runtime = "edge";
 // "/ Recipes" wordmark next to the logo.
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
-  const title = searchParams.get("title") || "vLLM Recipes";
+  const title = searchParams.get("title") || "Model Recipes";
   const subtitle = searchParams.get("subtitle") || "";
   const meta = searchParams.get("meta") || "";
   const path = searchParams.get("path") || "";
@@ -19,9 +19,6 @@ export async function GET(request) {
   // the footer collapses to URL-only.
   const cta = searchParams.get("cta") || "";
   const version = searchParams.get("version") || "";
-
-  const baseUrl = new URL(request.url).origin;
-  const logoUrl = `${baseUrl}/vLLM-Full-Logo.png`;
 
   const titleSize = title.length > 48 ? "44px" : title.length > 32 ? "56px" : "68px";
 
@@ -100,27 +97,28 @@ export async function GET(request) {
             padding: "56px 80px 52px",
           }}
         >
-          {/* Logo + Recipes wordmark */}
+          {/* Hexagon mark + Model Recipes wordmark (engine-neutral) */}
           <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={logoUrl}
-              alt="vLLM"
-              width={180}
-              height={46}
-              style={{ objectFit: "contain", objectPosition: "left" }}
-            />
-            <span style={{ fontSize: 30, color: "#cbd5e1", fontWeight: 300, lineHeight: 1 }}>/</span>
+            <svg width="46" height="46" viewBox="0 0 32 32" fill="none">
+              <defs>
+                <linearGradient id="og-mark" x1="3" y1="3" x2="29" y2="29" gradientUnits="userSpaceOnUse">
+                  <stop stopColor="#38bdf8" />
+                  <stop offset="1" stopColor="#6366f1" />
+                </linearGradient>
+              </defs>
+              <polygon points="16,1.5 28.4,8.75 28.4,23.25 16,30.5 3.6,23.25 3.6,8.75" stroke="url(#og-mark)" strokeWidth="2.5" strokeLinejoin="round" />
+              <polygon points="16,10.5 20.76,13.25 20.76,18.75 16,21.5 11.24,18.75 11.24,13.25" fill="url(#og-mark)" />
+            </svg>
             <span
               style={{
                 fontSize: 26,
-                color: "#111827",
                 fontWeight: 600,
                 letterSpacing: "-0.01em",
                 display: "flex",
               }}
             >
-              Recipes
+              <span style={{ color: "#64748b", fontWeight: 400 }}>Model&nbsp;</span>
+              <span style={{ color: "#111827" }}>Recipes</span>
             </span>
           </div>
 

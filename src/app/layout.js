@@ -19,33 +19,28 @@ const jetbrainsMono = JetBrains_Mono({
   display: "swap",
 });
 
-const defaultOgUrl = `/og?title=${encodeURIComponent("vLLM Recipes")}&subtitle=${encodeURIComponent("Deploy any model on any hardware")}`;
+const defaultOgUrl = `/og?title=${encodeURIComponent("Model Recipes")}&subtitle=${encodeURIComponent("Deploy any model on any hardware")}`;
 
 export const metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: "vLLM Recipes",
-    template: "%s | vLLM Recipes",
+    default: "Model Recipes",
+    template: "%s | Model Recipes",
   },
-  description: "Deploy any model on any hardware with vLLM. Interactive command builder for model serving.",
-  icons: {
-    icon: { url: "https://docs.vllm.ai/en/latest/assets/logos/vllm-logo-only-light.ico" },
-  },
+  description: "Deploy any model on any hardware with vLLM or SGLang. Interactive command builder for model serving.",
   openGraph: {
     type: "website",
     locale: "en_US",
     url: siteUrl,
-    siteName: "vLLM Recipes",
-    title: "vLLM Recipes",
-    description: "Deploy any model on any hardware with vLLM. Interactive command builder for model serving.",
-    images: [{ url: defaultOgUrl, width: 1200, height: 630, alt: "vLLM Recipes" }],
+    siteName: "Model Recipes",
+    title: "Model Recipes",
+    description: "Deploy any model on any hardware with vLLM or SGLang. Interactive command builder for model serving.",
+    images: [{ url: defaultOgUrl, width: 1200, height: 630, alt: "Model Recipes" }],
   },
   twitter: {
     card: "summary_large_image",
-    site: "@vllm_project",
-    creator: "@vllm_project",
-    title: "vLLM Recipes",
-    description: "Deploy any model on any hardware with vLLM.",
+    title: "Model Recipes",
+    description: "Deploy any model on any hardware with vLLM or SGLang.",
     images: [defaultOgUrl],
   },
   alternates: { canonical: siteUrl },
@@ -80,25 +75,32 @@ export default async function RootLayout({ children }) {
         {/* Global header */}
         <header className="border-b border-border bg-background/95 backdrop-blur-sm sticky top-0 z-30">
           <div className="max-w-[1480px] mx-auto px-4 sm:px-6 h-16 flex items-center gap-4">
-            <Link href="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity group shrink-0">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src="https://docs.vllm.ai/en/latest/assets/logos/vllm-logo-text-light.png"
-                alt="vLLM"
-                width={96}
-                height={36}
-                className="h-8 w-auto dark:hidden"
-              />
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src="https://docs.vllm.ai/en/latest/assets/logos/vllm-logo-text-dark.png"
-                alt="vLLM"
-                width={96}
-                height={36}
-                className="h-8 w-auto hidden dark:block"
-              />
-              <span className="text-muted-foreground/50 font-light text-xl leading-none">/</span>
-              <span className="font-semibold text-base group-hover:text-vllm-blue transition-colors">Recipes</span>
+            <Link href="/" className="flex items-center gap-2.5 hover:opacity-80 transition-opacity group shrink-0" aria-label="Model Recipes — home">
+              {/* Engine-neutral mark: a hexagon "hub" with a center node. The
+                  sky→indigo gradient is theme-independent (reads on light and
+                  dark); the wordmark below uses text tokens so it adapts. We
+                  dropped the vLLM wordmark here because the site is now
+                  multi-engine (vLLM + SGLang, extensible). */}
+              <svg width="32" height="32" viewBox="0 0 32 32" fill="none" className="shrink-0" aria-hidden="true">
+                <defs>
+                  <linearGradient id="mr-mark" x1="3" y1="3" x2="29" y2="29" gradientUnits="userSpaceOnUse">
+                    <stop stopColor="#38bdf8" />
+                    <stop offset="1" stopColor="#6366f1" />
+                  </linearGradient>
+                </defs>
+                <polygon
+                  points="16,1.5 28.4,8.75 28.4,23.25 16,30.5 3.6,23.25 3.6,8.75"
+                  stroke="url(#mr-mark)" strokeWidth="2.5" strokeLinejoin="round"
+                />
+                <polygon
+                  points="16,10.5 20.76,13.25 20.76,18.75 16,21.5 11.24,18.75 11.24,13.25"
+                  fill="url(#mr-mark)"
+                />
+              </svg>
+              <span className="text-base leading-none">
+                <span className="text-muted-foreground font-normal">Model </span>
+                <span className="font-semibold group-hover:text-vllm-blue transition-colors">Recipes</span>
+              </span>
             </Link>
 
             {/* Search — flex-1 so it expands to fill available space */}
