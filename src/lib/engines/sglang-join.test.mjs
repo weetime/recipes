@@ -32,7 +32,10 @@ test("attachEngines adds engines map when an sglang block exists on disk", () =>
 });
 
 test("attachEngines is a no-op for a model with no sglang block", () => {
-  const recipe = { hf_id: "deepseek-ai/DeepSeek-R1", model: { model_id: "deepseek-ai/DeepSeek-R1", min_vllm_version: "0.9.0" } };
+  // Use a diffusion model that will never get an LLM-style SGLang block (neither
+  // generated nor hand-authored) — it's served by SGLang's separate diffusion
+  // stack, not launch_server. (DeepSeek-R1, the old example, now has a manual block.)
+  const recipe = { hf_id: "stabilityai/stable-diffusion-3.5-medium", model: { model_id: "stabilityai/stable-diffusion-3.5-medium", min_vllm_version: "0.9.0" } };
   const out = attachEngines(recipe);
   assert.equal(out.engines, undefined);
   assert.equal(out.default_engine, undefined);

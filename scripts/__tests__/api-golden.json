@@ -2645,7 +2645,7 @@
   "deepseek-ai/DeepSeek-R1-0528/strategies/pd_cluster.json": "937fee4a6948ed337491b19ca62a0885f326dd085b6ea2e655a68c73ad90f8a0",
   "deepseek-ai/DeepSeek-R1-0528/strategies/single_node_dep.json": "5446ee063de6e89809d2f173c40490689b650238d08c0fd9596a351a356dba54",
   "deepseek-ai/DeepSeek-R1-0528/strategies/single_node_tep.json": "da6af166de71034e9700ef32bf73ab1c26cd6f36f85ab6ec45aff90c8d00bcc1",
-  "deepseek-ai/DeepSeek-R1.json": "2e1a4fa60d0e79d6a5c7ca64fabf0b6382ae46c5efc2cd37528619527260c6e1",
+  "deepseek-ai/DeepSeek-R1.json": "a5ad46ea542978723b4946bfaba5747ad05b6d99eca51f7d936b42ba6abcb39b",
   "deepseek-ai/DeepSeek-R1/hw/b200.json": "f0f6a82cd609f16ac7b3dac05deec4f98023303c661608c8e4fd93c4aedd5262",
   "deepseek-ai/DeepSeek-R1/hw/b200/strategies/multi_node_dep.json": "f2a99c88d0a9d6ab88f865dcfd677b2055bcf51bb72e075a9db2c9f4fdac4630",
   "deepseek-ai/DeepSeek-R1/hw/b200/strategies/multi_node_tep.json": "74d0d050a9b09ddcb977b59ecf90553cdfad6ca2ad1e701ab29201cb79a5b233",
