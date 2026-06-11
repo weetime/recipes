@@ -1,0 +1,20 @@
+# HAND-AUTHORED SGLang block (engines/sglang-manual/) — upstream sgl-cookbook
+# doesn't carry this model yet. See engines/sglang-manual/README.md.
+# Sources: HF model card + repo issue #13 (web-verified 2026-06-11).
+# Vision-language hybrid-Mamba (12B). VLM — no confirmed SGLang reasoning/tool
+# parser → features {}. Needs main/nightly image and --max-mamba-cache-size
+# (see guide). Recipe verifies h100 + b200 only → block ships b200.
+engine: sglang
+model_id: nvidia/NVIDIA-Nemotron-Nano-12B-v2-VL-BF16
+min_version: v0.5.10
+serve_binary: python3 -m sglang.launch_server
+base_args:
+  - '--trust-remote-code'
+tp_by_hardware:
+  b200: 1
+variants:
+  default:
+    precision: bf16
+strategies:
+  single_node_tp: {}
+features: {}

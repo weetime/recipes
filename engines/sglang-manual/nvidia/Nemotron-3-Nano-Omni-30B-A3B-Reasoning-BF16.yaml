@@ -1,0 +1,25 @@
+# HAND-AUTHORED SGLang block (engines/sglang-manual/) — upstream sgl-cookbook
+# doesn't carry this Nemotron-3 omni model yet. See engines/sglang-manual/README.md.
+# Sources: HF model card + repo issue #13 (web-verified 2026-06-11).
+# Omni MoE (31B total / 3B active), Mamba2-Transformer hybrid. SGLang reasoning
+# parser is `nemotron_3` (NOT vLLM's `nemotron_v3`). No confirmed SGLang tool
+# parser → tool_calling omitted. Needs librosa + a dev/nightly image (see guide).
+engine: sglang
+model_id: nvidia/Nemotron-3-Nano-Omni-30B-A3B-Reasoning-BF16
+min_version: v0.5.10
+serve_binary: python3 -m sglang.launch_server
+base_args:
+  - '--trust-remote-code'
+tp_by_hardware:
+  h200: 1
+  b200: 1
+variants:
+  default:
+    precision: bf16
+strategies:
+  single_node_tp: {}
+features:
+  reasoning:
+    args:
+      - '--reasoning-parser'
+      - nemotron_3
