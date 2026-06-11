@@ -1,0 +1,20 @@
+# HAND-AUTHORED SGLang block (engines/sglang-manual/) — upstream sgl-cookbook
+# doesn't carry Qwen2.5-32B yet. See engines/sglang-manual/README.md.
+# Sources: SGLang Qwen docs — Qwen2.5 dense *base* (pretrained) model: no chat
+# tool/reasoning parser. Recipe features are empty → features: {}. Recipe lists
+# only TPU hardware (trillium) → default to h200 + b200 for our taxonomy.
+engine: sglang
+model_id: Qwen/Qwen2.5-32B
+min_version: v0.5.6
+serve_binary: python3 -m sglang.launch_server
+base_args:
+  - '--trust-remote-code'
+tp_by_hardware:
+  h200: 1
+  b200: 1
+variants:
+  default:
+    precision: bf16
+strategies:
+  single_node_tp: {}
+features: {}
