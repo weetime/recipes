@@ -64,30 +64,29 @@ jobs:
             git merge --abort
           fi
 
-      # ── Conflict path: surface for manual resolution, then fail the run ──
-      - name: Open a conflict issue
+      # ── Conflict path: report in the run summary, then fail (red) the run ──
+      # (We don't open an issue: the Actions GITHUB_TOKEN can't create issues on
+      # this fork. Conflicts here are exactly what Claude is good at resolving —
+      # ping it to do the merge intelligently.)
+      - name: Report conflicts in the run summary
         if: steps.check.outputs.skip == 'false' && steps.merge.outputs.conflicts != ''
-        env:
-          GH_TOKEN: ${{ github.token }}
         run: |
           {
-            echo "Auto-merging \`upstream/main\` into \`main\` hit conflicts in:"
+            echo "## ⚠️ Upstream sync hit conflicts"
             echo
+            echo "Merging \`upstream/main\` into \`main\` conflicts in files this fork has diverged on:"
             echo '```'
             echo "${{ steps.merge.outputs.conflicts }}"
             echo '```'
-            echo
-            echo "These are files this fork has diverged on. Resolve locally:"
-            echo
+            echo "**Ask Claude to do the merge** (it resolves these intelligently), or resolve locally:"
             echo '```bash'
-            echo "git fetch upstream main"
-            echo "git checkout -B $SYNC_BRANCH origin/main"
+            echo "git fetch upstream main && git checkout -B $SYNC_BRANCH origin/main"
             echo "git merge upstream/main        # resolve conflicts"
             echo "node scripts/build-recipes-api.mjs && node scripts/snapshot-api.mjs --write"
             echo "node --test && git push -u origin $SYNC_BRANCH"
             echo '```'
-          } > issue-body.md
-          gh issue create --title "Upstream sync needs manual conflict resolution ($(date -u +%Y-%m-%d))" --body-file issue-body.md
+          } >> "$GITHUB_STEP_SUMMARY"
+          echo "::error::Upstream sync has conflicts — see the run summary."
           exit 1
 
       # ── Clean path: validate, rebaseline golden, open/update the PR ──

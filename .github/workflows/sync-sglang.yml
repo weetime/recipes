@@ -1,0 +1,86 @@
+name: Sync SGLang blocks (sgl-cookbook)
+
+# Weekly (+ on-demand) re-vendor of the upstream SGLang cookbook snapshot and
+# regeneration of engines/sglang/ blocks. Purely mechanical — if anything
+# changed it validates and opens a PR. Authoring guides for any newly-covered
+# models (engines/sglang-guides/) is the intelligent follow-up: ping Claude on
+# the PR. (Hand-authored engines/sglang-manual/ blocks are never touched.)
+
+on:
+  schedule:
+    - cron: "17 6 * * 1"     # weekly · Monday 06:17 UTC (offset minute)
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+  pull-requests: write
+
+env:
+  SYNC_BRANCH: sync/sglang
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Configure bot identity
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - uses: pnpm/action-setup@v4
+        with: { version: 9 }
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install deps
+        run: pnpm install --frozen-lockfile
+
+      - name: Re-vendor latest sgl-cookbook + regenerate blocks
+        run: |
+          node scripts/fetch-sglang-upstream.mjs main   # 'main' = latest, not the pinned ref
+          node scripts/sync-sglang.mjs
+
+      - name: Anything changed?
+        id: diff
+        run: |
+          if [ -z "$(git status --porcelain)" ]; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "sgl-cookbook unchanged since the pinned snapshot — nothing to sync." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Rebuild API + rebaseline golden + test
+        if: steps.diff.outputs.changed == 'true'
+        run: |
+          node scripts/build-recipes-api.mjs
+          node scripts/snapshot-api.mjs --write
+          node --test
+
+      - name: Commit + open/update PR
+        if: steps.diff.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git checkout -B "$SYNC_BRANCH"
+          git add -A
+          git commit -s -m "Sync SGLang blocks from latest sgl-cookbook ($(date -u +%Y-%m-%d))"
+          git push origin "$SYNC_BRANCH" --force-with-lease
+          {
+            echo "Automated re-vendor of the upstream **sgl-cookbook** snapshot + regenerated \`engines/sglang/\` blocks."
+            echo
+            echo "Review the new/changed generated blocks. **Newly-covered models likely need a hand-authored guide** (\`engines/sglang-guides/\`) and possibly removal of a now-redundant \`engines/sglang-manual/\` block — ping Claude to finish those, then merge."
+          } > pr-body.md
+          if gh pr view "$SYNC_BRANCH" >/dev/null 2>&1; then
+            gh pr edit "$SYNC_BRANCH" --body-file pr-body.md
+          else
+            gh pr create --base main --head "$SYNC_BRANCH" \
+              --title "Sync SGLang blocks from sgl-cookbook ($(date -u +%Y-%m-%d))" \
+              --body-file pr-body.md
+          fi
