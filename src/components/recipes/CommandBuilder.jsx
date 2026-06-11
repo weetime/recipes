@@ -7,6 +7,7 @@ import { Copy, Check, Terminal, Gauge, Sparkles, ChevronDown, Package, Info, Zap
 import { resolveCommand, recommendStrategy, isPrecisionCompatible, isHardwareSupported, fitsSingleNode, isHardwareScalable, variantRunsOnHardware, pickFittingVariant, pickDefaultHardware, resolveSingleNodeTp, computeDockerMeta, buildDockerRun, resolveOmniCommand } from "@/lib/command-synthesis";
 import { resolveCommandForEngine } from "@/lib/engines/index.js";
 import { engineList, engineSources } from "@/lib/engine-ui";
+import { getEngineMeta } from "@/lib/engine-meta";
 import { resolveOmniTasks } from "@/lib/omni-tasks";
 import { TooltipProvider, InfoTip } from "@/components/ui/tooltip";
 import { detectPlaceholdersAll, substitute, substituteEnv, loadEndpoints, saveEndpoint, clearEndpoints } from "@/lib/cluster-endpoints";
@@ -1447,7 +1448,7 @@ export function CommandBuilder({ recipe, strategies, taxonomy }) {
                       });
                     }}
                   >
-                    {id === "vllm" ? "vLLM" : id === "sglang" ? "SGLang" : id}
+                    {getEngineMeta(id).label}
                   </Pill>
                 ))}
               </PillGroup>
