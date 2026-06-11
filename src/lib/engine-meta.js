@@ -29,7 +29,8 @@ export function getEngineMeta(id) {
 // every recipe; others come from the attached `engines` map). Mirrors
 // engineList() in engine-ui.js but is safe to call with a trimmed recipe.
 export function recipeEngineIds(recipe) {
-  const ids = recipe?.engines ? Object.keys(recipe.engines) : [];
-  if (ids.length) return ids.includes("vllm") ? ids : ["vllm", ...ids];
-  return ["vllm"];
+  // vLLM is the baseline for every recipe; pin it first regardless of the
+  // engines map's key order, then append the rest.
+  const ids = recipe?.engines ? Object.keys(recipe.engines).filter((id) => id !== "vllm") : [];
+  return ["vllm", ...ids];
 }
