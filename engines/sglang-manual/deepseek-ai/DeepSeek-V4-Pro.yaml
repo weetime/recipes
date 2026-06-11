@@ -1,0 +1,27 @@
+# HAND-AUTHORED SGLang block (engines/sglang-manual/) — upstream sgl-cookbook
+# doesn't carry DeepSeek-V4-Pro yet. See engines/sglang-manual/README.md.
+# Issue #13: --tool-call-parser deepseekv4 --reasoning-parser deepseek-v4; nightly,
+# large multi-node (8×B200). min v0.5.10.
+engine: sglang
+model_id: deepseek-ai/DeepSeek-V4-Pro
+min_version: v0.5.10
+serve_binary: python3 -m sglang.launch_server
+base_args:
+  - '--trust-remote-code'
+tp_by_hardware:
+  h200: 8
+  b200: 8
+variants:
+  default:
+    precision: fp8
+strategies:
+  single_node_tp: {}
+features:
+  tool_calling:
+    args:
+      - '--tool-call-parser'
+      - deepseekv4
+  reasoning:
+    args:
+      - '--reasoning-parser'
+      - deepseek-v4

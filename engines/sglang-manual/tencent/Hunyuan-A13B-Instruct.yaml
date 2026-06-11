@@ -1,0 +1,29 @@
+# HAND-AUTHORED SGLang block (engines/sglang-manual/) — upstream sgl-cookbook
+# doesn't carry Hunyuan-A13B-Instruct yet. See engines/sglang-manual/README.md.
+# Sources: issue #13 (web-verified 2026-06-11) — native hunyuan.py, parsers `hunyuan_a13b`.
+# tp=2 (not the formula's tp=1): the 80B BF16 weights are ~176 GB, leaving no
+# KV headroom on a single 192 GB MI300X — the vLLM recipe verifies TP=2.
+engine: sglang
+model_id: tencent/Hunyuan-A13B-Instruct
+min_version: v0.5.6
+serve_binary: python3 -m sglang.launch_server
+base_args:
+  - '--trust-remote-code'
+tp_by_hardware:
+  mi300x: 2
+  mi325x: 2
+  mi355x: 2
+variants:
+  default:
+    precision: bf16
+strategies:
+  single_node_tp: {}
+features:
+  tool_calling:
+    args:
+      - '--tool-call-parser'
+      - hunyuan_a13b
+  reasoning:
+    args:
+      - '--reasoning-parser'
+      - hunyuan_a13b

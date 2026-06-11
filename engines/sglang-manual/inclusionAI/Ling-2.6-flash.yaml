@@ -1,0 +1,23 @@
+# HAND-AUTHORED SGLang block (engines/sglang-manual/) — upstream sgl-cookbook
+# doesn't carry Ling-2.6-flash yet. See engines/sglang-manual/README.md.
+# Sources: issue #13 (web-verified 2026-06-11) — sglang[all]>=0.5.10.post1,
+# --tool-call-parser qwen25.
+engine: sglang
+model_id: inclusionAI/Ling-2.6-flash
+min_version: v0.5.10.post1
+serve_binary: python3 -m sglang.launch_server
+base_args:
+  - '--trust-remote-code'
+tp_by_hardware:
+  h200: 2
+  mi300x: 2
+variants:
+  default:
+    precision: bf16
+strategies:
+  single_node_tp: {}
+features:
+  tool_calling:
+    args:
+      - '--tool-call-parser'
+      - qwen25

@@ -1,0 +1,18 @@
+# HAND-AUTHORED SGLang block (engines/sglang-manual/) — upstream sgl-cookbook
+# doesn't carry Mellum2-12B-A2.5B-Instruct yet. See engines/sglang-manual/README.md.
+# Sources: issue #13 (web-verified, 2026-06-11) — runs via SGLang's HF
+# transformers backend (no native impl). No native parsers, so features empty.
+engine: sglang
+model_id: JetBrains/Mellum2-12B-A2.5B-Instruct
+min_version: v0.5.6
+serve_binary: python3 -m sglang.launch_server
+base_args:
+  - '--trust-remote-code'
+tp_by_hardware:
+  h200: 1
+variants:
+  default:
+    precision: bf16
+strategies:
+  single_node_tp: {}
+features: {}

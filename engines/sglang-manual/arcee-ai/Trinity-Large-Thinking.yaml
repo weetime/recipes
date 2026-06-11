@@ -1,0 +1,29 @@
+# HAND-AUTHORED SGLang block (engines/sglang-manual/) — upstream sgl-cookbook
+# doesn't carry Trinity-Large-Thinking yet. See engines/sglang-manual/README.md.
+# Issue #13: HF card ships sglang.launch_server but omits parser names.
+# Parsers below are INFERRED from the vLLM recipe (tool qwen3_coder, reasoning
+# deepseek_r1) and mapped to SGLang names (reasoning deepseek-r1) — UNVERIFIED
+# against SGLang's CLI; confirm before relying on them.
+engine: sglang
+model_id: arcee-ai/Trinity-Large-Thinking
+min_version: v0.5.6
+serve_binary: python3 -m sglang.launch_server
+base_args:
+  - '--trust-remote-code'
+tp_by_hardware:
+  h200: 8
+  b200: 8
+variants:
+  default:
+    precision: bf16
+strategies:
+  single_node_tp: {}
+features:
+  tool_calling:
+    args:
+      - '--tool-call-parser'
+      - qwen3_coder
+  reasoning:
+    args:
+      - '--reasoning-parser'
+      - deepseek-r1

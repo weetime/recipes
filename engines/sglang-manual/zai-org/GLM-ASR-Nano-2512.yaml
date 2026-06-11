@@ -1,0 +1,18 @@
+# HAND-AUTHORED SGLang block (engines/sglang-manual/) — upstream sgl-cookbook
+# doesn't carry GLM-ASR-Nano-2512 yet. See engines/sglang-manual/README.md.
+# Sources: issue #13 (web-verified 2026-06-11) — ASR via native glmasr.py.
+# No chat tool/reasoning parser applies to a speech-recognition model.
+engine: sglang
+model_id: zai-org/GLM-ASR-Nano-2512
+min_version: v0.5.6
+serve_binary: python3 -m sglang.launch_server
+base_args:
+  - '--trust-remote-code'
+tp_by_hardware:
+  h200: 1
+variants:
+  default:
+    precision: bf16
+strategies:
+  single_node_tp: {}
+features: {}

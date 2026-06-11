@@ -1,0 +1,27 @@
+# HAND-AUTHORED SGLang block (engines/sglang-manual/) — upstream sgl-cookbook
+# doesn't carry MiMo-V2.5-Pro yet. See engines/sglang-manual/README.md.
+# Sources: issue #13 (web-verified 2026-06-11) —
+# --tool-call-parser mimo --reasoning-parser mimo; 1T MoE, multi-node derived
+# from tp 8.
+engine: sglang
+model_id: XiaomiMiMo/MiMo-V2.5-Pro
+min_version: v0.5.10
+serve_binary: python3 -m sglang.launch_server
+base_args:
+  - '--trust-remote-code'
+tp_by_hardware:
+  h200: 8
+variants:
+  default:
+    precision: fp8
+strategies:
+  single_node_tp: {}
+features:
+  tool_calling:
+    args:
+      - '--tool-call-parser'
+      - mimo
+  reasoning:
+    args:
+      - '--reasoning-parser'
+      - mimo

@@ -1,0 +1,29 @@
+# HAND-AUTHORED SGLang block (engines/sglang-manual/) — upstream sgl-cookbook
+# doesn't carry this model yet. See engines/sglang-manual/README.md.
+# Sources: issue #13 (web-verified 2026-06-11): dev image at launch;
+#   --tool-call-parser mistral --reasoning-parser mistral.
+#   min_version v0.5.6 — see guide: requires a nightly/dev SGLang image today.
+#   --trust-remote-code kept (custom mistral arch).
+# tp: fp8 128B ≈ 141 GB → tp 2 on h200 for KV-cache/context headroom.
+engine: sglang
+model_id: mistralai/Mistral-Medium-3.5-128B
+min_version: v0.5.6
+serve_binary: python3 -m sglang.launch_server
+base_args:
+  - '--trust-remote-code'
+tp_by_hardware:
+  h200: 2
+variants:
+  default:
+    precision: fp8
+strategies:
+  single_node_tp: {}
+features:
+  tool_calling:
+    args:
+      - '--tool-call-parser'
+      - mistral
+  reasoning:
+    args:
+      - '--reasoning-parser'
+      - mistral

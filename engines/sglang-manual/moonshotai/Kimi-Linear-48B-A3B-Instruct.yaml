@@ -1,0 +1,19 @@
+# HAND-AUTHORED SGLang block (engines/sglang-manual/) — upstream sgl-cookbook
+# doesn't carry this model yet. See engines/sglang-manual/README.md.
+# Sources: SGLang native kimi_linear.py (linear-attn MoE), issue #13 (web-verified 2026-06-11).
+#   No dedicated tool/reasoning parser noted → features omitted.
+# tp: bf16 48B ≈ 106 GB → fits one h200 (141 GB) at tp 1.
+engine: sglang
+model_id: moonshotai/Kimi-Linear-48B-A3B-Instruct
+min_version: v0.5.6
+serve_binary: python3 -m sglang.launch_server
+base_args:
+  - '--trust-remote-code'
+tp_by_hardware:
+  h200: 1
+variants:
+  default:
+    precision: bf16
+strategies:
+  single_node_tp: {}
+features: {}
