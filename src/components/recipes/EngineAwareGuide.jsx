@@ -5,9 +5,7 @@ import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeSlug from "rehype-slug";
 import { pickGuide } from "@/lib/guide";
-
-// Proper display names for engines (the naive capitalize of "sglang" → "Sglang").
-const ENGINE_LABELS = { vllm: "vLLM", sglang: "SGLang" };
+import { getEngineMeta } from "@/lib/engine-meta";
 
 // Engine-aware Guide body. Reads the same ?engine= param CommandBuilder uses so
 // the guide toggles instantly with the Engine pill. Renders the active engine's
@@ -31,7 +29,7 @@ export function EngineAwareGuide({ recipe, defaultEngine = "vllm" }) {
   }
 
   if (engine !== "vllm") {
-    const label = ENGINE_LABELS[engine] || engine.charAt(0).toUpperCase() + engine.slice(1);
+    const label = getEngineMeta(engine).label;
     return (
       <p className="text-sm text-muted-foreground leading-relaxed">
         No {label}-specific guide yet for this model — the command above is the

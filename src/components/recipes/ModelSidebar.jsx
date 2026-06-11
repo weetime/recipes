@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { getProviderLogo, getProviderLogoClass, getProviderDisplayName } from "@/lib/providers";
 import { recipeHref } from "@/lib/recipe-utils";
+import { getEngineMeta, recipeEngineIds } from "@/lib/engine-meta";
 import { ChevronRight, Type, Eye, Sparkles, Hash, Cpu } from "lucide-react";
 import { TooltipProvider, InfoTip } from "@/components/ui/tooltip";
 
@@ -110,6 +111,7 @@ export function ModelSidebar({ recipesByOrg }) {
                     const isActive = m.hf_repo === currentRepo && m.hf_org === currentOrg;
                     const primaryTask = (m.meta.tasks || [])[0];
                     const Icon = TASK_ICON[primaryTask] || Cpu;
+                    const engineIds = recipeEngineIds(m);
                     return (
                       <InfoTip key={m.hf_id} content={primaryTask}>
                         <Link
@@ -122,7 +124,26 @@ export function ModelSidebar({ recipesByOrg }) {
                           }`}
                         >
                           <Icon size={10} className="shrink-0 opacity-60" />
-                          <span className="truncate">{m.hf_repo || m.meta.title}</span>
+                          <span className="truncate flex-1">{m.hf_repo || m.meta.title}</span>
+                          {/* Supported inference engines — logo per engine, in
+                              display order. Driven by engine-meta so new engines
+                              (TEI, …) show up automatically. */}
+                          <span className="flex items-center gap-1 shrink-0">
+                            {engineIds.map((id) => {
+                              const meta = getEngineMeta(id);
+                              if (!meta.logo) return null;
+                              return (
+                                // eslint-disable-next-line @next/next/no-img-element
+                                <img
+                                  key={id}
+                                  src={meta.logo}
+                                  alt={meta.label}
+                                  title={meta.label}
+                                  className="h-3 w-auto max-w-[26px] object-contain opacity-80"
+                                />
+                              );
+                            })}
+                          </span>
                         </Link>
                       </InfoTip>
                     );
