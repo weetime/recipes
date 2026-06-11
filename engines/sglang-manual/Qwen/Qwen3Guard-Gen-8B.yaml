@@ -1,0 +1,19 @@
+# HAND-AUTHORED SGLang block (engines/sglang-manual/) — upstream sgl-cookbook
+# doesn't carry Qwen3Guard-Gen-8B yet. See engines/sglang-manual/README.md.
+# Sources: issue #13 — sglang>=0.4.6.post1; guardrail/safety classifier (Gen,
+# not Stream). No chat tool/reasoning parsers apply.
+engine: sglang
+model_id: Qwen/Qwen3Guard-Gen-8B
+min_version: v0.4.6.post1
+serve_binary: python3 -m sglang.launch_server
+base_args:
+  - '--trust-remote-code'
+tp_by_hardware:
+  h200: 1
+  b200: 1
+variants:
+  default:
+    precision: bf16
+strategies:
+  single_node_tp: {}
+features: {}
