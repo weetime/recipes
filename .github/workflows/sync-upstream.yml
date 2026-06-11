@@ -1,0 +1,138 @@
+name: Sync upstream (vllm-project/recipes)
+
+# Weekly (and on-demand) merge of the upstream recipes repo into a sync branch,
+# opened as a PR for review — NOT auto-merged into main, because this fork has
+# diverged (engine seam, SGLang, rebrand) and an upstream change to a file we
+# rewrote must be resolved by a human. Clean merges open/update a PR; conflicting
+# merges open an issue listing the files to resolve.
+#
+# Requires (one-time, repo Settings → Actions → General → Workflow permissions):
+#   "Allow GitHub Actions to create and approve pull requests" = ENABLED.
+
+on:
+  schedule:
+    - cron: "0 6 * * 1"      # weekly · Monday 06:00 UTC
+  workflow_dispatch: {}       # manual "Run workflow" button
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+env:
+  UPSTREAM_URL: https://github.com/vllm-project/recipes.git
+  SYNC_BRANCH: sync/upstream
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0      # full history so the merge has a real base
+
+      - name: Configure bot identity
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Fetch upstream
+        run: |
+          git remote add upstream "$UPSTREAM_URL" 2>/dev/null || git remote set-url upstream "$UPSTREAM_URL"
+          git fetch upstream main
+
+      - name: Already up to date?
+        id: check
+        run: |
+          if git merge-base --is-ancestor upstream/main origin/main; then
+            echo "skip=true"  >> "$GITHUB_OUTPUT"
+            echo "Fork already contains every upstream commit — nothing to sync."
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Merge upstream into the sync branch
+        if: steps.check.outputs.skip == 'false'
+        id: merge
+        run: |
+          git checkout -B "$SYNC_BRANCH" origin/main
+          if git merge --no-commit --no-ff upstream/main; then
+            git commit -s -m "Merge upstream vllm-project/recipes ($(date -u +%Y-%m-%d))"
+            echo "conflicts=" >> "$GITHUB_OUTPUT"
+          else
+            { echo "conflicts<<EOF"; git diff --name-only --diff-filter=U; echo "EOF"; } >> "$GITHUB_OUTPUT"
+            git merge --abort
+          fi
+
+      # ── Conflict path: surface for manual resolution, then fail the run ──
+      - name: Open a conflict issue
+        if: steps.check.outputs.skip == 'false' && steps.merge.outputs.conflicts != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          {
+            echo "Auto-merging \`upstream/main\` into \`main\` hit conflicts in:"
+            echo
+            echo '```'
+            echo "${{ steps.merge.outputs.conflicts }}"
+            echo '```'
+            echo
+            echo "These are files this fork has diverged on. Resolve locally:"
+            echo
+            echo '```bash'
+            echo "git fetch upstream main"
+            echo "git checkout -B $SYNC_BRANCH origin/main"
+            echo "git merge upstream/main        # resolve conflicts"
+            echo "node scripts/build-recipes-api.mjs && node scripts/snapshot-api.mjs --write"
+            echo "node --test && git push -u origin $SYNC_BRANCH"
+            echo '```'
+          } > issue-body.md
+          gh issue create --title "Upstream sync needs manual conflict resolution ($(date -u +%Y-%m-%d))" --body-file issue-body.md
+          exit 1
+
+      # ── Clean path: validate, rebaseline golden, open/update the PR ──
+      - uses: pnpm/action-setup@v4
+        if: steps.check.outputs.skip == 'false' && steps.merge.outputs.conflicts == ''
+        with: { version: 9 }
+      - uses: actions/setup-node@v4
+        if: steps.check.outputs.skip == 'false' && steps.merge.outputs.conflicts == ''
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Validate + rebaseline golden
+        if: steps.check.outputs.skip == 'false' && steps.merge.outputs.conflicts == ''
+        id: validate
+        run: |
+          pnpm install --frozen-lockfile
+          node scripts/build-recipes-api.mjs
+          node scripts/snapshot-api.mjs --write
+          if ! git diff --quiet scripts/__tests__/api-golden.json; then
+            git add scripts/__tests__/api-golden.json
+            git commit -s -m "Rebaseline API golden after upstream sync"
+          fi
+          # Tests are reported in the PR body, not used as a hard gate, so a
+          # human can still review a merge that needs a follow-up test fix.
+          if node --test; then echo "tests=✅ pass" >> "$GITHUB_OUTPUT"; else echo "tests=❌ FAIL — fix before merging" >> "$GITHUB_OUTPUT"; fi
+
+      - name: Push + open/update PR
+        if: steps.check.outputs.skip == 'false' && steps.merge.outputs.conflicts == ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git push origin "$SYNC_BRANCH" --force-with-lease
+          {
+            echo "Automated merge of \`upstream/main\` (vllm-project/recipes)."
+            echo
+            echo "- \`node --test\`: ${{ steps.validate.outputs.tests }}"
+            echo "- API golden rebaselined if the merge changed it."
+            echo
+            echo "Review the upstream changes (new recipes / taxonomy / strategies / src), then merge."
+          } > pr-body.md
+          if gh pr view "$SYNC_BRANCH" >/dev/null 2>&1; then
+            gh pr edit "$SYNC_BRANCH" --body-file pr-body.md
+          else
+            gh pr create --base main --head "$SYNC_BRANCH" \
+              --title "Sync upstream vllm-project/recipes ($(date -u +%Y-%m-%d))" \
+              --body-file pr-body.md
+          fi
