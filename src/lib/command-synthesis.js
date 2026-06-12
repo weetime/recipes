@@ -284,7 +284,19 @@ export function computeDockerMeta(recipe, variant, hwProfile) {
   const isTpu = hwProfile?.generation === "tpu";
   const isIntel = hwProfile?.generation === "cpu" ||hwProfile?.brand === "Intel";
   const isAscend = hwProfile?.generation === "ascend" || hwProfile?.brand === "Huawei";
-  const brandKey = isTpu ? "tpu" : isAmd ? "amd" : isIntel ? "intel" : isAscend ? "ascend" : "nvidia";
+  // Domestic accelerators that run vLLM only via a vendor stack (no standard
+  // pip/docker): Hygon DCU (DTK image), Iluvatar CoreX (.run SDK), Alibaba
+  // T-Head PPU (GPUStack). The Install block is hidden for these; the per-recipe
+  // `brand:`-filtered dependency carries the real install.
+  const isHygon = hwProfile?.generation === "hygon" || hwProfile?.brand === "Hygon";
+  const isIluvatar = hwProfile?.generation === "iluvatar" || hwProfile?.brand === "Iluvatar";
+  const isPpu = hwProfile?.generation === "ppu" || hwProfile?.brand === "T-Head";
+  const isKunlun = hwProfile?.generation === "kunlun" || hwProfile?.brand === "Kunlunxin";
+  const isCambricon = hwProfile?.generation === "cambricon" || hwProfile?.brand === "Cambricon";
+  const vendorOnly = isHygon || isIluvatar || isPpu || isKunlun || isCambricon;
+  const brandKey = isTpu ? "tpu" : isAmd ? "amd" : isIntel ? "intel" : isAscend ? "ascend"
+    : isHygon ? "hygon" : isIluvatar ? "iluvatar" : isPpu ? "ppu"
+    : isKunlun ? "kunlun" : isCambricon ? "cambricon" : "nvidia";
   const override = variant?.docker_image || recipe.model?.docker_image;
 
   const isCudaMap = (v) =>
@@ -315,7 +327,7 @@ export function computeDockerMeta(recipe, variant, hwProfile) {
     : isAscend
       ? "--device /dev/davinci0 --device /dev/davinci_manager \\\n  --device /dev/devmm_svm --device /dev/hisi_hdc \\\n  -v /usr/local/dcmi:/usr/local/dcmi -v /usr/local/Ascend/driver:/usr/local/Ascend/driver \\\n  -v /etc/ascend_install.info:/etc/ascend_install.info"
       : "--gpus all";
-  return { image, gpuFlags, brandKey, isAmd, isTpu, isIntel, isAscend, pinned, cudaMap, nightlyRequired };
+  return { image, gpuFlags, brandKey, isAmd, isTpu, isIntel, isAscend, vendorOnly, pinned, cudaMap, nightlyRequired };
 }
 
 // argv form of the brand-specific GPU flags from computeDockerMeta. Mirrors
