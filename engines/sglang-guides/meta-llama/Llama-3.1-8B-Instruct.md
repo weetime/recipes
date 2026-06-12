@@ -25,9 +25,27 @@ docker run --gpus all --ipc=host -p 30000:30000 \
   --tp 1 --tool-call-parser llama3_json
 ```
 
+## Huawei Ascend NPU
+
+SGLang's in-tree Ascend NPU backend has verified Llama-3.1-8B. Use the Ascend
+Docker image and CANN stack instead of the CUDA wheel:
+
+```bash
+docker run --rm -it --network host \
+  --device /dev/davinci0 --device /dev/davinci_manager --device /dev/hisi_hdc \
+  -v /usr/local/Ascend/driver:/usr/local/Ascend/driver \
+  -v ~/.cache/huggingface:/root/.cache/huggingface \
+  lmsysorg/sglang:latest-cann8.5.0-910b \
+  python3 -m sglang.launch_server --model-path meta-llama/Llama-3.1-8B-Instruct \
+  --tp 1 --tool-call-parser llama3_json
+```
+
+Requires CANN 8.5.0 + torch-npu 2.8 (bundled in the `-cann8.5.0-910b` image; use
+the `-a3` variant for 910C). See [SGLang Ascend docs](https://github.com/sgl-project/sglang/blob/main/docs/platforms/ascend/ascend_npu.md).
+
 ## Launching the server
 
-The BF16 checkpoint (~16 GB) fits on a single H100 or H200 GPU at `tp 1`.
+The BF16 checkpoint (~16 GB) fits on a single H100, H200, or Ascend NPU at `tp 1`.
 
 ```bash
 python3 -m sglang.launch_server --model-path meta-llama/Llama-3.1-8B-Instruct \

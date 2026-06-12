@@ -636,10 +636,15 @@ export function CommandBuilder({ recipe, strategies, taxonomy }) {
       const i = list.indexOf(id);
       return i === -1 ? 9999 : i;
     };
-    // `restricted` profiles (e.g. TPU) only appear when the recipe explicitly
-    // lists them in `meta.hardware` — keeps specialty hardware out of the
-    // picker for recipes that haven't been validated on it.
-    const declared = recipe.meta?.hardware || {};
+    // `restricted` profiles (e.g. TPU, Ascend) only appear when the recipe
+    // explicitly lists them — AND the list is per-engine: vLLM gates on
+    // meta.hardware, other engines on meta.engine_hardware.<id>. So a model
+    // verified on Ascend for vLLM doesn't falsely advertise Ascend under SGLang
+    // (where the backend may not support it). Non-restricted hardware is
+    // unaffected — it shows for every engine.
+    const declared = engine === "vllm"
+      ? (recipe.meta?.hardware || {})
+      : (recipe.meta?.engine_hardware?.[engine] || {});
     const groups = {};
     for (const [id, p] of Object.entries(taxonomy.hardware_profiles || {})) {
       if (p.restricted && !(id in declared)) continue;
@@ -667,7 +672,7 @@ export function CommandBuilder({ recipe, strategies, taxonomy }) {
         return ai - bi;
       }
     );
-  }, [taxonomy]);
+  }, [taxonomy, engine, recipe.meta]);
 
   const hwProfile = taxonomy.hardware_profiles?.[hwId] || {};
   // Non-scalable hardware (single-GPU workstation, e.g. DGX Station) can't add
@@ -1022,7 +1027,9 @@ export function CommandBuilder({ recipe, strategies, taxonomy }) {
   // Status caption for the command block header.
   // Only `verified` is a positive signal worth surfacing; anything else
   // falls back to a neutral "vllm serve" label (treat as "assumed to work").
-  const hwStatus = recipe.meta?.hardware?.[hwId]; // "verified" | undefined
+  // Engine-aware verified status: prefer the per-engine declaration
+  // (meta.engine_hardware.<engine>), fall back to recipe-level meta.hardware.
+  const hwStatus = recipe.meta?.engine_hardware?.[engine]?.[hwId] ?? recipe.meta?.hardware?.[hwId]; // "verified" | undefined
   const hwFullName = hwProfile?.brand
     ? `${hwProfile.brand} ${hwProfile.display_name || hwId}`
     : (hwProfile?.display_name || hwId);
@@ -1439,12 +1446,24 @@ export function CommandBuilder({ recipe, strategies, taxonomy }) {
                         : src.defaultVariant;
                       if (nextVariant !== variant) setVariant(nextVariant);
                       setFeatures(src.defaultFeatures);
+                      // If the selected restricted hardware (e.g. Ascend) isn't
+                      // available under the new engine, fall back to the default.
+                      const newDeclared = id === "vllm"
+                        ? (recipe.meta?.hardware || {})
+                        : (recipe.meta?.engine_hardware?.[id] || {});
+                      const curProfile = taxonomy.hardware_profiles?.[hwId];
+                      let nextHw = hwId;
+                      if (curProfile?.restricted && !(hwId in newDeclared)) {
+                        nextHw = pickDefaultHardware(taxonomy.hardware_profiles, currentVariant, recipe) || "h200";
+                        if (nextHw !== hwId) setHwId(nextHw);
+                      }
                       const defaultEngine = recipe.default_engine || "vllm";
                       syncUrl({
                         engine: id === defaultEngine ? "" : id,
                         ...(strategyReset ? { strategy: "" } : {}),
+                        ...(nextHw !== hwId ? { hardware: nextHw } : {}),
                         variant: nextVariant,
-                        features: featuresToUrl(src.defaultFeatures, hwId),
+                        features: featuresToUrl(src.defaultFeatures, nextHw),
                       });
                     }}
                   >

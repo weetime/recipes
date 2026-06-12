@@ -10,6 +10,9 @@ base_args: []
 tp_by_hardware:
   h100: 1
   h200: 1
+  ascend_910b: 1
+  ascend_910b4: 1
+  ascend_910c: 1
 variants:
   default:
     precision: bf16
