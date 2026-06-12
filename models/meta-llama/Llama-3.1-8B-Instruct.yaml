@@ -16,6 +16,14 @@ meta:
     ascend_910b: verified
     ascend_910b4: verified
     ascend_910c: verified
+  # Per-engine hardware verification (restricted hardware only). vLLM uses
+  # `hardware` above; other engines gate on this. SGLang's in-tree Ascend NPU
+  # backend has verified Llama-3.1-8B (docs.sglang.ai/platforms/ascend).
+  engine_hardware:
+    sglang:
+      ascend_910b: verified
+      ascend_910b4: verified
+      ascend_910c: verified
 
 model:
   model_id: "meta-llama/Llama-3.1-8B-Instruct"
