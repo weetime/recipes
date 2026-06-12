@@ -19,6 +19,8 @@ meta:
     mi300x: unsupported
     mi325x: unsupported
     mi355x: verified
+    ascend_910b: verified
+    ascend_910c: verified
 
 model:
   model_id: "deepseek-ai/DeepSeek-V4-Flash"
@@ -41,6 +43,9 @@ model:
 dependencies:
   - note: "DeepGEMM FP8 kernels — install via vLLM tools/install_deepgemm.sh"
     command: "bash <(curl -fsSL https://raw.githubusercontent.com/vllm-project/vllm/main/tools/install_deepgemm.sh)"
+  - command: "pip install vllm-ascend"
+    brand: Huawei
+    note: "Huawei Ascend NPU support is provided by the vllm-ascend plugin (requires CANN 9.0 + torch-npu; use the matching quay.io/ascend/vllm-ascend image). FP8 weights are served via W8A8 on Ascend. See https://docs.vllm.ai/projects/ascend"
 
 features:
   tool_calling:

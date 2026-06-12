@@ -10,6 +10,10 @@ meta:
   performance_headline: "Improved grounding and markdown conversion over DeepSeek-OCR"
   related_recipes:
     - "deepseek-ai/DeepSeek-OCR"
+  hardware:
+    ascend_910b: verified
+    ascend_910b4: verified
+    ascend_910c: verified
 
 model:
   model_id: "deepseek-ai/DeepSeek-OCR-2"
@@ -26,6 +30,11 @@ model:
     - "--mm-processor-cache-gb"
     - "0"
   base_env: {}
+
+dependencies:
+  - command: "pip install vllm-ascend"
+    brand: Huawei
+    note: "Huawei Ascend NPU support is provided by the vllm-ascend plugin (requires CANN 9.0 + torch-npu; use the matching quay.io/ascend/vllm-ascend image). FP8 weights are served via W8A8 on Ascend. See https://docs.vllm.ai/projects/ascend"
 
 features:
   text_only:
