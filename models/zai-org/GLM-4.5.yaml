@@ -14,6 +14,7 @@ meta:
     mi300x: verified
     mi325x: verified
     mi355x: verified
+    hygon_k100ai: verified
 
 model:
   model_id: "zai-org/GLM-4.5"
@@ -25,6 +26,11 @@ model:
   base_args:
     - "--trust-remote-code"
   base_env: {}
+
+dependencies:
+  - command: "docker pull image.sourcefind.cn:5000/dcu/admin/base/custom:vllm0.6.2-ubuntu22.04-dtk25.04-rc7-das1.5-py3.10"
+    brand: Hygon
+    note: "Hygon DCU K100-AI runs vLLM via the Sourcefind DTK image (ROCm/HIP). Set HSA_OVERRIDE_GFX_VERSION=9.2.8; device flags --device=/dev/kfd --device=/dev/dri -v /opt/hyhal:/opt/hyhal:ro; serve with --enforce-eager --dtype float16 (CUDA-graph capture unreliable; K100-AI is fp16/bf16 only — FP8 checkpoints run as fp16). See https://docs.gpustack.ai/0.5/tutorials/running-inference-with-hygon-dcus/"
 
 features:
   tool_calling:

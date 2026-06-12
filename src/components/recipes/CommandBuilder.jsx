@@ -1924,7 +1924,7 @@ function InstallBlock({ recipe, dockerMeta, installMode, setInstallMode, dockerC
   const pipHidden = pipCfg === false;
   const dockerHidden = dockerCfg === false;
   const [open, setOpen] = useState(false);
-  const { isAmd, isTpu, isAscend, image: dockerImage, brandKey, cudaMap } = dockerMeta;
+  const { isAmd, isTpu, isAscend, vendorOnly, image: dockerImage, brandKey, cudaMap } = dockerMeta;
   const minV = recipe.model?.min_vllm_version;
   // Omni recipes are served by vLLM-Omni, a fast-moving companion package that
   // tracks vLLM nightly (Wan2.2 even pins a git commit). Surface it next to the
@@ -1992,7 +1992,10 @@ uv pip install -U vllm --torch-backend auto`;
       (installMode === "pip" && nightlyRequired && !pipCfg?.command));
 
   // TPU has no pip wheel — force-hide the pip tab regardless of recipe overrides.
-  const effectivePipHidden = pipHidden || isTpu;
+  // Vendor-stack accelerators (Hygon/Iluvatar/PPU) don't use standard vLLM
+  // pip/docker — hide both tabs so the whole Install block drops out; the
+  // `brand:`-filtered dependency above the command carries the real install.
+  const effectivePipHidden = pipHidden || isTpu || vendorOnly;
   const dockerLabel = isTpu ? "Docker (TPU)" : isAmd ? "Docker (ROCm)" : isAscend ? "Docker (Ascend)" : "Docker";
   const tabs = [
     !effectivePipHidden && {
@@ -2001,7 +2004,7 @@ uv pip install -U vllm --torch-backend auto`;
       code: pipCmd,
       note: pipNote,
     },
-    !dockerHidden && {
+    !dockerHidden && !vendorOnly && {
       id: "docker",
       label: dockerLabel,
       code: dockerCmd,

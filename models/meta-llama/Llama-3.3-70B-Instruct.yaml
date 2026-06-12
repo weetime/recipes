@@ -19,6 +19,8 @@ meta:
     ascend_910b: verified
     ascend_910b4: verified
     ascend_910c: verified
+    hygon_k100ai: verified
+    iluvatar_biv150: verified
 
 model:
   model_id: "meta-llama/Llama-3.3-70B-Instruct"
@@ -34,6 +36,12 @@ dependencies:
   - command: "pip install vllm-ascend"
     brand: Huawei
     note: "Huawei Ascend NPU support is provided by the vllm-ascend plugin (requires CANN 9.0 + torch-npu; use the matching quay.io/ascend/vllm-ascend image). FP8 weights are served via W8A8 on Ascend. See https://docs.vllm.ai/projects/ascend"
+  - command: "docker pull image.sourcefind.cn:5000/dcu/admin/base/custom:vllm0.6.2-ubuntu22.04-dtk25.04-rc7-das1.5-py3.10"
+    brand: Hygon
+    note: "Hygon DCU K100-AI runs vLLM via the Sourcefind DTK image (ROCm/HIP). Set HSA_OVERRIDE_GFX_VERSION=9.2.8; device flags --device=/dev/kfd --device=/dev/dri -v /opt/hyhal:/opt/hyhal:ro; serve with --enforce-eager --dtype float16 (CUDA-graph capture unreliable; fp16/bf16 only). See https://docs.gpustack.ai/0.5/tutorials/running-inference-with-hygon-dcus/"
+  - command: "docker run --runtime iluvatar -e IX_VISIBLE_DEVICES=all <corex-vllm-image>"
+    brand: Iluvatar
+    note: "Iluvatar CoreX BI-V150 runs a vendor-forked vLLM. Get the CoreX Docker installer (corex-docker-installer-4.3.0+-llm-py3.10-x86_64.run) from the Iluvatar Resource Center (login required), install the iluvatar container runtime, then vllm serve as usual. bf16/fp16/int8. See https://github.com/Deep-Spark/DeepSparkInference"
 
 features: {}
 

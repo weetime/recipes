@@ -200,6 +200,39 @@ hardware_profiles:
     multi_node: false
     restricted: true
 
+  # ── Other domestic accelerators ──
+  # All restricted (opt-in per recipe) and vLLM-via-vendor-stack: they don't use
+  # the standard vLLM pip/docker, so the command builder hides the Install block
+  # for them and the per-recipe `brand:`-filtered dependency carries the real
+  # vendor install (DTK image / CoreX SDK / GPUStack). See command-synthesis.js.
+  hygon_k100ai:
+    brand: Hygon
+    generation: hygon
+    display_name: "DCU K100-AI"
+    description: "Hygon DCU K100-AI 64 GB · 8-card node · DTK (ROCm/HIP); fp16/bf16, --enforce-eager"
+    gpu_count: 8
+    vram_gb: 512
+    multi_node: false
+    restricted: true
+  iluvatar_biv150:
+    brand: Iluvatar
+    generation: iluvatar
+    display_name: "BI-V150"
+    description: "Iluvatar CoreX BI-V150 (天垓150) 32 GB · 8-card node · CoreX/IXUCA SDK; bf16/fp16/int8"
+    gpu_count: 8
+    vram_gb: 256
+    multi_node: false
+    restricted: true
+  thead_ppu_810e:
+    brand: T-Head
+    generation: ppu
+    display_name: "PPU 810E"
+    description: "Alibaba T-Head 真武 PPU 810E 96 GB · 8-card node · via GPUStack; bf16/fp8 (~H20 class)"
+    gpu_count: 8
+    vram_gb: 768
+    multi_node: false
+    restricted: true
+
 tasks:
   - id: text
     display_name: "Text"
