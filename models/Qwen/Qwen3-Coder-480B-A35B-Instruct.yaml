@@ -15,6 +15,8 @@ meta:
     mi325x: verified
     mi355x: verified
     ironwood: verified
+    ascend_910b: verified
+    ascend_910c: verified
 
 model:
   model_id: "Qwen/Qwen3-Coder-480B-A35B-Instruct"
@@ -30,6 +32,9 @@ dependencies:
   - note: "Optional: opt into DeepGEMM FP8 MoE kernels for extra throughput"
     command: "export VLLM_USE_DEEP_GEMM=1"
     optional: true
+  - command: "pip install vllm-ascend"
+    brand: Huawei
+    note: "Huawei Ascend NPU support is provided by the vllm-ascend plugin (requires CANN 9.0 + torch-npu; use the matching quay.io/ascend/vllm-ascend image). FP8 weights are served via W8A8 on Ascend. See https://docs.vllm.ai/projects/ascend"
 
 features:
   tool_calling:

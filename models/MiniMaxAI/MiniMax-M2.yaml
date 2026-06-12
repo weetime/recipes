@@ -15,6 +15,8 @@ meta:
     mi300x: verified
     mi325x: verified
     mi355x: verified
+    ascend_910b: verified
+    ascend_910c: verified
 
 model:
   model_id: "MiniMaxAI/MiniMax-M2"
@@ -31,6 +33,9 @@ dependencies:
   - note: "Optional: DeepGEMM FP8 MoE kernels for throughput (skip on B200 — known FlashInfer FP8 MoE error)"
     command: "export VLLM_USE_DEEP_GEMM=1"
     optional: true
+  - command: "pip install vllm-ascend"
+    brand: Huawei
+    note: "Huawei Ascend NPU support is provided by the vllm-ascend plugin (requires CANN 9.0 + torch-npu; use the matching quay.io/ascend/vllm-ascend image). FP8 weights are served via W8A8 on Ascend. See https://docs.vllm.ai/projects/ascend"
 
 features:
   tool_calling:

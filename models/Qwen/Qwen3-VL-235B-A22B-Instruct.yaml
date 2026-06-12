@@ -17,6 +17,8 @@ meta:
     mi300x: verified
     mi325x: verified
     mi355x: verified
+    ascend_910b: verified
+    ascend_910c: verified
 
 model:
   model_id: "Qwen/Qwen3-VL-235B-A22B-Instruct"
@@ -32,6 +34,9 @@ dependencies:
   - note: "Recommended for offline multimodal inference (image/video pre-processing helpers)"
     command: "uv pip install qwen-vl-utils==0.0.14"
     optional: true
+  - command: "pip install vllm-ascend"
+    brand: Huawei
+    note: "Huawei Ascend NPU support is provided by the vllm-ascend plugin (requires CANN 9.0 + torch-npu; use the matching quay.io/ascend/vllm-ascend image). FP8 weights are served via W8A8 on Ascend. See https://docs.vllm.ai/projects/ascend"
 
 features:
   text_only:
