@@ -278,11 +278,13 @@ export function computeDockerMeta(recipe, variant, hwProfile) {
         amd: "vllm/vllm-openai-rocm:latest",
         tpu: "vllm/vllm-tpu:latest",
         intel: "vllm/vllm-openai-cpu:latest-x86_64",
+        ascend: "quay.io/ascend/vllm-ascend:latest",
       };
   const isAmd = hwProfile?.brand === "AMD";
   const isTpu = hwProfile?.generation === "tpu";
   const isIntel = hwProfile?.generation === "cpu" ||hwProfile?.brand === "Intel";
-  const brandKey = isTpu ? "tpu" : isAmd ? "amd" : isIntel ? "intel" : "nvidia";
+  const isAscend = hwProfile?.generation === "ascend" || hwProfile?.brand === "Huawei";
+  const brandKey = isTpu ? "tpu" : isAmd ? "amd" : isIntel ? "intel" : isAscend ? "ascend" : "nvidia";
   const override = variant?.docker_image || recipe.model?.docker_image;
 
   const isCudaMap = (v) =>
@@ -293,7 +295,7 @@ export function computeDockerMeta(recipe, variant, hwProfile) {
   if (typeof override === "string") {
     if (brandKey === "nvidia") pinned = override;
   } else if (override && typeof override === "object") {
-    const isBrandKeyed = "nvidia" in override || "amd" in override || "tpu" in override || "intel" in override;
+    const isBrandKeyed = "nvidia" in override || "amd" in override || "tpu" in override || "intel" in override || "ascend" in override;
     if (isBrandKeyed) {
       const brandValue = override[brandKey];
       if (typeof brandValue === "string") pinned = brandValue;
@@ -309,9 +311,11 @@ export function computeDockerMeta(recipe, variant, hwProfile) {
     : isAmd
       ? "--device=/dev/kfd --device=/dev/dri \\\n  --security-opt seccomp=unconfined --group-add video"
     : isIntel
-      ? "--shm-size=16g"	
+      ? "--shm-size=16g"
+    : isAscend
+      ? "--device /dev/davinci0 --device /dev/davinci_manager \\\n  --device /dev/devmm_svm --device /dev/hisi_hdc \\\n  -v /usr/local/dcmi:/usr/local/dcmi -v /usr/local/Ascend/driver:/usr/local/Ascend/driver \\\n  -v /etc/ascend_install.info:/etc/ascend_install.info"
       : "--gpus all";
-  return { image, gpuFlags, brandKey, isAmd, isTpu, isIntel, pinned, cudaMap, nightlyRequired };
+  return { image, gpuFlags, brandKey, isAmd, isTpu, isIntel, isAscend, pinned, cudaMap, nightlyRequired };
 }
 
 // argv form of the brand-specific GPU flags from computeDockerMeta. Mirrors
@@ -328,7 +332,16 @@ function dockerGpuArgv(meta) {
   }
   if (meta.isIntel) {
     return ["--shm-size", "16g"];
-  }	
+  }
+  if (meta.isAscend) {
+    return [
+      "--device", "/dev/davinci0", "--device", "/dev/davinci_manager",
+      "--device", "/dev/devmm_svm", "--device", "/dev/hisi_hdc",
+      "-v", "/usr/local/dcmi:/usr/local/dcmi",
+      "-v", "/usr/local/Ascend/driver:/usr/local/Ascend/driver",
+      "-v", "/etc/ascend_install.info:/etc/ascend_install.info",
+    ];
+  }
   return ["--gpus", "all"];
 }
 

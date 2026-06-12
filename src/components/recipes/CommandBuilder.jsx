@@ -1905,7 +1905,7 @@ function InstallBlock({ recipe, dockerMeta, installMode, setInstallMode, dockerC
   const pipHidden = pipCfg === false;
   const dockerHidden = dockerCfg === false;
   const [open, setOpen] = useState(false);
-  const { isAmd, isTpu, image: dockerImage, brandKey, cudaMap } = dockerMeta;
+  const { isAmd, isTpu, isAscend, image: dockerImage, brandKey, cudaMap } = dockerMeta;
   const minV = recipe.model?.min_vllm_version;
   // Omni recipes are served by vLLM-Omni, a fast-moving companion package that
   // tracks vLLM nightly (Wan2.2 even pins a git commit). Surface it next to the
@@ -1974,11 +1974,11 @@ uv pip install -U vllm --torch-backend auto`;
 
   // TPU has no pip wheel — force-hide the pip tab regardless of recipe overrides.
   const effectivePipHidden = pipHidden || isTpu;
-  const dockerLabel = isTpu ? "Docker (TPU)" : isAmd ? "Docker (ROCm)" : "Docker";
+  const dockerLabel = isTpu ? "Docker (TPU)" : isAmd ? "Docker (ROCm)" : isAscend ? "Docker (Ascend)" : "Docker";
   const tabs = [
     !effectivePipHidden && {
       id: "pip",
-      label: isAmd ? "pip / uv (ROCm)" : "pip / uv",
+      label: isAmd ? "pip / uv (ROCm)" : isAscend ? "pip (vllm-ascend)" : "pip / uv",
       code: pipCmd,
       note: pipNote,
     },
@@ -2002,7 +2002,7 @@ uv pip install -U vllm --torch-backend auto`;
         <Package size={12} className="text-[var(--command-fg)]/50 shrink-0" />
         <span className="text-[11px] font-semibold text-[var(--command-fg)]/70 uppercase tracking-widest">Install</span>
         <span className="text-[11px] text-[var(--command-fg)]/40 font-mono">
-          vLLM {minV}+{isOmni ? " · vLLM-Omni nightly" : ""} · {isTpu ? "TPU" : isAmd ? "ROCm" : "CUDA"}
+          vLLM {minV}+{isOmni ? " · vLLM-Omni nightly" : ""} · {isTpu ? "TPU" : isAmd ? "ROCm" : isAscend ? "Ascend" : "CUDA"}
         </span>
         {nightlyRequired && (
           <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-400 border border-amber-500/30 uppercase tracking-wider">
