@@ -164,6 +164,31 @@ hardware_profiles:
     multi_node: false
     restricted: true
 
+  # ── Huawei Ascend NPU ──
+  # `restricted: true` keeps these out of the picker unless a recipe declares
+  # them in `meta.hardware` — Ascend runs via the vllm-ascend plugin (separate
+  # install: CANN + torch-npu), only on recipes validated against the
+  # vllm-ascend support matrix. The `vllm serve` command is unchanged (TP works
+  # like a GPU); only the install + docker image differ.
+  ascend_910b:
+    brand: Huawei
+    generation: ascend
+    display_name: "Ascend 910B"
+    description: "Huawei Ascend 910B 64 GB · 8-NPU node (Atlas 800 A2) · vllm-ascend"
+    gpu_count: 8
+    vram_gb: 512
+    multi_node: false
+    restricted: true
+  ascend_910c:
+    brand: Huawei
+    generation: ascend
+    display_name: "Ascend 910C"
+    description: "Huawei Ascend 910C 128 GB · 8-NPU node (Atlas 800 A3) · vllm-ascend"
+    gpu_count: 8
+    vram_gb: 1024
+    multi_node: false
+    restricted: true
+
 tasks:
   - id: text
     display_name: "Text"
