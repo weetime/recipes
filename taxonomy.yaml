@@ -232,6 +232,24 @@ hardware_profiles:
     vram_gb: 768
     multi_node: false
     restricted: true
+  kunlun_p800:
+    brand: Kunlunxin
+    generation: kunlun
+    display_name: "Kunlun P800"
+    description: "Kunlunxin (Baidu) P800 96 GB HBM2e OAM · 8-card node · vLLM-Kunlun plugin; int8/fp8/awq/gptq"
+    gpu_count: 8
+    vram_gb: 768
+    multi_node: false
+    restricted: true
+  cambricon_mlu590:
+    brand: Cambricon
+    generation: cambricon
+    display_name: "MLU590 (思元590)"
+    description: "Cambricon MLU590 96 GB HBM2e · 8-card node · vllm-mlu plugin (Neuware SDK); MLU370+"
+    gpu_count: 8
+    vram_gb: 768
+    multi_node: false
+    restricted: true
 
 tasks:
   - id: text

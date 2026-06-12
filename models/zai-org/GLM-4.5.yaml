@@ -15,6 +15,7 @@ meta:
     mi325x: verified
     mi355x: verified
     hygon_k100ai: verified
+    kunlun_p800: verified
 
 model:
   model_id: "zai-org/GLM-4.5"
@@ -31,6 +32,9 @@ dependencies:
   - command: "docker pull image.sourcefind.cn:5000/dcu/admin/base/custom:vllm0.6.2-ubuntu22.04-dtk25.04-rc7-das1.5-py3.10"
     brand: Hygon
     note: "Hygon DCU K100-AI runs vLLM via the Sourcefind DTK image (ROCm/HIP). Set HSA_OVERRIDE_GFX_VERSION=9.2.8; device flags --device=/dev/kfd --device=/dev/dri -v /opt/hyhal:/opt/hyhal:ro; serve with --enforce-eager --dtype float16 (CUDA-graph capture unreliable; K100-AI is fp16/bf16 only — FP8 checkpoints run as fp16). See https://docs.gpustack.ai/0.5/tutorials/running-inference-with-hygon-dcus/"
+  - command: "docker pull wjie520/vllm_kunlun:uv_base"
+    brand: Kunlunxin
+    note: "Kunlunxin (Baidu) P800 runs vLLM via the out-of-tree vLLM-Kunlun plugin (P800 only). In the image: pip install vllm==0.15.1 --no-deps, build the plugin (v0.15.1-dev) + kunlun op wheels (kunlun_ops/xspeedgate_ops). TP across 8×P800; int8/awq/gptq/fp8. See https://github.com/baidu/vLLM-Kunlun"
 
 features:
   tool_calling:

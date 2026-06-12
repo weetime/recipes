@@ -291,9 +291,12 @@ export function computeDockerMeta(recipe, variant, hwProfile) {
   const isHygon = hwProfile?.generation === "hygon" || hwProfile?.brand === "Hygon";
   const isIluvatar = hwProfile?.generation === "iluvatar" || hwProfile?.brand === "Iluvatar";
   const isPpu = hwProfile?.generation === "ppu" || hwProfile?.brand === "T-Head";
-  const vendorOnly = isHygon || isIluvatar || isPpu;
+  const isKunlun = hwProfile?.generation === "kunlun" || hwProfile?.brand === "Kunlunxin";
+  const isCambricon = hwProfile?.generation === "cambricon" || hwProfile?.brand === "Cambricon";
+  const vendorOnly = isHygon || isIluvatar || isPpu || isKunlun || isCambricon;
   const brandKey = isTpu ? "tpu" : isAmd ? "amd" : isIntel ? "intel" : isAscend ? "ascend"
-    : isHygon ? "hygon" : isIluvatar ? "iluvatar" : isPpu ? "ppu" : "nvidia";
+    : isHygon ? "hygon" : isIluvatar ? "iluvatar" : isPpu ? "ppu"
+    : isKunlun ? "kunlun" : isCambricon ? "cambricon" : "nvidia";
   const override = variant?.docker_image || recipe.model?.docker_image;
 
   const isCudaMap = (v) =>

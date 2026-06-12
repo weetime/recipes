@@ -17,6 +17,7 @@ meta:
     hygon_k100ai: verified
     iluvatar_biv150: verified
     thead_ppu_810e: verified
+    kunlun_p800: verified
 
 model:
   model_id: "Qwen/Qwen2.5-32B"
@@ -41,6 +42,9 @@ dependencies:
   - command: "# deploy via GPUStack 2.1+ (Alibaba T-Head PPU backend)"
     brand: T-Head
     note: "Alibaba T-Head 真武 PPU 810E (96 GB, ~H20 class) serves vLLM/SGLang via GPUStack 2.1+, which orchestrates vendor container images and a pluggable backend — raw vllm serve flags are abstracted. bf16/fp8. See https://github.com/gpustack/gpustack"
+  - command: "docker pull wjie520/vllm_kunlun:uv_base"
+    brand: Kunlunxin
+    note: "Kunlunxin (Baidu) P800 runs vLLM via the out-of-tree vLLM-Kunlun plugin (P800 only). In the image: pip install vllm==0.15.1 --no-deps, build the plugin (v0.15.1-dev) + kunlun op wheels (kunlun_ops/xspeedgate_ops). TP across 8×P800; int8/awq/gptq/fp8. See https://github.com/baidu/vLLM-Kunlun"
 
 features: {}
 

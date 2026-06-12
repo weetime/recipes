@@ -18,6 +18,7 @@ meta:
     ascend_910c: verified
     hygon_k100ai: verified
     iluvatar_biv150: verified
+    kunlun_p800: verified
   # Per-engine hardware verification (restricted hardware only). vLLM uses
   # `hardware` above; other engines gate on this. SGLang's in-tree Ascend NPU
   # backend has verified Llama-3.1-8B (docs.sglang.ai/platforms/ascend).
@@ -47,6 +48,9 @@ dependencies:
   - command: "docker run --runtime iluvatar -e IX_VISIBLE_DEVICES=all <corex-vllm-image>"
     brand: Iluvatar
     note: "Iluvatar CoreX BI-V150 runs a vendor-forked vLLM. Get the CoreX Docker installer (corex-docker-installer-4.3.0+-llm-py3.10-x86_64.run) from the Iluvatar Resource Center (login required), install the iluvatar container runtime, then vllm serve as usual. bf16/fp16/int8. See https://github.com/Deep-Spark/DeepSparkInference"
+  - command: "docker pull wjie520/vllm_kunlun:uv_base"
+    brand: Kunlunxin
+    note: "Kunlunxin (Baidu) P800 runs vLLM via the out-of-tree vLLM-Kunlun plugin (P800 only). In the image: pip install vllm==0.15.1 --no-deps, build the plugin (v0.15.1-dev) + kunlun op wheels (kunlun_ops/xspeedgate_ops). TP across 8×P800; int8/awq/gptq/fp8. See https://github.com/baidu/vLLM-Kunlun"
 
 features:
   spec_decoding:
