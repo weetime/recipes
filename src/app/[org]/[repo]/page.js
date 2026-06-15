@@ -11,7 +11,7 @@ import { getProviderLogo, getProviderLogoClass } from "@/lib/providers";
 import { CommandBuilder } from "@/components/recipes/CommandBuilder";
 import { EngineAwareGuide } from "@/components/recipes/EngineAwareGuide";
 import { DeployDialog } from "@/components/recipes/DeployDialog";
-import { HuggingFaceIcon } from "@/components/icons/PlatformLogos";
+import { HuggingFaceIcon, ModelScopeIcon } from "@/components/icons/PlatformLogos";
 import { Badge } from "@/components/ui/badge";
 import { Cpu, Layers, Pencil, Bug, ExternalLink } from "lucide-react";
 
@@ -151,6 +151,16 @@ export default async function RecipePage({ params }) {
               >
                 <HuggingFaceIcon className="w-3.5 h-3.5" />
                 View on HuggingFace
+                <ExternalLink size={10} />
+              </a>
+              <a
+                href={`https://modelscope.cn/models/${recipe.hf_id}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-vllm-blue transition-colors"
+              >
+                <ModelScopeIcon className="w-3.5 h-3.5" />
+                View on ModelScope
                 <ExternalLink size={10} />
               </a>
             </div>

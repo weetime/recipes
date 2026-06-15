@@ -9,6 +9,11 @@ export function HuggingFaceIcon({ className = "" }) {
   return <img src="/platform-logos/huggingface.svg" alt="" aria-hidden="true" className={className} />;
 }
 
+export function ModelScopeIcon({ className = "" }) {
+  // eslint-disable-next-line @next/next/no-img-element
+  return <img src="/platform-logos/modelscope.svg" alt="" aria-hidden="true" className={className} />;
+}
+
 function ModalIcon({ className = "" }) {
   // eslint-disable-next-line @next/next/no-img-element
   return <img src="/platform-logos/modal.svg" alt="Modal" className={className} />;
