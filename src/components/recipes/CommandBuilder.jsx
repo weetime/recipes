@@ -1014,7 +1014,11 @@ export function CommandBuilder({ recipe, strategies, taxonomy }) {
   // without `brand` are platform-agnostic and always render. Used for cross-
   // platform recipes (e.g. an omni recipe with separate NVIDIA / ROCm wheels)
   // so AMD users don't see CUDA-only steps and vice versa.
+  // Recipe-level dependencies (e.g. the DeepGEMM install via vLLM's
+  // tools/install_deepgemm.sh) are vLLM-specific extra-install steps — they
+  // don't apply to other engines, whose own setup is the Install block above.
   const dependencies = useMemo(() => {
+    if (engine !== "vllm") return [];
     const all = recipe.dependencies || [];
     const brand = hwProfile?.brand;
     return all.filter((d) => {
@@ -1022,7 +1026,7 @@ export function CommandBuilder({ recipe, strategies, taxonomy }) {
       const allowed = Array.isArray(d.brand) ? d.brand : [d.brand];
       return allowed.includes(brand);
     });
-  }, [recipe.dependencies, hwProfile?.brand]);
+  }, [recipe.dependencies, hwProfile?.brand, engine]);
 
   // Status caption for the command block header.
   // Only `verified` is a positive signal worth surfacing; anything else
@@ -1195,6 +1199,7 @@ export function CommandBuilder({ recipe, strategies, taxonomy }) {
         <div className="space-y-4">
           <InstallBlock
             recipe={recipe}
+            engine={engine}
             dockerMeta={dockerMeta}
             installMode={effectiveInstallMode}
             setInstallMode={setInstallMode}
@@ -1333,6 +1338,7 @@ export function CommandBuilder({ recipe, strategies, taxonomy }) {
           so switching from either place keeps them in sync). */}
         <InstallBlock
           recipe={recipe}
+          engine={engine}
           dockerMeta={dockerMeta}
           installMode={effectiveInstallMode}
           setInstallMode={setInstallMode}
@@ -1909,7 +1915,7 @@ function SingleCommandBlock({ command, env, verifyCmd, benchCmd, statusHeader, i
   );
 }
 
-function InstallBlock({ recipe, dockerMeta, installMode, setInstallMode, dockerCudaVariant, setDockerCudaVariant, altCudaSuffix }) {
+function InstallBlock({ recipe, engine = "vllm", dockerMeta, installMode, setInstallMode, dockerCudaVariant, setDockerCudaVariant, altCudaSuffix }) {
   // Collapsible install reference. Shows the one-time setup step for the
   // active mode — `uv pip install vllm …` in pip mode, `docker pull <image>`
   // in docker mode. The active tab mirrors the command card's mode toggle
@@ -1918,14 +1924,25 @@ function InstallBlock({ recipe, dockerMeta, installMode, setInstallMode, dockerC
   // Per-recipe overrides via `model.install.{pip,docker}`:
   //   false              → hide that tab entirely
   //   { command, note }  → override the generated one-liner and/or show a note
-  const install = recipe.model?.install || {};
+  // Install is engine-aware: the active Engine pill decides which package the
+  // one-time setup step installs. For vLLM these knobs come from the recipe's
+  // top-level `model.*`; for any other engine (SGLang) they come from the
+  // engine block, and the vLLM-only machinery (nightly wheels, CUDA selector,
+  // ROCm/Ascend/TPU wheels, per-recipe install overrides) is bypassed.
+  const isVllm = engine === "vllm";
+  const engineBlock = isVllm ? null : recipe.engines?.[engine];
+  const install = isVllm ? (recipe.model?.install || {}) : {};
   const pipCfg = install.pip;
   const dockerCfg = install.docker;
   const pipHidden = pipCfg === false;
   const dockerHidden = dockerCfg === false;
   const [open, setOpen] = useState(false);
   const { isAmd, isTpu, isAscend, vendorOnly, image: dockerImage, brandKey, cudaMap } = dockerMeta;
-  const minV = recipe.model?.min_vllm_version;
+  // Min version: vLLM reads `min_vllm_version` (already bare, e.g. "0.20.0");
+  // SGLang carries a `v`-prefixed tag in its block (e.g. "v0.5.10") — strip it.
+  const minV = isVllm
+    ? recipe.model?.min_vllm_version
+    : (engineBlock?.min_version || "").replace(/^v/, "");
   // Omni recipes are served by vLLM-Omni, a fast-moving companion package that
   // tracks vLLM nightly (Wan2.2 even pins a git commit). Surface it next to the
   // vLLM version so users know the generation path needs nightly wheels.
@@ -1936,12 +1953,14 @@ function InstallBlock({ recipe, dockerMeta, installMode, setInstallMode, dockerC
   // swaps the default pip command to the nightly wheel index and surfaces a
   // pill in the Install header. Manual `install.pip.command` overrides still
   // win — this flag only affects the default.
-  const nightlyRequired = recipe.model?.nightly_required === true;
+  const nightlyRequired = isVllm && recipe.model?.nightly_required === true;
   // Resolve the CUDA tag for pip's nightly wheel index from the same toggle
   // that drives the Docker tag suffix. "default" → cu130 (today's upstream
   // baseline); explicit picks pass through.
   const pipCudaTag = dockerCudaVariant === "default" ? "cu130" : dockerCudaVariant;
-  const defaultPipCmd = isAmd
+  const defaultPipCmd = !isVllm
+    ? `python3 -m pip install "sglang[all]${minV ? `>=${minV}` : ""}"`
+    : isAmd
     ? `uv venv --python 3.12
 source .venv/bin/activate
 uv pip install vllm --extra-index-url https://wheels.vllm.ai/rocm`
@@ -1967,9 +1986,11 @@ uv pip install -U vllm --torch-backend auto`;
   // override at `model.install.docker.command` still wins for recipes that
   // need a custom build step. The CUDA-version selector (below, next to Copy)
   // drives the tag suffix for NVIDIA; AMD / TPU pull a single image.
-  const defaultDockerCmd = `docker pull ${dockerImage}`;
+  const defaultDockerCmd = isVllm ? `docker pull ${dockerImage}` : `docker pull lmsysorg/sglang:latest`;
   const dockerCmd = dockerCfg?.command || defaultDockerCmd;
-  const defaultDockerNote = isTpu
+  const defaultDockerNote = !isVllm
+    ? "Official SGLang image. The `python3 -m sglang.launch_server …` command is shown below."
+    : isTpu
     ? "TPU builds are published by vllm-project/tpu-inference. See the Trillium and Ironwood tpu-recipes for pinned image tags and exact deployment flags."
     : isAmd
       ? undefined
@@ -1986,6 +2007,7 @@ uv pip install -U vllm --torch-backend auto`;
   // Stable pip uses `--torch-backend auto`, which detects the host CUDA, so
   // a toggle would be inert there.
   const showCudaSelector =
+    isVllm &&
     brandKey === "nvidia" &&
     !dockerCfg?.command &&
     (installMode === "docker" ||
@@ -1996,11 +2018,13 @@ uv pip install -U vllm --torch-backend auto`;
   // pip/docker — hide both tabs so the whole Install block drops out; the
   // `brand:`-filtered dependency above the command carries the real install.
   const effectivePipHidden = pipHidden || isTpu || vendorOnly;
-  const dockerLabel = isTpu ? "Docker (TPU)" : isAmd ? "Docker (ROCm)" : isAscend ? "Docker (Ascend)" : "Docker";
+  const dockerLabel = !isVllm
+    ? "Docker"
+    : isTpu ? "Docker (TPU)" : isAmd ? "Docker (ROCm)" : isAscend ? "Docker (Ascend)" : "Docker";
   const tabs = [
     !effectivePipHidden && {
       id: "pip",
-      label: isAmd ? "pip / uv (ROCm)" : isAscend ? "pip (vllm-ascend)" : "pip / uv",
+      label: !isVllm ? "pip" : isAmd ? "pip / uv (ROCm)" : isAscend ? "pip (vllm-ascend)" : "pip / uv",
       code: pipCmd,
       note: pipNote,
     },
@@ -2024,7 +2048,7 @@ uv pip install -U vllm --torch-backend auto`;
         <Package size={12} className="text-[var(--command-fg)]/50 shrink-0" />
         <span className="text-[11px] font-semibold text-[var(--command-fg)]/70 uppercase tracking-widest">Install</span>
         <span className="text-[11px] text-[var(--command-fg)]/40 font-mono">
-          vLLM {minV}+{isOmni ? " · vLLM-Omni nightly" : ""} · {isTpu ? "TPU" : isAmd ? "ROCm" : isAscend ? "Ascend" : "CUDA"}
+          {isVllm ? "vLLM" : "SGLang"} {minV}+{isVllm && isOmni ? " · vLLM-Omni nightly" : ""} · {isTpu ? "TPU" : isAmd ? "ROCm" : isAscend ? "Ascend" : "CUDA"}
         </span>
         {nightlyRequired && (
           <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-400 border border-amber-500/30 uppercase tracking-wider">

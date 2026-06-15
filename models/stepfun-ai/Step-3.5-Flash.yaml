@@ -182,7 +182,7 @@ guide: |
 
   ## Troubleshooting
 
-  - **MoE kernel tuning:** See [tune-moe-kernel](https://github.com/vllm-project/recipes/blob/main/Qwen/Qwen3-Next.md#tune-moe-kernel)
+  - **MoE kernel tuning:** See [tune-moe-kernel](https://github.com/weetime/recipes/blob/main/Qwen/Qwen3-Next.md#tune-moe-kernel)
     to tune Triton kernels for your hardware.
   - **FP8 DeepGEMM:** For FP8, install DeepGEMM via [install_deepgemm.sh](https://github.com/vllm-project/vllm/blob/v0.16.0rc0/tools/install_deepgemm.sh).
   - **B200 FlashInfer FP8 MoE error:** If you see

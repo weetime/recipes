@@ -243,7 +243,7 @@ guide: |
 
   ## Troubleshooting
 
-  - **MoE kernel tuning:** See [tune-moe-kernel](https://github.com/vllm-project/recipes/blob/main/Qwen/Qwen3-Next.md#tune-moe-kernel) to tune Triton kernels for your hardware.
+  - **MoE kernel tuning:** See [tune-moe-kernel](https://github.com/weetime/recipes/blob/main/Qwen/Qwen3-Next.md#tune-moe-kernel) to tune Triton kernels for your hardware.
   - **NVFP4 + TP > 4:** The author recommends TP4+EP for NVFP4. Higher TP isn't validated.
   - **Cascade attention:** Always pass `--disable-cascade-attn` — the hybrid SWA/GA schedule is not compatible with cascade attention in vLLM.
 

@@ -16,9 +16,9 @@ meta:
   platforms:
     - id: modal
       blurb: "Serverless deploy via the Gemma 4 Modal script bundled with this recipe."
-      script: https://github.com/vllm-project/recipes/blob/main/Google/gemma4-modal.py
+      script: https://github.com/weetime/recipes/blob/main/Google/gemma4-modal.py
       install: |
-        curl -O https://raw.githubusercontent.com/vllm-project/recipes/main/Google/gemma4-modal.py
+        curl -O https://raw.githubusercontent.com/weetime/recipes/main/Google/gemma4-modal.py
         pip install modal
         modal setup
         modal deploy gemma4-modal.py

@@ -222,13 +222,13 @@ export default async function RecipePage({ params }) {
       <footer className="mt-10 pt-4 border-t border-border text-sm text-muted-foreground flex flex-wrap gap-x-4 gap-y-2">
         <span>Updated {recipe.meta.date_updated}</span>
         <a
-          href={`https://github.com/vllm-project/recipes/edit/main/models/${recipe.hf_org}/${recipe.hf_repo}.yaml`}
+          href={`https://github.com/weetime/recipes/edit/main/models/${recipe.hf_org}/${recipe.hf_repo}.yaml`}
           className="inline-flex items-center gap-1 hover:text-foreground transition-colors"
         >
           <Pencil size={12} /> Edit recipe
         </a>
         <a
-          href="https://github.com/vllm-project/recipes/issues"
+          href="https://github.com/weetime/recipes/issues"
           className="inline-flex items-center gap-1 hover:text-foreground transition-colors"
         >
           <Bug size={12} /> Report issue

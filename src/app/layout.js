@@ -114,7 +114,7 @@ export default async function RootLayout({ children }) {
             <nav className="flex items-center gap-4 text-sm text-muted-foreground shrink-0">
               <Link href="/browse" className="hover:text-foreground transition-colors hidden sm:inline">Browse</Link>
               <a href="https://docs.vllm.ai" className="hover:text-foreground transition-colors hidden sm:inline">Docs</a>
-              <a href="https://github.com/vllm-project/recipes" className="hover:text-foreground transition-colors hidden sm:inline">GitHub</a>
+              <a href="https://github.com/weetime/recipes" className="hover:text-foreground transition-colors hidden sm:inline">GitHub</a>
               <ThemeToggle />
             </nav>
           </div>
@@ -128,8 +128,8 @@ export default async function RootLayout({ children }) {
         {/* Global footer */}
         <footer className="border-t border-border mt-auto">
           <div className="max-w-[1480px] mx-auto px-4 sm:px-6 py-5 text-xs text-muted-foreground flex flex-wrap gap-x-5 gap-y-2">
-            <a href="https://github.com/vllm-project/recipes" className="hover:text-foreground transition-colors">GitHub</a>
-            <a href="https://github.com/vllm-project/recipes/issues" className="hover:text-foreground transition-colors">Request a recipe</a>
+            <a href="https://github.com/weetime/recipes" className="hover:text-foreground transition-colors">GitHub</a>
+            <a href="https://github.com/weetime/recipes/issues" className="hover:text-foreground transition-colors">Request a recipe</a>
             <a href="https://docs.vllm.ai" className="hover:text-foreground transition-colors">Documentation</a>
             <a href="https://vllm.ai/#compatibility" className="hover:text-foreground transition-colors">Supported Models & Hardware</a>
             <a href="https://vllm.ai/#quick-start" className="hover:text-foreground transition-colors">Install vLLM</a>
