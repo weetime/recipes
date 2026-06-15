@@ -171,7 +171,7 @@ function PopoverButton({ label, code, icon: Icon }) {
 // is a form for editing $VAR / NODE_N substitutions. Lives on each command
 // block header next to cURL/Bench so the user finds it where they realize
 // "this curl is hitting localhost — I need to point it elsewhere."
-function EndpointsPopoverButton({ isPd, isMultiNode, placeholders, endpoints, onChange, onReset }) {
+function EndpointsPopoverButton({ isPd, isMultiNode, engine = "vllm", placeholders, endpoints, onChange, onReset }) {
   const [open, setOpen] = useState(false);
   const [rect, setRect] = useState(null);
   const btnRef = useRef(null);
@@ -195,10 +195,14 @@ function EndpointsPopoverButton({ isPd, isMultiNode, placeholders, endpoints, on
     };
   }, [open]);
 
-  const clientHostKey = isPd ? "ROUTER_HOST" : (isMultiNode ? "HEAD_IP" : "VLLM_HOST");
-  const clientPortKey = isPd ? "ROUTER_PORT" : "VLLM_PORT";
+  // Host/port placeholder keys + hints mirror the engine's served port (vLLM
+  // 8000, SGLang 30000). Must match the keys the curl/bench target reads in
+  // CommandBuilder, or a user-entered override wouldn't be picked up.
+  const isVllm = engine === "vllm";
+  const clientHostKey = isPd ? "ROUTER_HOST" : (isMultiNode ? "HEAD_IP" : isVllm ? "VLLM_HOST" : "SGLANG_HOST");
+  const clientPortKey = isPd ? "ROUTER_PORT" : isVllm ? "VLLM_PORT" : "SGLANG_PORT";
   const clientHostHint = "localhost";
-  const clientPortHint = isPd ? "30000" : "8000";
+  const clientPortHint = isPd ? "30000" : isVllm ? "8000" : "30000";
 
   const extras = placeholders.filter(
     (p) => !(p.kind === "var" && (p.name === clientHostKey || p.name === clientPortKey)),
@@ -934,8 +938,8 @@ export function CommandBuilder({ recipe, strategies, taxonomy }) {
   // node (head node for multi-node TP). Defaults to localhost so the
   // single-node demo case still works copy-paste; user can fill the
   // Cluster endpoints panel to point at a real cluster.
-  const clientHostKey = isPd ? "ROUTER_HOST" : (isMultiNode ? "HEAD_IP" : "VLLM_HOST");
-  const clientPortKey = isPd ? "ROUTER_PORT" : "VLLM_PORT";
+  const clientHostKey = isPd ? "ROUTER_HOST" : (isMultiNode ? "HEAD_IP" : engine === "vllm" ? "VLLM_HOST" : "SGLANG_HOST");
+  const clientPortKey = isPd ? "ROUTER_PORT" : engine === "vllm" ? "VLLM_PORT" : "SGLANG_PORT";
   const clientHost = endpoints[clientHostKey] || "localhost";
   const clientPortStr = endpoints[clientPortKey] || String(clientPort);
 
@@ -998,17 +1002,21 @@ export function CommandBuilder({ recipe, strategies, taxonomy }) {
   // not generally localhost and a wrong default would mislead the reader.
   const effectiveEndpoints = useMemo(() => {
     const defaults = {};
+    const isVllm = engine === "vllm";
+    const hostKey = isVllm ? "VLLM_HOST" : "SGLANG_HOST";
+    const portKey = isVllm ? "VLLM_PORT" : "SGLANG_PORT";
+    const defaultPort = isVllm ? "8000" : "30000";
     if (result.deployType === "pd_cluster") {
       defaults.ROUTER_HOST = "localhost";
       defaults.ROUTER_PORT = "30000";
     } else if (result.deployType === "multi_node") {
-      defaults.VLLM_PORT = "8000";
+      defaults[portKey] = defaultPort;
     } else {
-      defaults.VLLM_HOST = "localhost";
-      defaults.VLLM_PORT = "8000";
+      defaults[hostKey] = "localhost";
+      defaults[portKey] = defaultPort;
     }
     return { ...defaults, ...endpoints };
-  }, [result.deployType, endpoints]);
+  }, [result.deployType, engine, endpoints]);
 
   const displayedResult = useMemo(() => {
     const sub = (s) => substitute(s, effectiveEndpoints);
@@ -1414,6 +1422,7 @@ export function CommandBuilder({ recipe, strategies, taxonomy }) {
             <EndpointsPopoverButton
               isPd={isPd}
               isMultiNode={isMultiNode}
+              engine={engine}
               placeholders={placeholdersInUse}
               endpoints={endpoints}
               onChange={updateEndpoint}
