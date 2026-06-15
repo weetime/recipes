@@ -1119,9 +1119,20 @@ export function CommandBuilder({ recipe, strategies, taxonomy }) {
   // hardware; docker: recipe opt-out). This way switching to TPU flips both
   // the Install tab *and* the rendered command block to docker — they stay
   // in sync without requiring the user to re-click.
+  // These constraints are engine-aware: `model.install` and the TPU wheel gap
+  // are vLLM-only knobs. For any other engine (SGLang) pip is always available,
+  // and docker is force-hidden because the command-card docker wrapping
+  // (buildDockerRun) only understands `vllm serve …` — wrapping an SGLang
+  // launch command would emit a broken `docker run`. Forcing pip here also
+  // keeps effectiveInstallMode in sync with InstallBlock's tab set, so a click
+  // never snaps back.
+  const installEngineIsVllm = engine === "vllm";
   const pipEffectivelyHidden =
-    recipe.model?.install?.pip === false || hwProfile?.generation === "tpu";
-  const dockerEffectivelyHidden = recipe.model?.install?.docker === false;
+    installEngineIsVllm &&
+    (recipe.model?.install?.pip === false || hwProfile?.generation === "tpu");
+  const dockerEffectivelyHidden = installEngineIsVllm
+    ? recipe.model?.install?.docker === false
+    : true;
   const effectiveInstallMode =
     installMode === "pip" && pipEffectivelyHidden
       ? "docker"
@@ -1986,11 +1997,11 @@ uv pip install -U vllm --torch-backend auto`;
   // override at `model.install.docker.command` still wins for recipes that
   // need a custom build step. The CUDA-version selector (below, next to Copy)
   // drives the tag suffix for NVIDIA; AMD / TPU pull a single image.
-  const defaultDockerCmd = isVllm ? `docker pull ${dockerImage}` : `docker pull lmsysorg/sglang:latest`;
+  // Docker tab is vLLM-only (see InstallBlock tabs + dockerEffectivelyHidden);
+  // these defaults only render under vLLM.
+  const defaultDockerCmd = `docker pull ${dockerImage}`;
   const dockerCmd = dockerCfg?.command || defaultDockerCmd;
-  const defaultDockerNote = !isVllm
-    ? "Official SGLang image. The `python3 -m sglang.launch_server …` command is shown below."
-    : isTpu
+  const defaultDockerNote = isTpu
     ? "TPU builds are published by vllm-project/tpu-inference. See the Trillium and Ironwood tpu-recipes for pinned image tags and exact deployment flags."
     : isAmd
       ? undefined
@@ -2018,9 +2029,7 @@ uv pip install -U vllm --torch-backend auto`;
   // pip/docker — hide both tabs so the whole Install block drops out; the
   // `brand:`-filtered dependency above the command carries the real install.
   const effectivePipHidden = pipHidden || isTpu || vendorOnly;
-  const dockerLabel = !isVllm
-    ? "Docker"
-    : isTpu ? "Docker (TPU)" : isAmd ? "Docker (ROCm)" : isAscend ? "Docker (Ascend)" : "Docker";
+  const dockerLabel = isTpu ? "Docker (TPU)" : isAmd ? "Docker (ROCm)" : isAscend ? "Docker (Ascend)" : "Docker";
   const tabs = [
     !effectivePipHidden && {
       id: "pip",
@@ -2028,7 +2037,7 @@ uv pip install -U vllm --torch-backend auto`;
       code: pipCmd,
       note: pipNote,
     },
-    !dockerHidden && !vendorOnly && {
+    isVllm && !dockerHidden && !vendorOnly && {
       id: "docker",
       label: dockerLabel,
       code: dockerCmd,
