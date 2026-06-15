@@ -24,7 +24,7 @@ export default function NotFound() {
   const issueBody = hfId
     ? `### Model\n\nhttps://huggingface.co/${hfId}\n\n### Hardware I'm targeting\n\n<!-- e.g. 8x H200, 4x MI355X, 2-node TP+PP -->\n\n### Precision / variant\n\n<!-- bf16, fp8, nvfp4, ... -->\n\n### Notes\n\n<!-- anything else you want the recipe to cover -->`
     : "### Model\n\n<HuggingFace URL>\n\n### Hardware\n\n### Precision / variant\n\n### Notes";
-  const issueUrl = `https://github.com/vllm-project/recipes/issues/new?title=${encodeURIComponent(
+  const issueUrl = `https://github.com/weetime/recipes/issues/new?title=${encodeURIComponent(
     issueTitle
   )}&body=${encodeURIComponent(issueBody)}&labels=recipe-request`;
   const hfUrl = hfId ? `https://huggingface.co/${hfId}` : null;
@@ -93,7 +93,7 @@ export default function NotFound() {
             anchors would be invalid HTML. */}
         <div className="group flex flex-col gap-2 rounded-xl border border-border bg-card/40 hover:bg-card hover:border-vllm-blue/40 transition-all p-4">
           <a
-            href="https://github.com/vllm-project/recipes/blob/main/CONTRIBUTING.md"
+            href="https://github.com/weetime/recipes/blob/main/CONTRIBUTING.md"
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center gap-2"
@@ -109,7 +109,7 @@ export default function NotFound() {
             <code className="font-mono text-[11px]">models/&lt;org&gt;/&lt;repo&gt;.yaml</code>
             .{" "}
             <a
-              href="https://github.com/vllm-project/recipes/blob/main/CONTRIBUTING.md"
+              href="https://github.com/weetime/recipes/blob/main/CONTRIBUTING.md"
               target="_blank"
               rel="noopener noreferrer"
               className="underline underline-offset-2 decoration-muted-foreground/30 hover:decoration-foreground hover:text-foreground transition-colors"
@@ -123,7 +123,7 @@ export default function NotFound() {
             <span>
               Using Claude Code? The{" "}
               <a
-                href="https://github.com/vllm-project/recipes/blob/main/.claude/skills/add-recipe/SKILL.md"
+                href="https://github.com/weetime/recipes/blob/main/.claude/skills/add-recipe/SKILL.md"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="font-mono text-[11px] text-vllm-blue underline underline-offset-2 decoration-vllm-blue/40 hover:decoration-vllm-blue"

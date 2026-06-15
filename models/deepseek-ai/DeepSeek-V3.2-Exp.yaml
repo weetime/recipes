@@ -152,4 +152,4 @@ guide: |
   ## References
 
   - [DeepSeek-V3.2-Exp on Hugging Face](https://huggingface.co/deepseek-ai/DeepSeek-V3.2-Exp)
-  - [End-to-end tutorial (Jupyter Notebook)](https://github.com/vllm-project/recipes/blob/main/DeepSeek/DeepSeek_v3_2_vLLM_getting_started_guide.ipynb)
+  - [End-to-end tutorial (Jupyter Notebook)](https://github.com/weetime/recipes/blob/main/DeepSeek/DeepSeek_v3_2_vLLM_getting_started_guide.ipynb)
