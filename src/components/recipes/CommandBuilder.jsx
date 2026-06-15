@@ -915,10 +915,20 @@ export function CommandBuilder({ recipe, strategies, taxonomy }) {
 
   const isPd = result.deployType === "pd_cluster";
   const isMultiNode = result.deployType === "multi_node";
-  const modelId = recipe.variants?.[variant]?.model_id || recipe.model?.model_id || "model";
+  // Served model name for curl/bench. vLLM reads the recipe variant/model;
+  // other engines read their own block (its variant may serve a different
+  // checkpoint than the vLLM recipe).
+  const modelId =
+    engine === "vllm"
+      ? recipe.variants?.[variant]?.model_id || recipe.model?.model_id || "model"
+      : recipe.engines?.[engine]?.variants?.[variant]?.model_id ||
+        recipe.engines?.[engine]?.model_id ||
+        recipe.model?.model_id ||
+        "model";
 
-  // PD clients hit the router (port 30000), everyone else hits `vllm serve` on 8000.
-  const clientPort = isPd ? 30000 : 8000;
+  // Default client port for curl/bench. PD clients hit the router (30000);
+  // otherwise it's the served port — vLLM defaults to 8000, SGLang to 30000.
+  const clientPort = isPd ? 30000 : engine === "vllm" ? 8000 : 30000;
 
   // curl/bench target. PD → router host:port; everyone else → the vllm-serve
   // node (head node for multi-node TP). Defaults to localhost so the
@@ -937,7 +947,23 @@ export function CommandBuilder({ recipe, strategies, taxonomy }) {
     "max_tokens": 32
   }'`;
 
-  const benchCmd = `vllm bench serve \\
+  // Bench client is engine-specific: vLLM ships `vllm bench serve`; SGLang
+  // ships `python3 -m sglang.bench_serving` (bundled with sglang[all]), which
+  // hits its own OpenAI-compatible server on port 30000. Using vLLM's client
+  // for SGLang would need a separate vllm install and the wrong default port.
+  const benchCmd =
+    engine === "vllm"
+      ? `vllm bench serve \\
+  --model ${modelId} \\
+  --host ${clientHost} \\
+  --port ${clientPortStr} \\
+  --dataset-name random \\
+  --random-input-len 1024 \\
+  --random-output-len 1024 \\
+  --num-prompts 100 \\
+  --max-concurrency 32`
+      : `python3 -m sglang.bench_serving \\
+  --backend sglang \\
   --model ${modelId} \\
   --host ${clientHost} \\
   --port ${clientPortStr} \\
