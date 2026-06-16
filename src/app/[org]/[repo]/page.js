@@ -153,16 +153,18 @@ export default async function RecipePage({ params }) {
                 View on HuggingFace
                 <ExternalLink size={10} />
               </a>
-              <a
-                href={`https://modelscope.cn/models/${recipe.hf_id}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-vllm-blue transition-colors"
-              >
-                <ModelScopeIcon className="w-3.5 h-3.5" />
-                View on ModelScope
-                <ExternalLink size={10} />
-              </a>
+              {recipe.modelscope_id && (
+                <a
+                  href={`https://modelscope.cn/models/${recipe.modelscope_id}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-vllm-blue transition-colors"
+                >
+                  <ModelScopeIcon className="w-3.5 h-3.5" />
+                  View on ModelScope
+                  <ExternalLink size={10} />
+                </a>
+              )}
             </div>
           </div>
         </div>
