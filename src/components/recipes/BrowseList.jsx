@@ -108,6 +108,37 @@ const HW_BRANDS = [
       { id: "xeon5", label: "Xeon 5" },
     ],
   },
+  // Domestic (China) accelerators. No brand logo yet — the row renders the
+  // brand name as text (see the conditional <img> in the Hardware filter).
+  // Profiles + per-recipe support live in taxonomy.yaml / meta.hardware.
+  {
+    name: "Huawei",
+    items: [
+      { id: "ascend_910b", label: "Ascend 910B" },
+      { id: "ascend_910b4", label: "Ascend 910B4" },
+      { id: "ascend_910c", label: "Ascend 910C" },
+    ],
+  },
+  {
+    name: "Cambricon",
+    items: [{ id: "cambricon_mlu590", label: "MLU590" }],
+  },
+  {
+    name: "Hygon",
+    items: [{ id: "hygon_k100ai", label: "K100AI" }],
+  },
+  {
+    name: "Iluvatar",
+    items: [{ id: "iluvatar_biv150", label: "BI-V150" }],
+  },
+  {
+    name: "Kunlunxin",
+    items: [{ id: "kunlun_p800", label: "P800" }],
+  },
+  {
+    name: "T-Head",
+    items: [{ id: "thead_ppu_810e", label: "PPU 810E" }],
+  },
 ];
 
 const HARDWARE_BY_ID = Object.fromEntries(
@@ -458,8 +489,10 @@ export function BrowseList({ recipes }) {
             {HW_BRANDS.map((brand) => (
               <div key={brand.name} className="flex flex-wrap items-center gap-3">
                 <span className="inline-flex items-center gap-2 w-28 shrink-0">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={brand.logo} alt="" width={20} height={20} className="rounded shrink-0" aria-hidden />
+                  {brand.logo && (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={brand.logo} alt="" width={20} height={20} className="rounded shrink-0" aria-hidden />
+                  )}
                   <span className="text-[12px] font-semibold uppercase tracking-wider text-foreground/80">
                     {brand.name}
                   </span>
