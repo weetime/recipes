@@ -7,6 +7,7 @@ let cache = null;
 
 const MODELS_DIR = path.join(process.cwd(), "models");
 const HF_DATES_PATH = path.join(process.cwd(), "public", "hf-dates.json");
+const MODELSCOPE_IDS_PATH = path.join(process.cwd(), "modelscope-ids.json");
 
 // HF release dates per hf_id (populated at build by scripts/fetch-hf-dates.mjs)
 let hfDates = null;
@@ -18,6 +19,19 @@ function loadHfDates() {
     hfDates = {};
   }
   return hfDates;
+}
+
+// Resolved ModelScope id per hf_id (populated by scripts/fetch-modelscope-ids.mjs).
+// Only models with a verified ModelScope mirror appear here; others get no link.
+let modelscopeIds = null;
+function loadModelscopeIds() {
+  if (modelscopeIds !== null) return modelscopeIds;
+  try {
+    modelscopeIds = JSON.parse(fs.readFileSync(MODELSCOPE_IDS_PATH, "utf8"));
+  } catch {
+    modelscopeIds = {};
+  }
+  return modelscopeIds;
 }
 
 function parseRecipe(filePath) {
@@ -36,6 +50,8 @@ function parseRecipe(filePath) {
     // Attach HF release date (ISO string) from build-time manifest
     const dates = loadHfDates();
     raw.hf_released = dates[raw.hf_id] || null;
+    // Attach resolved ModelScope id (null when no verified mirror exists)
+    raw.modelscope_id = loadModelscopeIds()[raw.hf_id] || null;
   }
   return attachEngines(raw);
 }
