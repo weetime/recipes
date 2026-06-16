@@ -86,23 +86,28 @@ async function searchMatch(repo) {
 
   const candidates = [];
   for (const m of models) {
-    const candPath = m.Path || m.Namespace || m.GroupName;
+    // ModelScope returns the namespace in Path; guard against other shapes
+    // (Namespace/GroupName) and a full "org/repo" Path by taking the org segment.
+    const rawOrg = m.Namespace || m.GroupName || m.Path;
+    const candOrg = rawOrg && rawOrg.includes("/") ? rawOrg.split("/")[0] : rawOrg;
     const candName = m.Name;
-    if (!candPath || !candName) continue;
+    if (!candOrg || !candName) continue;
     const c = norm(candName);
     // exact, or candidate name is HF repo with an org-ish prefix (Meta-Llama vs Llama).
     // endsWith excludes suffix variants (GGUF/AWQ/INT4) since those don't end with repo.
     const exact = c === target;
-    if ((exact || c.endsWith(target)) && !REUPLOADER.test(candPath)) {
-      candidates.push({ id: `${candPath}/${candName}`, exact });
+    if ((exact || c.endsWith(target)) && !REUPLOADER.test(candOrg)) {
+      candidates.push({ id: `${candOrg}/${candName}`, exact });
     }
   }
   // Prefer exact name match, preserving search order otherwise.
   candidates.sort((a, b) => b.exact - a.exact);
 
-  for (const cand of candidates) {
+  // Verify reachability before accepting. Candidates are exact-first, so the real
+  // mirror is in the top few — cap the checks to avoid hammering the API.
+  for (const cand of candidates.slice(0, 3)) {
     const [o, n] = cand.id.split("/");
-    if (await existsExact(o, n)) return cand.id; // verify reachable before accepting
+    if (await existsExact(o, n)) return cand.id;
   }
   return null;
 }
