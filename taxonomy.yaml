@@ -224,7 +224,7 @@ hardware_profiles:
     multi_node: false
     restricted: true
   thead_ppu_810e:
-    brand: T-Head
+    brand: Alibaba
     generation: ppu
     display_name: "PPU 810E"
     description: "Alibaba T-Head 真武 PPU 810E 96 GB · 8-card node · via GPUStack; bf16/fp8 (~H20 class)"

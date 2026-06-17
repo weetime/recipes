@@ -69,10 +69,13 @@ const PRECISION_OPTIONS = ["bf16", "fp8", "fp4", "nvfp4", "mxfp4", "int4", "int8
 // Hardware filter so the visual separation is unambiguous. Single source
 // of truth: HARDWARE_BY_ID is derived from this for lookups elsewhere
 // (active-filter pills, result rows).
+// Brand logos live in the committed public/hardware-logos/ (Simple Icons SVGs).
+// Niche domestic brands without an available logo omit `logo` and fall back to a
+// monogram (see the Hardware filter row).
 const HW_BRANDS = [
   {
     name: "NVIDIA",
-    logo: "/providers/nvidia.png",
+    logo: "/hardware-logos/nvidia.svg",
     items: [
       { id: "h100", label: "H100" },
       { id: "h200", label: "H200" },
@@ -85,7 +88,7 @@ const HW_BRANDS = [
   },
   {
     name: "AMD",
-    logo: "/providers/amd.png",
+    logo: "/hardware-logos/amd.svg",
     items: [
       { id: "mi300x", label: "MI300X" },
       { id: "mi325x", label: "MI325X" },
@@ -94,7 +97,7 @@ const HW_BRANDS = [
   },
   {
     name: "Google",
-    logo: "/providers/Google.png",
+    logo: "/hardware-logos/google.svg",
     items: [
       { id: "trillium", label: "TPU v6e" },
       { id: "ironwood", label: "TPU v7" },
@@ -102,17 +105,18 @@ const HW_BRANDS = [
   },
   {
     name: "Intel",
-    logo: "/providers/intel.png",
+    logo: "/hardware-logos/intel.svg",
     items: [
       { id: "xeon6", label: "Xeon 6" },
       { id: "xeon5", label: "Xeon 5" },
     ],
   },
-  // Domestic (China) accelerators. No brand logo yet — the row renders the
-  // brand name as text (see the conditional <img> in the Hardware filter).
-  // Profiles + per-recipe support live in taxonomy.yaml / meta.hardware.
+  // Domestic (China) accelerators. Profiles + per-recipe support live in
+  // taxonomy.yaml / meta.hardware. Brands without a Simple Icons logo render a
+  // monogram fallback.
   {
     name: "Huawei",
+    logo: "/hardware-logos/huawei.svg",
     items: [
       { id: "ascend_910b", label: "Ascend 910B" },
       { id: "ascend_910b4", label: "Ascend 910B4" },
@@ -136,7 +140,9 @@ const HW_BRANDS = [
     items: [{ id: "kunlun_p800", label: "P800" }],
   },
   {
-    name: "T-Head",
+    // T-Head is Alibaba's chip arm; surfaced under the Alibaba brand.
+    name: "Alibaba",
+    logo: "/hardware-logos/alibaba.svg",
     items: [{ id: "thead_ppu_810e", label: "PPU 810E" }],
   },
 ];
@@ -489,9 +495,16 @@ export function BrowseList({ recipes }) {
             {HW_BRANDS.map((brand) => (
               <div key={brand.name} className="flex flex-wrap items-center gap-3">
                 <span className="inline-flex items-center gap-2 w-28 shrink-0">
-                  {brand.logo && (
+                  {brand.logo ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={brand.logo} alt="" width={20} height={20} className="rounded shrink-0" aria-hidden />
+                  ) : (
+                    <span
+                      className="inline-flex items-center justify-center w-5 h-5 rounded bg-muted text-[10px] font-bold text-muted-foreground shrink-0"
+                      aria-hidden
+                    >
+                      {brand.name.charAt(0)}
+                    </span>
                   )}
                   <span className="text-[12px] font-semibold uppercase tracking-wider text-foreground/80">
                     {brand.name}
