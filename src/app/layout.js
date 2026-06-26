@@ -112,6 +112,7 @@ export default async function RootLayout({ children }) {
             </div>
 
             <nav className="flex items-center gap-4 text-sm text-muted-foreground shrink-0">
+              <Link href="/image-selector" className="hover:text-foreground transition-colors hidden sm:inline">Image Selector</Link>
               <Link href="/browse" className="hover:text-foreground transition-colors hidden sm:inline">Browse</Link>
               <a href="https://docs.vllm.ai" className="hover:text-foreground transition-colors hidden sm:inline">Docs</a>
               <a href="https://github.com/weetime/recipes" className="hover:text-foreground transition-colors hidden sm:inline">GitHub</a>
