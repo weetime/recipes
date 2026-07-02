@@ -2,6 +2,10 @@
 # doesn't carry DeepSeek-V4-Flash yet. See engines/sglang-manual/README.md.
 # Issue #13: --tool-call-parser deepseekv4 --reasoning-parser deepseek-v4; nightly,
 # Blackwell PRs. min v0.5.10.
+# PPU-ZW810E (thead_ppu_810e): tested on SGLang 0.5.12 with the INT8 (w8a8_int8)
+# checkpoint at --tp 8. The full INT8/NSA-CP/DeepEP/EAGLE launch command + env vars
+# don't fit the block renderer (no env, no per-hardware extra_args) — they live
+# verbatim in the SGLang guide's "PPU-ZW810E (T-Head 真武, INT8)" section.
 engine: sglang
 model_id: deepseek-ai/DeepSeek-V4-Flash
 min_version: v0.5.10
@@ -11,6 +15,53 @@ base_args:
 tp_by_hardware:
   h200: 4
   b200: 4
+  thead_ppu_810e: 8
+# PPU-ZW810E real tested config (SGLang 0.5.12, INT8 w8a8_int8). These args + env
+# apply ONLY when the PPU hardware pill is selected — h200/b200 (FP4+FP8, tp 4)
+# are untouched. Verbatim source: 2026-07 DeepSeek-V4-Flash PPU SGLang sweep.
+hardware_overrides:
+  thead_ppu_810e:
+    extra_args:
+      - '--enable-metrics'
+      - '--context-length'
+      - '8192'
+      - '--quantization'
+      - 'w8a8_int8'
+      - '--attention-context-parallel-size'
+      - '8'
+      - '--enable-nsa-prefill-context-parallel'
+      - '--moe-a2a-backend'
+      - 'deepep'
+      - '--disable-shared-experts-fusion'
+      - '--max-running-requests'
+      - '32'
+      - '--cuda-graph-bs'
+      - '32'
+      - '--mem-fraction-static'
+      - '0.75'
+      - '--chunked-prefill-size'
+      - '8192'
+      - '--kv-cache-dtype'
+      - 'bfloat16'
+      - '--disable-piecewise-cuda-graph'
+      - '--speculative-algo'
+      - 'EAGLE'
+      - '--speculative-num-steps'
+      - '2'
+      - '--speculative-eagle-topk'
+      - '1'
+      - '--speculative-num-draft-tokens'
+      - '2'
+    extra_env:
+      GPU_COUNT: '8'
+      NODE_COUNT: '1'
+      PORT: '8000'
+      SGLANG_OPT_USE_MULTI_STREAM_OVERLAP: '1'
+      SGLANG_DEEPEP_NUM_MAX_DISPATCH_TOKENS_PER_RANK: '512'
+      SGLANG_OPT_USE_COMPRESSOR_V2: '0'
+      SGLANG_OPT_FUSE_WQA_WKV: '0'
+      SGLANG_DSV4_FP4_EXPERTS: '0'
+      SGLANG_OPT_USE_FUSED_STORE_CACHE: '0'
 variants:
   default:
     precision: fp8

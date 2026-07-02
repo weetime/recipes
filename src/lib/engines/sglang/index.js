@@ -41,15 +41,17 @@ function formatArgv(serveBinary, modelId, args) {
 }
 
 // Build the trailing args (everything after `--model-path <id>`): base args,
-// the TP flag, the strategy's templated extras, then enabled feature args, then
-// any advanced args. `rank` fills {RANK} for the head (0) / worker (1) command.
-function buildArgs(block, tp, strategyExtra, rank, featureArgs, advancedArgs) {
+// the TP flag, any per-hardware extra args, the strategy's templated extras,
+// then enabled feature args, then any advanced args. `rank` fills {RANK} for the
+// head (0) / worker (1) command.
+function buildArgs(block, tp, hwExtra, strategyExtra, rank, featureArgs, advancedArgs) {
   const filledExtra = (strategyExtra || []).map((tok) =>
     tok === "{NNODES}" ? String(rank.nnodes) : tok === "{RANK}" ? String(rank.rank) : tok
   );
   return [
     ...(block.base_args || []),
     "--tp", String(tp),
+    ...(hwExtra || []),
     ...filledExtra,
     ...featureArgs,
     ...(advancedArgs || []),
@@ -85,14 +87,21 @@ function synthesize(recipe, variantKey, strategyName, hwId, enabledFeatures, _st
 
   const { tp, nodes } = deriveSglangNodes(block, hwId, taxonomy);
 
+  // Per-hardware overrides: extra CLI args and env for one hardware profile only
+  // (e.g. the INT8/NSA-CP/DeepEP/EAGLE config verified on PPU-ZW810E). Keyed by
+  // hwId so other hardware is unaffected. env merges base_env then the override.
+  const hwOverride = block.hardware_overrides?.[hwId] || {};
+  const hwExtra = hwOverride.extra_args || [];
+  const env = { ...(block.base_env || {}), ...(hwOverride.extra_env || {}) };
+
   if (nodes > 1) {
     // Derived multi-node (nodes from deriveSglangNodes, not strategyName). A block
     // may pin its own dist flags via strategies.multi_node_tp.extra (the explicit
     // upstream path); otherwise the adapter default applies, regardless of which
     // strategy name was passed. tp is the upstream value — never × nodes.
     const extra = block.strategies?.multi_node_tp?.extra ?? MULTI_NODE_EXTRA;
-    const headArgs = buildArgs(block, tp, extra, { nnodes: nodes, rank: 0 }, featureArgs, advancedArgs);
-    const workerArgs = buildArgs(block, tp, extra, { nnodes: nodes, rank: 1 }, featureArgs, advancedArgs);
+    const headArgs = buildArgs(block, tp, hwExtra, extra, { nnodes: nodes, rank: 0 }, featureArgs, advancedArgs);
+    const workerArgs = buildArgs(block, tp, hwExtra, extra, { nnodes: nodes, rank: 1 }, featureArgs, advancedArgs);
     return {
       deployType: "multi_node",
       nodeCount: nodes,
@@ -101,18 +110,18 @@ function synthesize(recipe, variantKey, strategyName, hwId, enabledFeatures, _st
       workerCommand: formatCommand(serveBinary, modelId, workerArgs),
       headArgv: formatArgv(serveBinary, modelId, headArgs),
       workerArgv: formatArgv(serveBinary, modelId, workerArgs),
-      env: {},
+      env,
     };
   }
 
   const strat = block.strategies?.[strategyName] || block.strategies?.single_node_tp || {};
-  const args = buildArgs(block, tp, strat.extra, { nnodes: 1, rank: 0 }, featureArgs, advancedArgs);
+  const args = buildArgs(block, tp, hwExtra, strat.extra, { nnodes: 1, rank: 0 }, featureArgs, advancedArgs);
   return {
     deployType: "single_node",
     tp,
     command: formatCommand(serveBinary, modelId, args),
     argv: formatArgv(serveBinary, modelId, args),
-    env: {},
+    env,
   };
 }
 
