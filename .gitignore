@@ -6,6 +6,13 @@ site/
 out/
 node_modules/
 
+# macOS junk
+.DS_Store
+**/.DS_Store
+
+# Editor settings (personal)
+.vscode/
+
 # Generated at pnpm build time (JSON API + provider logos)
 public/models.json
 public/strategies.json
