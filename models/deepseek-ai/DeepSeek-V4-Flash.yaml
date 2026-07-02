@@ -22,6 +22,13 @@ meta:
     ascend_910b: verified
     ascend_910c: verified
     cambricon_mlu590: verified
+  # Per-engine hardware verification (restricted hardware only). vLLM uses
+  # `hardware` above; other engines gate on this. PPU-ZW810E was verified with
+  # SGLang 0.5.12 on the INT8 (w8a8_int8) checkpoint at --tp 8 — see the SGLang
+  # guide's "PPU-ZW810E (T-Head 真武, INT8)" section.
+  engine_hardware:
+    sglang:
+      thead_ppu_810e: verified
 
 model:
   model_id: "deepseek-ai/DeepSeek-V4-Flash"
