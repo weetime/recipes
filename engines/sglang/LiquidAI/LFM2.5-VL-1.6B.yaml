@@ -15,3 +15,6 @@ variants:
 strategies:
   single_node_tp: {}
 features: {}
+base_env:
+  SGLANG_USE_CUDA_IPC_TRANSPORT: '1'
+  SGLANG_USE_IPC_POOL_HANDLE_CACHE: '1'

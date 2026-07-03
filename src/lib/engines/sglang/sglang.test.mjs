@@ -103,11 +103,11 @@ test("single_node_tp uses tp_by_hardware[hwId] when present and returns tp", () 
   assert.ok(r.command.includes("--tp 4"), r.command);
 });
 
-test("falls back to gpu_count when hwId is absent from tp_by_hardware", () => {
+test("falls back to --tp 1 when hwId is absent from tp_by_hardware", () => {
   const tax = { hardware_profiles: { ...TAXONOMY.hardware_profiles, h100: { gpu_count: 8, vram_gb: 640, brand: "NVIDIA", generation: "hopper" } } };
   const r = resolveCommandForEngine("sglang", RECIPE, "default", "single_node_tp", "h100", [], STRATEGIES, tax, [], 1, null);
-  assert.equal(r.tp, 8);
-  assert.ok(r.command.includes("--tp 8"), r.command);
+  assert.equal(r.tp, 1);
+  assert.ok(r.command.includes("--tp 1"), r.command);
 });
 
 const TAX_MULTI = {
@@ -132,9 +132,9 @@ test("deriveSglangNodes: tp < gpu_count → single node", () => {
   assert.deepEqual(deriveSglangNodes(block, "h100", TAX_MULTI), { tp: 4, nodes: 1, gpuCount: 8 });
 });
 
-test("deriveSglangNodes: missing tp falls back to gpu_count (single node)", () => {
+test("deriveSglangNodes: missing tp falls back to --tp 1 (SGLang default, single node)", () => {
   const block = { tp_by_hardware: {} };
-  assert.deepEqual(deriveSglangNodes(block, "h200", TAX_MULTI), { tp: 8, nodes: 1, gpuCount: 8 });
+  assert.deepEqual(deriveSglangNodes(block, "h200", TAX_MULTI), { tp: 1, nodes: 1, gpuCount: 8 });
 });
 
 test("deriveSglangNodes: non-divisible tp rounds nodes up, keeps upstream tp", () => {
@@ -142,7 +142,7 @@ test("deriveSglangNodes: non-divisible tp rounds nodes up, keeps upstream tp", (
   assert.deepEqual(deriveSglangNodes(block, "h100", TAX_MULTI), { tp: 12, nodes: 2, gpuCount: 8 });
 });
 
-test("deriveSglangNodes: null/undefined block falls back to gpu_count (single node)", () => {
-  assert.deepEqual(deriveSglangNodes(null, "h100", TAX_MULTI), { tp: 8, nodes: 1, gpuCount: 8 });
-  assert.deepEqual(deriveSglangNodes(undefined, "h200", TAX_MULTI), { tp: 8, nodes: 1, gpuCount: 8 });
+test("deriveSglangNodes: null/undefined block falls back to --tp 1 (single node)", () => {
+  assert.deepEqual(deriveSglangNodes(null, "h100", TAX_MULTI), { tp: 1, nodes: 1, gpuCount: 8 });
+  assert.deepEqual(deriveSglangNodes(undefined, "h200", TAX_MULTI), { tp: 1, nodes: 1, gpuCount: 8 });
 });

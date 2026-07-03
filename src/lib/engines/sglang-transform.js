@@ -75,6 +75,22 @@ function commonBaseArgs(cells) {
   return common.length ? common : ["--trust-remote-code"];
 }
 
+// Env vars common to ALL of a variant's cells → base_env (the object form the
+// SGLang adapter merges). cell.env is an array of "KEY=VAL" strings.
+function commonEnv(cells) {
+  const arrays = cells.map((c) => (Array.isArray(c?.env) ? c.env : []));
+  if (!arrays.length || arrays.some((e) => e.length === 0)) return {};
+  const sets = arrays.map((e) => new Set(e));
+  const [first, ...rest] = sets;
+  const common = [...first].filter((kv) => rest.every((s) => s.has(kv)));
+  const env = {};
+  for (const kv of common) {
+    const i = String(kv).indexOf("=");
+    if (i > 0) env[kv.slice(0, i)] = kv.slice(i + 1);
+  }
+  return env;
+}
+
 // One (config, variant) → one block. `modelId` is the resolved served checkpoint
 // (the caller matched it against the recipe set, so it equals the recipe hf_id).
 // `recipePrecision` is authoritative for the checkpoint's precision.
@@ -112,6 +128,9 @@ export function configToBlock(config, variantId, modelId, recipePrecision, taxon
     strategies: { single_node_tp: {} },
     features,
   };
+
+  const base_env = commonEnv(cells);
+  if (Object.keys(base_env).length) block.base_env = base_env;
 
   const precision = recipePrecision || config?.quantizations?.[0]?.id || null;
   if (precision) block.variants.default.precision = precision;

@@ -108,6 +108,24 @@ test("configToBlock never mixes variants: a tagged config's absent variant → e
   assert.deepEqual(pro.tp_by_hardware, {}); // must NOT absorb flash's --tp 4
 });
 
+test("configToBlock captures env common to a variant's cells into base_env", () => {
+  const cfg = {
+    variants: [{ id: "vl" }],
+    supportedHardware: ["h200"],
+    quantizations: [{ id: "bf16" }],
+    cells: [
+      { match: { hw: "h200", variant: "vl", quant: "bf16" }, flags: ["--trust-remote-code", "--tp 1"], env: ["SGLANG_USE_CUDA_IPC_TRANSPORT=1", "FOO=bar"] },
+    ],
+  };
+  const b = configToBlock(cfg, "vl", "org/VL", "bf16", HW);
+  assert.deepEqual(b.base_env, { SGLANG_USE_CUDA_IPC_TRANSPORT: "1", FOO: "bar" });
+});
+
+test("configToBlock omits base_env when cells carry no env", () => {
+  const b = configToBlock(CFG, "default", "poolside/Laguna-M.1", "bf16", HW);
+  assert.equal(b.base_env, undefined);
+});
+
 test("configToBlock keeps parser=auto verbatim", () => {
   const cfg = { ...CFG, playgroundFeatures: { parsers: { items: [
     { flag: "--reasoning-parser auto" }, { flag: "--tool-call-parser auto" },
