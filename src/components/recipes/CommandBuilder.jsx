@@ -4,7 +4,7 @@ import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { Copy, Check, Terminal, Gauge, Sparkles, ChevronDown, Package, Info, Zap, Globe, Wrench, Brain } from "lucide-react";
-import { resolveCommand, recommendStrategy, isPrecisionCompatible, isHardwareSupported, fitsSingleNode, isHardwareScalable, variantRunsOnHardware, pickFittingVariant, pickDefaultHardware, resolveSingleNodeTp, computeDockerMeta, buildDockerRun, resolveOmniCommand } from "@/lib/command-synthesis";
+import { resolveCommand, recommendStrategy, isPrecisionCompatible, isHardwareSupported, isVariantHardwareSupported, fitsSingleNode, isHardwareScalable, variantRunsOnHardware, pickFittingVariant, pickDefaultHardware, resolveSingleNodeTp, computeDockerMeta, buildDockerRun, resolveOmniCommand, pdPoolModes, defaultModeFor, isModeSupported, isModeAllowedForVariant, resolveModeKey } from "@/lib/command-synthesis";
 import { resolveCommandForEngine } from "@/lib/engines/index.js";
 import { engineList, engineSources } from "@/lib/engine-ui";
 import { getEngineMeta } from "@/lib/engine-meta";
@@ -370,7 +370,14 @@ export function CommandBuilder({ recipe, strategies, taxonomy }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [recipe, taxonomy]);
 
-  const [hwId, setHwId] = useState(searchParams.get("hardware") || defaultHw);
+  const requestedHwId = searchParams.get("hardware");
+  const requestedVariant = recipe.variants?.[searchParams.get("variant") || "default"] || recipe.variants?.default || {};
+  const requestedHwProfile = taxonomy.hardware_profiles?.[requestedHwId] || {};
+  const requestedHwAllowed = requestedHwId
+    && isPrecisionCompatible(requestedHwProfile, requestedVariant)
+    && isHardwareSupported(recipe, requestedHwId)
+    && isVariantHardwareSupported(requestedVariant, requestedHwId);
+  const [hwId, setHwId] = useState(requestedHwAllowed ? requestedHwId : defaultHw);
 
   // After mount: restore preferences from localStorage in two scopes.
   // URL params always win (explicit > stored).
@@ -384,6 +391,13 @@ export function CommandBuilder({ recipe, strategies, taxonomy }) {
   useEffect(() => {
     const prefs = loadPreferences();
     let restoredFitsHw = null;
+    // Variant restrictions beat an incompatible hardware query parameter.
+    // Normalize the URL immediately so copied links match the rendered state.
+    if (requestedHwId && requestedHwId !== hwId) {
+      const sp = new URLSearchParams(searchParams.toString());
+      sp.set("hardware", hwId);
+      router.replace(`?${sp.toString()}`, { scroll: false });
+    }
     if (!searchParams.get("hardware") && prefs.hardware) {
       const v = recipe.variants?.[variant] || recipe.variants?.default || {};
       const prefProfile = taxonomy.hardware_profiles?.[prefs.hardware];
@@ -393,7 +407,7 @@ export function CommandBuilder({ recipe, strategies, taxonomy }) {
       // preference and leave every other recipe with no rendered pill selected.
       const declaredHere = prefs.hardware in (recipe.meta?.hardware || {});
       const restrictedElsewhere = prefProfile?.restricted && !declaredHere;
-      if (prefProfile?.brand === "NVIDIA" && !restrictedElsewhere && isPrecisionCompatible(prefProfile, v) && isHardwareSupported(recipe, prefs.hardware)) {
+      if (prefProfile?.brand === "NVIDIA" && !restrictedElsewhere && isPrecisionCompatible(prefProfile, v) && isHardwareSupported(recipe, prefs.hardware) && isVariantHardwareSupported(v, prefs.hardware)) {
         setHwId(prefs.hardware);
         restoredFitsHw = prefProfile;
       }
@@ -413,7 +427,7 @@ export function CommandBuilder({ recipe, strategies, taxonomy }) {
     }
     // Resolve the hardware this mount actually settles on (URL > restored pref
     // > default) so the non-scalable fixups below see the right profile.
-    const resolvedHwId = restoredFitsHw ? prefs.hardware : (searchParams.get("hardware") || defaultHw);
+    const resolvedHwId = restoredFitsHw ? prefs.hardware : hwId;
     const resolvedHw = taxonomy.hardware_profiles?.[resolvedHwId];
     const resolvedScalable = isHardwareScalable(resolvedHw);
     // Non-scalable hardware can't shard an oversized variant. If we land on one
@@ -423,7 +437,7 @@ export function CommandBuilder({ recipe, strategies, taxonomy }) {
     if (!searchParams.get("variant") && resolvedHw && !resolvedScalable) {
       const v = recipe.variants?.[variant] || recipe.variants?.default || {};
       if (!fitsSingleNode(resolvedHw, v)) {
-        const fitting = pickFittingVariant(recipe, resolvedHw);
+        const fitting = pickFittingVariant(recipe, resolvedHw, resolvedHwId);
         if (fitting && fitting !== variant) setVariant(fitting);
       }
     }
@@ -516,6 +530,29 @@ export function CommandBuilder({ recipe, strategies, taxonomy }) {
     if (!searchParams.get("decode_nodes")) setPdDecodeNodes(pdDefaults.decode);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pdDefaults]);
+  // PD-pool parallelism modes offered for this recipe, derived from
+  // compatible_strategies (TP / TEP / DEP). A single-mode list (e.g. dense
+  // models with only TP) hides the per-pool pills entirely.
+  const pdModes = useMemo(() => pdPoolModes(recipe), [recipe]);
+  // Default per-role parallelism: recipe strategy_overrides → strategy YAML →
+  // "tp", clamped to an offered mode.
+  const pdDefaultPar = useMemo(() => {
+    const so = recipe.strategy_overrides?.pd_cluster || {};
+    const st = strategies?.pd_cluster || {};
+    const pick = (role) => {
+      const d = so[role]?.parallelism || st[role]?.parallelism || "tp";
+      return pdModes.includes(d) ? d : pdModes[0];
+    };
+    return { prefill: pick("prefill"), decode: pick("decode") };
+  }, [recipe, strategies, pdModes]);
+  const [pdPrefillPar, setPdPrefillPar] = useState(() => {
+    const p = searchParams.get("prefill_mode");
+    return p && pdModes.includes(p) ? p : pdDefaultPar.prefill;
+  });
+  const [pdDecodePar, setPdDecodePar] = useState(() => {
+    const p = searchParams.get("decode_mode");
+    return p && pdModes.includes(p) ? p : pdDefaultPar.decode;
+  });
   // Which DP rank's command to render for each DEP pool. User can bump this
   // to see e.g. rank 7's command — illustrates that each rank differs only in
   // --data-parallel-rank, CUDA_VISIBLE_DEVICES, and the per-host ports.
@@ -532,7 +569,7 @@ export function CommandBuilder({ recipe, strategies, taxonomy }) {
   // The per-hw override lets a recipe suppress a feature's default on specific
   // hardware (e.g. GB200's 4-GPU trays make --mm-encoder-tp-mode data unnecessary).
   const defaultFeaturesFor = useCallback(
-    (hw) => {
+    (hw, variantKey) => {
       // Non-vLLM engines draw defaults from their own block (features minus the
       // block's opt_in_features); the per-hardware opt-in is vLLM-only. This
       // also fixes featuresToUrl below, which diffs against these defaults.
@@ -543,17 +580,21 @@ export function CommandBuilder({ recipe, strategies, taxonomy }) {
       }
       const optIn = new Set(recipe.opt_in_features || []);
       for (const f of recipe.hardware_opt_in_features?.[hw] || []) optIn.add(f);
-      return Object.keys(recipe.features || {}).filter((f) => !optIn.has(f));
+      // A variant that declares a preferred mode for a feature (`default_modes`)
+      // wants that feature on — un-opt-in it for this variant. E.g. selecting
+      // the fused DSpark checkpoint auto-enables spec_decoding (default: dspark).
+      const forced = new Set(Object.keys(recipe.variants?.[variantKey]?.default_modes || {}));
+      return Object.keys(recipe.features || {}).filter((f) => forced.has(f) || !optIn.has(f));
     },
     [recipe, engine]
   );
 
   // Encode a features array for the URL: returns "" (which syncUrl deletes)
-  // when the set matches the YAML default for `hw`, so links stay clean unless
-  // the user actually deviated.
+  // when the set matches the YAML default for `hw`+`variantKey`, so links stay
+  // clean unless the user actually deviated.
   const featuresToUrl = useCallback(
-    (arr, hw) => {
-      const want = new Set(defaultFeaturesFor(hw));
+    (arr, hw, variantKey) => {
+      const want = new Set(defaultFeaturesFor(hw, variantKey));
       const got = new Set(arr);
       const same = want.size === got.size && [...want].every((f) => got.has(f));
       return same ? "" : arr.join(",");
@@ -565,8 +606,78 @@ export function CommandBuilder({ recipe, strategies, taxonomy }) {
     const fp = searchParams.get("features");
     if (fp) return fp.split(",").filter(Boolean);
     const urlHw = searchParams.get("hardware") || defaultHw;
-    return defaultFeaturesFor(urlHw);
+    const urlVariant = searchParams.get("variant") || "default";
+    return defaultFeaturesFor(urlHw, urlVariant);
   });
+
+  // Features that are single-select ("pick one of N") rather than boolean —
+  // they declare a `modes` map (e.g. spec_decoding → MTP / DFlash / DSpark).
+  const featuredModeKeys = useMemo(
+    () => Object.keys(recipe.features || {}).filter((k) => recipe.features[k]?.modes),
+    [recipe]
+  );
+  // Default sub-mode per modes-feature for a given variant: a variant can steer
+  // it via `default_modes: { <feature>: <mode> }` (e.g. the DSpark checkpoint
+  // variant defaults spec_decoding to the dspark method); otherwise it falls
+  // back to the feature's own `default_mode`. This keeps the two axes clean —
+  // the variant owns model_id (the served checkpoint), the mode owns args (the
+  // --speculative-config) — while letting a checkpoint pick its natural method.
+  const variantDefaultModes = useCallback(
+    (variantKey) => {
+      const v = recipe.variants?.[variantKey] || recipe.variants?.default || {};
+      const hp = taxonomy.hardware_profiles?.[hwId];
+      const out = {};
+      for (const k of featuredModeKeys) {
+        out[k] = resolveModeKey(recipe.features[k], k, v, variantKey, hp, hwId, undefined);
+      }
+      return out;
+    },
+    [recipe, featuredModeKeys, taxonomy, hwId]
+  );
+  const defaultModes = useMemo(() => variantDefaultModes(variant), [variantDefaultModes, variant]);
+
+  // Selected sub-mode per modes-feature. URL param `fmode` is a comma list of
+  // `key:mode` pairs; defaults (for the active variant) are omitted so links stay clean.
+  const parseFmode = useCallback((raw) => {
+    const out = {};
+    if (!raw) return out;
+    for (const pair of raw.split(",")) {
+      const [k, m] = pair.split(":");
+      if (k && m && recipe.features?.[k]?.modes?.[m]) out[k] = m;
+    }
+    return out;
+  }, [recipe]);
+  const [featureModes, setFeatureModes] = useState(() => ({
+    ...variantDefaultModes(searchParams.get("variant") || "default"),
+    ...parseFmode(searchParams.get("fmode")),
+  }));
+  const featureModesToUrl = useCallback(
+    (modes, variantKey) => {
+      const defs = variantDefaultModes(variantKey);
+      const parts = [];
+      for (const k of featuredModeKeys) {
+        if (modes[k] && modes[k] !== defs[k]) parts.push(`${k}:${modes[k]}`);
+      }
+      return parts.join(",");
+    },
+    [featuredModeKeys, variantDefaultModes]
+  );
+
+  // Restore saved sub-mode picks (URL wins). Separate from the main mount
+  // effect so it runs after featureModes is declared.
+  useEffect(() => {
+    if (searchParams.get("fmode") || featuredModeKeys.length === 0) return;
+    const rs = loadRecipeState(recipe.hf_id);
+    if (rs.featureModes && typeof rs.featureModes === "object") {
+      const restored = {};
+      for (const k of featuredModeKeys) {
+        const m = rs.featureModes[k];
+        if (m && recipe.features[k]?.modes?.[m]) restored[k] = m;
+      }
+      if (Object.keys(restored).length) setFeatureModes((prev) => ({ ...prev, ...restored }));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Advanced tuning flags (defaults off) — toggled independently from features
   const [advanced, setAdvanced] = useState(() => {
@@ -726,13 +837,13 @@ export function CommandBuilder({ recipe, strategies, taxonomy }) {
       const advArgs = advanced.flatMap((id) => advancedById[id]?.args || []);
       const pdNodes = activeStrategy === "pd_cluster"
         ? {
-          prefill: { nodes: pdPrefillNodes, rank: pdPrefillRank },
-          decode: { nodes: pdDecodeNodes, rank: pdDecodeRank },
+          prefill: { nodes: pdPrefillNodes, rank: pdPrefillRank, parallelism: pdPrefillPar },
+          decode: { nodes: pdDecodeNodes, rank: pdDecodeRank, parallelism: pdDecodePar },
         }
         : null;
-      return resolveCommandForEngine(engine, recipe, variant, activeStrategy, hwId, features, strategies, taxonomy, advArgs, nodeCount, pdNodes);
+      return resolveCommandForEngine(engine, recipe, variant, activeStrategy, hwId, features, strategies, taxonomy, advArgs, nodeCount, pdNodes, featureModes);
     },
-    [engine, recipe, variant, activeStrategy, hwId, features, advanced, advancedById, strategies, taxonomy, nodeCount, pdPrefillNodes, pdDecodeNodes, pdPrefillRank, pdDecodeRank]
+    [engine, recipe, variant, activeStrategy, hwId, features, featureModes, advanced, advancedById, strategies, taxonomy, nodeCount, pdPrefillNodes, pdDecodeNodes, pdPrefillRank, pdDecodeRank, pdPrefillPar, pdDecodePar]
   );
 
   // Visual feedback when any rendered command changes. Covers single-node
@@ -778,16 +889,43 @@ export function CommandBuilder({ recipe, strategies, taxonomy }) {
 
   const selectVariant = (key) => {
     setVariant(key);
-    syncUrl({ variant: key });
-    // Only swap hardware when precision demands it (e.g. NVFP4 needs Blackwell).
-    // VRAM is not a blocker because multi-node TP/DP can always supply more.
+    // Swap hardware when precision or an explicit variant allowlist requires
+    // it. VRAM alone is not a blocker because scalable profiles can add nodes.
     const v = recipe.variants?.[key] || {};
     const currentProfile = taxonomy.hardware_profiles?.[hwId] || {};
-    if (!isPrecisionCompatible(currentProfile, v)) {
+    const updates = { variant: key };
+    if (!isPrecisionCompatible(currentProfile, v) || !isVariantHardwareSupported(v, hwId)) {
       const next = pickDefaultHardware(taxonomy.hardware_profiles, v, recipe);
       setHwId(next);
-      syncUrl({ hardware: next });
+      updates.hardware = next;
     }
+    // Reset spec-decoding mode(s) to the new variant's preferred default so
+    // picking the DSpark checkpoint auto-selects the DSpark method (and picking
+    // a plain-precision variant falls back to MTP). A manual mode pick after
+    // this still wins until the next variant switch.
+    if (featuredModeKeys.length) {
+      const nextModes = variantDefaultModes(key);
+      setFeatureModes(nextModes);
+      updates.fmode = featureModesToUrl(nextModes, key);
+      saveRecipeState(recipe.hf_id, { featureModes: nextModes });
+    }
+    // Enable features the new variant forces on (`default_modes`, e.g. the
+    // DSpark checkpoint auto-enables spec_decoding), and drop the previous
+    // variant's forced-only features unless they're a plain default here.
+    const oldForced = new Set(Object.keys(currentVariant?.default_modes || {}));
+    const newForced = Object.keys(v.default_modes || {});
+    const baseDefault = new Set(defaultFeaturesFor(updates.hardware || hwId, key));
+    let nextFeatures = features.filter((f) => !oldForced.has(f) || newForced.includes(f) || baseDefault.has(f));
+    for (const f of newForced) if (recipe.features?.[f] && !nextFeatures.includes(f)) nextFeatures.push(f);
+    if (nextFeatures.length !== features.length || nextFeatures.some((f, i) => f !== features[i])) {
+      setFeatures(nextFeatures);
+      updates.features = featuresToUrl(nextFeatures, updates.hardware || hwId, key);
+      saveRecipeState(recipe.hf_id, { features: nextFeatures });
+    }
+    // One syncUrl call — two sequential calls each read the same stale
+    // searchParams from this closure, so the second would clobber the first
+    // (dropping variant= when selecting a Blackwell-only variant off Hopper).
+    syncUrl(updates);
   };
 
   const selectHardware = (id) => {
@@ -805,16 +943,34 @@ export function CommandBuilder({ recipe, strategies, taxonomy }) {
     setHwId(id);
     setStrategyOverride("");
     const newProfile = taxonomy.hardware_profiles?.[id] || {};
+    // A selected spec-mode may be gated to specific hardware (e.g. a DFlash
+    // draft that only ships for Blackwell). If the new GPU doesn't support it,
+    // fall back to the first mode that does so the command stays valid.
+    let nextModes = featureModes;
+    for (const k of featuredModeKeys) {
+      const feat = recipe.features[k];
+      const sel = nextModes[k];
+      if (sel && feat.modes[sel] && !isModeSupported(feat.modes[sel], newProfile, id)) {
+        const firstOk = Object.keys(feat.modes).find((mk) => isModeSupported(feat.modes[mk], newProfile, id));
+        if (firstOk) nextModes = { ...nextModes, [k]: firstOk };
+      }
+    }
+    if (nextModes !== featureModes) setFeatureModes(nextModes);
     const newScalable = isHardwareScalable(newProfile);
-    // Non-scalable hardware (single-GPU workstation) can't shard an oversized
-    // variant. If the active variant doesn't fit the new box, fall to the
-    // largest variant that does (e.g. BF16 → FP8 on DGX Station).
+    // If the active variant cannot run on the new hardware (explicit allowlist,
+    // precision, or a non-scalable VRAM shortfall), fall to the largest variant
+    // that can run there.
     let activeVariant = currentVariant;
-    if (!newScalable && !fitsSingleNode(newProfile, currentVariant)) {
-      const fitting = pickFittingVariant(recipe, newProfile);
+    // Folded into the single syncUrl below rather than synced here — a separate
+    // syncUrl call would read stale searchParams and get clobbered (same footgun
+    // as selectVariant). Left undefined when the variant is unchanged so the
+    // existing variant= param is preserved, not deleted.
+    let variantUpdate;
+    if (!variantRunsOnHardware(newProfile, currentVariant, id)) {
+      const fitting = pickFittingVariant(recipe, newProfile, id);
       if (fitting && fitting !== variant) {
         setVariant(fitting);
-        syncUrl({ variant: fitting });
+        variantUpdate = fitting;
         activeVariant = recipe.variants?.[fitting] || currentVariant;
       }
     }
@@ -839,7 +995,9 @@ export function CommandBuilder({ recipe, strategies, taxonomy }) {
       hardware: id,
       strategy: "",
       nodes: shouldBumpNodes ? "2" : shouldUnbumpNodes ? "" : undefined,
-      features: featuresToUrl(next, id),
+      features: featuresToUrl(next, id, variant),
+      ...(nextModes !== featureModes ? { fmode: featureModesToUrl(nextModes, variant) } : {}),
+      ...(variantUpdate ? { variant: variantUpdate } : {}),
     });
     savePreference("hardware", id);
     // Mirror the new state to per-recipe storage so a hardware switch
@@ -848,6 +1006,7 @@ export function CommandBuilder({ recipe, strategies, taxonomy }) {
       strategy: undefined,
       nodes: shouldBumpNodes ? 2 : shouldUnbumpNodes ? 1 : nodeCount,
       features: next,
+      ...(nextModes !== featureModes ? { featureModes: nextModes } : {}),
     });
   };
 
@@ -898,6 +1057,21 @@ export function CommandBuilder({ recipe, strategies, taxonomy }) {
     }
   };
 
+  // Switching a pool's parallelism changes what the rank/node index means
+  // (DEP start-rank vs TP node-rank), so reset that pool's rank to 0.
+  const setPdPar = (role, mode) => {
+    if (!pdModes.includes(mode)) return;
+    if (role === "prefill") {
+      setPdPrefillPar(mode);
+      setPdPrefillRank(0);
+      syncUrl({ prefill_mode: mode === pdDefaultPar.prefill ? "" : mode, prefill_rank: "" });
+    } else {
+      setPdDecodePar(mode);
+      setPdDecodeRank(0);
+      syncUrl({ decode_mode: mode === pdDefaultPar.decode ? "" : mode, decode_rank: "" });
+    }
+  };
+
   const toggleFeature = (f) => {
     // text_only (skip vision encoder) and encoder_parallel (DP the encoder)
     // are mutually exclusive — enabling one clears the other.
@@ -907,8 +1081,16 @@ export function CommandBuilder({ recipe, strategies, taxonomy }) {
       ? [...features.filter((x) => x !== mutex[f]), f]
       : features.filter((x) => x !== f);
     setFeatures(next);
-    syncUrl({ features: featuresToUrl(next, hwId) });
+    syncUrl({ features: featuresToUrl(next, hwId, variant) });
     saveRecipeState(recipe.hf_id, { features: next });
+  };
+
+  // Pick a sub-mode for a single-select feature (spec_decoding → MTP/DFlash/…).
+  const selectFeatureMode = (featureKey, modeKey) => {
+    const next = { ...featureModes, [featureKey]: modeKey };
+    setFeatureModes(next);
+    syncUrl({ fmode: featureModesToUrl(next, variant) });
+    saveRecipeState(recipe.hf_id, { featureModes: next });
   };
 
   const toggleAdvanced = (id) => {
@@ -1119,7 +1301,7 @@ export function CommandBuilder({ recipe, strategies, taxonomy }) {
   const altCudaSuffix = "cu129";
 
   const dockerMeta = useMemo(() => {
-    const meta = computeDockerMeta(recipe, currentVariant, hwProfile);
+    const meta = computeDockerMeta(recipe, currentVariant, hwProfile, hwId);
     if (meta.brandKey !== "nvidia") return meta;
 
     // Explicit CUDA map (e.g. `{cu129: ..., cu130: ...}`) — pick the matching
@@ -1146,7 +1328,7 @@ export function CommandBuilder({ recipe, strategies, taxonomy }) {
       return { ...meta, image: next };
     }
     return meta;
-  }, [recipe, currentVariant, hwProfile, dockerCudaVariant, altCudaSuffix]);
+  }, [recipe, currentVariant, hwProfile, hwId, dockerCudaVariant, altCudaSuffix]);
 
   // `installMode` carries the user's tab choice; `effectiveInstallMode` folds
   // in constraints that would hide a tab entirely (pip: recipe opt-out or TPU
@@ -1245,6 +1427,7 @@ export function CommandBuilder({ recipe, strategies, taxonomy }) {
           <InstallBlock
             recipe={recipe}
             engine={engine}
+            variant={currentVariant}
             dockerMeta={dockerMeta}
             installMode={effectiveInstallMode}
             setInstallMode={setInstallMode}
@@ -1284,13 +1467,16 @@ export function CommandBuilder({ recipe, strategies, taxonomy }) {
                     <PillGroup>
                       {profiles.map(([id, p]) => {
                         const precisionOk = isPrecisionCompatible(p, currentVariant);
+                        const variantHardwareOk = isVariantHardwareSupported(currentVariant, id);
                         const status = recipe.meta?.hardware?.[id];
                         const isUnsupported = status === "unsupported";
-                        const disabled = !precisionOk || isUnsupported;
+                        const disabled = !precisionOk || !variantHardwareOk || isUnsupported;
                         const verifiedNote = status === "verified"
                           ? "\n\nVerified — author has tested this hardware end-to-end"
                           : "";
-                        const reason = !precisionOk
+                        const reason = !variantHardwareOk
+                          ? `${currentVariant.precision?.toUpperCase()} is only supported on ${(currentVariant.supported_hardware || []).map((hw) => taxonomy.hardware_profiles?.[hw]?.display_name || hw).join(", ")}`
+                          : !precisionOk
                           ? `${currentVariant.precision?.toUpperCase()} requires NVIDIA Blackwell`
                           : isUnsupported
                             ? `Not yet supported on ${p.display_name} — this model doesn't run here today, may be enabled in a future release`
@@ -1384,6 +1570,7 @@ export function CommandBuilder({ recipe, strategies, taxonomy }) {
         <InstallBlock
           recipe={recipe}
           engine={engine}
+          variant={currentVariant}
           dockerMeta={dockerMeta}
           installMode={effectiveInstallMode}
           setInstallMode={setInstallMode}
@@ -1537,6 +1724,7 @@ export function CommandBuilder({ recipe, strategies, taxonomy }) {
                   <PillGroup>
                     {profiles.map(([id, p]) => {
                       const precisionOk = isPrecisionCompatible(p, currentVariant);
+                      const variantHardwareOk = isVariantHardwareSupported(currentVariant, id);
                       // Only `verified` carries a label; everything else = silent default.
                       // `unsupported` = author opt-out for this model; disables the pill.
                       const status = recipe.meta?.hardware?.[id];
@@ -1545,11 +1733,13 @@ export function CommandBuilder({ recipe, strategies, taxonomy }) {
                       // only needs to fit 1× model per node (standard precision
                       // check is enough). The old co-located single-node check
                       // (2× model on one node) is no longer the default UX.
-                      const disabled = !precisionOk || isUnsupported;
+                      const disabled = !precisionOk || !variantHardwareOk || isUnsupported;
                       const verifiedNote = status === "verified"
                         ? "\n\nVerified — author has tested this hardware end-to-end"
                         : "";
-                      const reason = !precisionOk
+                      const reason = !variantHardwareOk
+                        ? `${currentVariant.precision?.toUpperCase()} is only supported on ${(currentVariant.supported_hardware || []).map((hw) => taxonomy.hardware_profiles?.[hw]?.display_name || hw).join(", ")}`
+                        : !precisionOk
                         ? `${currentVariant.precision?.toUpperCase()} requires NVIDIA Blackwell`
                         : isUnsupported
                           ? `Not yet supported on ${p.display_name} — this model doesn't run here today, may be enabled in a future release`
@@ -1592,11 +1782,14 @@ export function CommandBuilder({ recipe, strategies, taxonomy }) {
           >
             <PillGroup>
               {Object.entries(activeVariantsMap).map(([key, v]) => {
-                // On non-scalable hardware (single-GPU workstation) a variant
-                // that doesn't fit has nowhere to shard — disable it instead of
-                // rendering a command that can't run. (vLLM-only: SGLang blocks
-                // don't carry VRAM/precision metadata so we never gate them.)
-                const disabled = engine === "vllm" && !hwScalable && !variantRunsOnHardware(hwProfile, v);
+                // Disable variants excluded by an exact hardware allowlist,
+                // incompatible precision, or a non-scalable VRAM shortfall — a
+                // variant that can't fit and has nowhere to shard is rendered
+                // disabled instead of emitting a command that can't run.
+                // (vLLM-only: SGLang blocks don't carry VRAM/precision metadata
+                // so we never gate them.)
+                const disabled = engine === "vllm" && !variantRunsOnHardware(hwProfile, v, hwId);
+                const hardwareRestricted = engine === "vllm" && !isVariantHardwareSupported(v, hwId);
                 return (
                   <Pill
                     key={key}
@@ -1605,7 +1798,9 @@ export function CommandBuilder({ recipe, strategies, taxonomy }) {
                     onClick={() => !disabled && selectVariant(key)}
                     title={
                       disabled
-                        ? `${(v.label || v.precision)?.toUpperCase()} needs ${v.vram_minimum_gb} GB but ${hwProfile.display_name || "this hardware"} has ${hwProfile.vram_gb} GB and can't scale out — pick a smaller-footprint variant`
+                        ? hardwareRestricted
+                          ? `${(v.label || v.precision)?.toUpperCase()} is only supported on ${(v.supported_hardware || []).map((hw) => taxonomy.hardware_profiles?.[hw]?.display_name || hw).join(", ")}`
+                          : `${(v.label || v.precision)?.toUpperCase()} needs ${v.vram_minimum_gb} GB but ${hwProfile.display_name || "this hardware"} has ${hwProfile.vram_gb} GB and can't scale out — pick a smaller-footprint variant`
                         : [
                             v.description,
                             v.vram_minimum_gb && `Min ${v.vram_minimum_gb} GB to load — add KV cache for serving. Scale out via multi-node if needed.`,
@@ -1673,20 +1868,28 @@ export function CommandBuilder({ recipe, strategies, taxonomy }) {
           {engine === "vllm" && (activeStrategy === "pd_cluster" ? (
             <ConfigRow
               label="Nodes"
-              hint="Each pool (prefill / decode) sizes independently. Total cluster = prefill_nodes + decode_nodes. For Kimi-K2.5 on GB200 the production pattern is prefill=1, decode=4."
+              hint={pdModes.length > 1
+                ? "Each pool (prefill / decode) sizes and shards independently — pick its parallelism (TP / TEP / DEP) and node count. Total cluster = prefill_nodes + decode_nodes."
+                : "Each pool (prefill / decode) sizes independently. Total cluster = prefill_nodes + decode_nodes."}
             >
-              <div className="flex flex-wrap items-center gap-3 text-sm">
+              <div className="flex flex-col gap-2 text-sm">
                 <PdNodeInput
                   label="Prefill"
                   value={pdPrefillNodes}
                   gpuPerNode={hwProfile.gpu_count || 8}
                   onChange={(n) => setPdNodes("prefill", n)}
+                  modes={pdModes}
+                  parallelism={pdPrefillPar}
+                  onParChange={(m) => setPdPar("prefill", m)}
                 />
                 <PdNodeInput
                   label="Decode"
                   value={pdDecodeNodes}
                   gpuPerNode={hwProfile.gpu_count || 8}
                   onChange={(n) => setPdNodes("decode", n)}
+                  modes={pdModes}
+                  parallelism={pdDecodePar}
+                  onParChange={(m) => setPdPar("decode", m)}
                 />
                 <span className="text-xs text-muted-foreground tabular-nums">
                   total {(pdPrefillNodes + pdDecodeNodes) * (hwProfile.gpu_count || 8)} GPUs
@@ -1773,6 +1976,43 @@ export function CommandBuilder({ recipe, strategies, taxonomy }) {
             </ConfigRow>
           )}
 
+          {/* Sub-mode selector for single-select features (spec_decoding →
+              MTP / DFlash / DSpark). Only shown while the parent feature is on. */}
+          {featuredModeKeys.map((key) => {
+            if (!features.includes(key)) return null;
+            const feat = recipe.features[key];
+            // Only modes available on the current checkpoint (variant). If a
+            // single method is available (e.g. FP8/NVFP4 → MTP only), the row is
+            // redundant with the feature toggle, so don't render it — the toggle
+            // alone means "MTP on". The DSpark checkpoint exposes {MTP, DSpark}.
+            const availEntries = Object.entries(feat.modes).filter(([, m]) => isModeAllowedForVariant(m, variant));
+            if (availEntries.length < 2) return null;
+            const active = resolveModeKey(feat, key, currentVariant, variant, hwProfile, hwId, featureModes[key]);
+            const rowLabel = key === "spec_decoding"
+              ? "Spec method"
+              : `${key.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())} method`;
+            return (
+              <ConfigRow key={`${key}-modes`} label={rowLabel}>
+                <PillGroup>
+                  {availEntries.map(([mk, m]) => {
+                    const supported = isModeSupported(m, hwProfile, hwId);
+                    return (
+                      <Pill
+                        key={mk}
+                        active={active === mk && supported}
+                        disabled={!supported}
+                        onClick={() => supported && selectFeatureMode(key, mk)}
+                        title={!supported ? "Not supported on this hardware" : m.description}
+                      >
+                        {m.label || mk.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())}
+                      </Pill>
+                    );
+                  })}
+                </PillGroup>
+              </ConfigRow>
+            );
+          })}
+
           {/* Advanced (collapsed by default) */}
           <details className="group">
             <summary className="px-4 py-3 cursor-pointer text-[10px] font-semibold text-muted-foreground uppercase tracking-widest hover:bg-muted/30 transition-colors flex items-center gap-2 select-none list-none">
@@ -1843,10 +2083,37 @@ function endpointHintFor(name) {
   return "value";
 }
 
-function PdNodeInput({ label, value, gpuPerNode, onChange }) {
+const PD_PAR_LABELS = { tp: "TP", tep: "TEP", dep: "DEP" };
+const PD_PAR_TIPS = {
+  tp: "Tensor parallel — one engine sharded across the pool's GPUs; only the head node serves HTTP.",
+  tep: "Tensor + expert parallel — TP layout plus --enable-expert-parallel (MoE models).",
+  dep: "Data + expert parallel — one vllm serve per node, DP across nodes with EP (MoE throughput).",
+};
+
+function PdNodeInput({ label, value, gpuPerNode, onChange, modes, parallelism, onParChange }) {
+  const showPills = Array.isArray(modes) && modes.length > 1 && typeof onParChange === "function";
   return (
-    <label className="inline-flex items-center gap-2">
-      <span className="text-xs font-medium text-muted-foreground">{label}</span>
+    <div className="inline-flex flex-wrap items-center gap-2">
+      <span className="text-xs font-medium text-muted-foreground w-12 shrink-0">{label}</span>
+      {showPills && (
+        <span className="inline-flex gap-1">
+          {modes.map((m) => (
+            <InfoTip key={m} content={PD_PAR_TIPS[m]}>
+              <button
+                onClick={() => onParChange(m)}
+                aria-label={PD_PAR_TIPS[m]}
+                className={`inline-flex items-center rounded-md border px-1.5 py-0.5 text-[11px] font-mono transition-all ${
+                  parallelism === m
+                    ? "border-vllm-blue bg-vllm-blue/5 text-foreground ring-1 ring-vllm-blue/20"
+                    : "border-border text-muted-foreground hover:text-foreground hover:border-muted-foreground/40 hover:bg-muted/30"
+                }`}
+              >
+                {PD_PAR_LABELS[m] || m.toUpperCase()}
+              </button>
+            </InfoTip>
+          ))}
+        </span>
+      )}
       <input
         type="number"
         min={1}
@@ -1858,7 +2125,7 @@ function PdNodeInput({ label, value, gpuPerNode, onChange }) {
       <span className="text-xs text-muted-foreground tabular-nums">
         × {gpuPerNode} = {value * gpuPerNode}
       </span>
-    </label>
+    </div>
   );
 }
 
@@ -1961,7 +2228,22 @@ function SingleCommandBlock({ command, env, verifyCmd, benchCmd, statusHeader, i
   );
 }
 
-function InstallBlock({ recipe, engine = "vllm", dockerMeta, installMode, setInstallMode, dockerCudaVariant, setDockerCudaVariant, altCudaSuffix }) {
+// Higher of two "X.Y.Z" version strings (missing/blank loses). Used to bump the
+// displayed min vLLM version when the active variant needs a newer release than
+// the recipe baseline (e.g. the DSpark checkpoint requires 0.25.0).
+function maxVersion(a, b) {
+  if (!a) return b;
+  if (!b) return a;
+  const pa = String(a).split(".").map((n) => parseInt(n, 10) || 0);
+  const pb = String(b).split(".").map((n) => parseInt(n, 10) || 0);
+  for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
+    const d = (pa[i] || 0) - (pb[i] || 0);
+    if (d !== 0) return d > 0 ? a : b;
+  }
+  return a;
+}
+
+function InstallBlock({ recipe, engine = "vllm", variant, dockerMeta, installMode, setInstallMode, dockerCudaVariant, setDockerCudaVariant, altCudaSuffix }) {
   // Collapsible install reference. Shows the one-time setup step for the
   // active mode — `uv pip install vllm …` in pip mode, `docker pull <image>`
   // in docker mode. The active tab mirrors the command card's mode toggle
@@ -1984,10 +2266,12 @@ function InstallBlock({ recipe, engine = "vllm", dockerMeta, installMode, setIns
   const dockerHidden = dockerCfg === false;
   const [open, setOpen] = useState(false);
   const { isAmd, isTpu, isAscend, vendorOnly, image: dockerImage, brandKey, cudaMap } = dockerMeta;
-  // Min version: vLLM reads `min_vllm_version` (already bare, e.g. "0.20.0");
-  // SGLang carries a `v`-prefixed tag in its block (e.g. "v0.5.10") — strip it.
+  // Min version: vLLM reads `min_vllm_version` (already bare, e.g. "0.20.0"); a
+  // variant may require a newer vLLM than the recipe baseline (e.g. the DSpark
+  // checkpoint needs 0.25.0) so take the higher of the two. SGLang carries a
+  // `v`-prefixed tag in its block (e.g. "v0.5.10") — strip it.
   const minV = isVllm
-    ? recipe.model?.min_vllm_version
+    ? maxVersion(recipe.model?.min_vllm_version, variant?.min_vllm_version)
     : (engineBlock?.min_version || "").replace(/^v/, "");
   // Omni recipes are served by vLLM-Omni, a fast-moving companion package that
   // tracks vLLM nightly (Wan2.2 even pins a git commit). Surface it next to the
@@ -1999,7 +2283,7 @@ function InstallBlock({ recipe, engine = "vllm", dockerMeta, installMode, setIns
   // swaps the default pip command to the nightly wheel index and surfaces a
   // pill in the Install header. Manual `install.pip.command` overrides still
   // win — this flag only affects the default.
-  const nightlyRequired = isVllm && recipe.model?.nightly_required === true;
+  const nightlyRequired = isVllm && (recipe.model?.nightly_required === true || variant?.nightly_required === true);
   // Resolve the CUDA tag for pip's nightly wheel index from the same toggle
   // that drives the Docker tag suffix. "default" → cu130 (today's upstream
   // baseline); explicit picks pass through.
@@ -2347,11 +2631,12 @@ function PdClusterBlock({ result, verifyCmd, benchCmd, statusHeader, onRankChang
           )}
         </div>
       )}
-      {!active.isRouter && active.meta?.parallelism === "dep" && active.meta.nodes > 1 && onRankChange && (
+      {!active.isRouter && active.meta?.nodes > 1 && onRankChange && (
         <div className="px-4 pt-2 pb-0 flex items-center gap-2 text-[11px] text-[var(--command-fg)]/70 flex-wrap">
           <span className="font-mono uppercase tracking-wider text-[var(--command-fg)]/50">node</span>
-          {/* Display node index is 1-based; emitted --data-parallel-start-rank
-              stays 0-based to match vLLM's rank convention. */}
+          {/* Display node index is 1-based; the emitted rank flag stays 0-based
+              to match vLLM's convention — --data-parallel-start-rank for DEP,
+              --node-rank for TP. */}
           <input
             type="number"
             min={1}
@@ -2363,10 +2648,23 @@ function PdClusterBlock({ result, verifyCmd, benchCmd, statusHeader, onRankChang
             }}
             className="w-14 px-2 py-0.5 text-xs font-mono tabular-nums rounded border border-[var(--command-fg)]/20 bg-transparent text-[var(--command-fg)] focus:outline-none focus:border-vllm-blue/60"
           />
-          <span className="text-[var(--command-fg)]/40">
-            of 1..{active.meta.nodes} · start_rank = {active.meta.startRank}
-          </span>
-          <span className="text-[var(--command-fg)]/40 ml-auto">vLLM spawns {active.meta.dpLocal} local DP ranks per node</span>
+          {active.meta.parallelism === "dep" ? (
+            <>
+              <span className="text-[var(--command-fg)]/40">
+                of 1..{active.meta.nodes} · start_rank = {active.meta.startRank}
+              </span>
+              <span className="text-[var(--command-fg)]/40 ml-auto">vLLM spawns {active.meta.dpLocal} local DP ranks per node</span>
+            </>
+          ) : (
+            <>
+              <span className="text-[var(--command-fg)]/40">
+                of 1..{active.meta.nodes} · --node-rank = {active.meta.currentNode ?? 0}
+              </span>
+              <span className="text-[var(--command-fg)]/40 ml-auto">
+                {(active.meta.currentNode ?? 0) === 0 ? "head node — serves HTTP + NIXL" : "follower — runs --headless"}
+              </span>
+            </>
+          )}
         </div>
       )}
       {prelude && (
