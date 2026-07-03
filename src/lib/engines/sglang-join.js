@@ -12,7 +12,10 @@ const SGLANG_GUIDES_DIR = path.join(process.cwd(), "engines", "sglang-guides");
 function deepMerge(base, over) {
   if (Array.isArray(over) || typeof over !== "object" || over === null) return over;
   const out = { ...(base && typeof base === "object" && !Array.isArray(base) ? base : {}) };
-  for (const [k, v] of Object.entries(over)) out[k] = deepMerge(out[k], v);
+  for (const [k, v] of Object.entries(over)) {
+    if (k === "__proto__" || k === "constructor" || k === "prototype") continue; // prototype-pollution guard
+    out[k] = deepMerge(out[k], v);
+  }
   return out;
 }
 

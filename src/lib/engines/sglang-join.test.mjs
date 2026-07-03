@@ -70,6 +70,15 @@ test("attachEngines deep-merges a fork-local overlay onto the generated block (P
   assert.equal(b.model_id, "deepseek-ai/DeepSeek-V4-Flash", "generated fields survive the merge");
 });
 
+test("attachEngines overlay replaces (not concatenates) an array at a colliding key", () => {
+  const dirs = tmpDirs({
+    "sglang/acme/Arr.yaml": "engine: sglang\nmodel_id: acme/Arr\nbase_args: ['--a', '--b']\n",
+    "sglang-overlay/acme/Arr.yaml": "base_args: ['--c']\n",
+  });
+  const out = attachEngines({ hf_id: "acme/Arr", model: {} }, dirs);
+  assert.deepEqual(out.engines.sglang.base_args, ["--c"], "overlay array replaces the base array");
+});
+
 test("attachEngines uses an overlay on its own when no generated block exists", () => {
   const dirs = tmpDirs({
     "sglang-overlay/acme/Only-Overlay.yaml": "engine: sglang\nmodel_id: acme/Only-Overlay\ntp_by_hardware:\n  h200: 1\n",
