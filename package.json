@@ -12,7 +12,7 @@
     "test": "node --test",
     "snapshot:api": "node scripts/snapshot-api.mjs",
     "snapshot:api:write": "node scripts/snapshot-api.mjs --write",
-    "sync:sglang": "node scripts/fetch-sglang-upstream.mjs && node scripts/sync-sglang.mjs"
+    "sync:sglang": "node scripts/fetch-sglang-configs.mjs && node scripts/sync-sglang.mjs"
   },
   "dependencies": {
     "@radix-ui/react-slot": "^1.1.2",
