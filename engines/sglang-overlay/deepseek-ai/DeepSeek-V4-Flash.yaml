@@ -1,0 +1,49 @@
+# FORK-LOCAL overlay (engines/sglang-overlay/) — deep-merged onto the
+# GENERATED DeepSeek-V4-Flash SGLang block. Holds only our own tested
+# PPU-ZW810E (T-Head 真武, INT8) config; the upstream cookbook will never
+# carry it. The full PPU launch command lives in the SGLang guide's PPU section.
+tp_by_hardware:
+  thead_ppu_810e: 8
+hardware_overrides:
+  thead_ppu_810e:
+    extra_args:
+      - '--enable-metrics'
+      - '--context-length'
+      - '8192'
+      - '--quantization'
+      - 'w8a8_int8'
+      - '--attention-context-parallel-size'
+      - '8'
+      - '--enable-nsa-prefill-context-parallel'
+      - '--moe-a2a-backend'
+      - 'deepep'
+      - '--disable-shared-experts-fusion'
+      - '--max-running-requests'
+      - '32'
+      - '--cuda-graph-bs'
+      - '32'
+      - '--mem-fraction-static'
+      - '0.75'
+      - '--chunked-prefill-size'
+      - '8192'
+      - '--kv-cache-dtype'
+      - 'bfloat16'
+      - '--disable-piecewise-cuda-graph'
+      - '--speculative-algo'
+      - 'EAGLE'
+      - '--speculative-num-steps'
+      - '2'
+      - '--speculative-eagle-topk'
+      - '1'
+      - '--speculative-num-draft-tokens'
+      - '2'
+    extra_env:
+      GPU_COUNT: '8'
+      NODE_COUNT: '1'
+      PORT: '8000'
+      SGLANG_OPT_USE_MULTI_STREAM_OVERLAP: '1'
+      SGLANG_DEEPEP_NUM_MAX_DISPATCH_TOKENS_PER_RANK: '512'
+      SGLANG_OPT_USE_COMPRESSOR_V2: '0'
+      SGLANG_OPT_FUSE_WQA_WKV: '0'
+      SGLANG_DSV4_FP4_EXPERTS: '0'
+      SGLANG_OPT_USE_FUSED_STORE_CACHE: '0'
