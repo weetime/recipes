@@ -80,9 +80,12 @@ function commonBaseArgs(cells) {
 // `recipePrecision` is authoritative for the checkpoint's precision.
 export function configToBlock(config, variantId, modelId, recipePrecision, taxonomyHwIds) {
   const allCells = config?.cells || [];
-  const variantCells = allCells.filter((c) => c?.match?.variant === variantId);
-  // Single-variant configs may omit match.variant; fall back to all cells then.
-  const cells = variantCells.length ? variantCells : allCells;
+  // If ANY cell is variant-tagged, trust the tags and use only this variant's
+  // cells — never silently mix variants (an empty result yields empty tp, which
+  // is safe; mixing would fabricate a wrong command). Only fall back to all
+  // cells when NO cell carries a variant tag (a genuinely single-variant config).
+  const anyTagged = allCells.some((c) => c?.match?.variant != null);
+  const cells = anyTagged ? allCells.filter((c) => c?.match?.variant === variantId) : allCells;
 
   const tp_by_hardware = {};
   for (const hw of config?.supportedHardware || []) {

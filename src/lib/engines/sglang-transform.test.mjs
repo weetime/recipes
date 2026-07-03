@@ -96,6 +96,18 @@ test("configToBlock filters cells by variant → each variant gets its own tp", 
   assert.deepEqual(flash.features.tool_calling.args, ["--tool-call-parser", "deepseekv4"]);
 });
 
+test("configToBlock never mixes variants: a tagged config's absent variant → empty tp (not all-cells)", () => {
+  const cfg = {
+    variants: [{ id: "flash" }, { id: "pro" }],
+    supportedHardware: ["h200"],
+    quantizations: [{ id: "fp8" }],
+    // Only 'flash' cells are present; 'pro' has none.
+    cells: [{ match: { hw: "h200", variant: "flash", quant: "fp8" }, flags: ["--trust-remote-code", "--tp 4"] }],
+  };
+  const pro = configToBlock(cfg, "pro", "org/Pro", "fp8", HW);
+  assert.deepEqual(pro.tp_by_hardware, {}); // must NOT absorb flash's --tp 4
+});
+
 test("configToBlock keeps parser=auto verbatim", () => {
   const cfg = { ...CFG, playgroundFeatures: { parsers: { items: [
     { flag: "--reasoning-parser auto" }, { flag: "--tool-call-parser auto" },
