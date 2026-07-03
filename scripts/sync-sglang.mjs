@@ -1,88 +1,94 @@
 /**
- * Generate engines/sglang/<org>/<repo>.yaml from the vendored upstream
- * (upstream/sglang/) for every model that also has a vLLM recipe (models/).
+ * Generate engines/sglang/<org>/<repo>.yaml from the new SGLang cookbook's
+ * declarative configs (vendored under upstream/sglang-configs/ by
+ * scripts/fetch-sglang-configs.mjs), for every model that also has a vLLM recipe.
  *
- * Run after scripts/fetch-sglang-upstream.mjs. Review the diff before committing.
+ * Each config carries a variant axis; each variant maps — via modelNames — to a
+ * distinct HF checkpoint, hence a distinct recipe. So one config can produce
+ * several blocks (deepseek-v4 -> Flash + Pro; lfm2.5 -> the LFM2.5 family).
+ * Matching against the recipe set is case-insensitive (upstream sometimes uses a
+ * lowercase slug); the block is written at the real recipe hf_id.
+ *
+ * Run after scripts/fetch-sglang-configs.mjs. Wipes+rebuilds engines/sglang/.
  */
 import fs from "fs";
 import path from "path";
 import yaml from "js-yaml";
-import { transform, HW_NAME_MAP } from "../src/lib/engines/sglang-transform.js";
+import { parseConfigModule, configVariantIds, candidateCheckpoints, configToBlock } from "../src/lib/engines/sglang-transform.js";
 
 const ROOT = process.cwd();
-const GEN_DIR = path.join(ROOT, "upstream", "sglang", "data", "models", "generated");
+const CONFIGS_DIR = path.join(ROOT, "upstream", "sglang-configs", "docs_new", "src", "snippets", "configs");
 const MODELS_DIR = path.join(ROOT, "models");
 const OUT_DIR = path.join(ROOT, "engines", "sglang");
+const TAXONOMY = path.join(ROOT, "taxonomy.yaml");
 
-// Scan the models/ tree once: collect existing vLLM recipe hf_ids (org/repo)
-// for overlap, plus an authoritative precision per checkpoint model_id. Precision
-// is a property of the on-disk checkpoint, so the hand-verified recipe overrides
-// any stale `quantization` in the upstream SGLang cookbook (see modelToBlock).
+// Recipe hf_ids (lowercase → real casing) + authoritative precision per recipe.
 function scanRecipes() {
-  const ids = new Set();
-  const precisionByModelId = new Map();
+  const byLower = new Map(); // lowercase hf_id -> real hf_id
+  const precisionByHfId = new Map();
   for (const org of fs.readdirSync(MODELS_DIR)) {
     const orgDir = path.join(MODELS_DIR, org);
     if (!fs.statSync(orgDir).isDirectory()) continue;
     for (const f of fs.readdirSync(orgDir)) {
-      if (!(f.endsWith(".yaml") || f.endsWith(".yml"))) continue;
-      ids.add(`${org}/${f.replace(/\.(yaml|yml)$/, "")}`);
-      let rec;
-      try { rec = yaml.load(fs.readFileSync(path.join(orgDir, f), "utf8")); } catch { continue; }
-      const baseId = rec?.model?.model_id;
-      for (const v of Object.values(rec?.variants || {})) {
-        const eff = v?.model_id || baseId;          // checkpoint this variant serves
-        if (eff && v?.precision) precisionByModelId.set(eff, v.precision);
-      }
+      if (!/\.ya?ml$/.test(f)) continue;
+      const hfId = `${org}/${f.replace(/\.ya?ml$/, "")}`;
+      byLower.set(hfId.toLowerCase(), hfId);
+      try {
+        const rec = yaml.load(fs.readFileSync(path.join(orgDir, f), "utf8"));
+        const p = rec?.variants?.default?.precision;
+        if (p) precisionByHfId.set(hfId, p);
+      } catch { /* build-recipes-api reports YAML errors separately */ }
     }
   }
-  return { ids, precisionByModelId };
+  return { byLower, precisionByHfId };
 }
 
-// Read every generated/v*/*.yaml as { version, doc }.
-function versionDocs() {
-  if (!fs.existsSync(GEN_DIR)) {
-    console.error(`Upstream not found at ${GEN_DIR}. Run "pnpm sync:sglang" (or node scripts/fetch-sglang-upstream.mjs) first.`);
-    process.exit(1);
-  }
+function taxonomyHwIds() {
+  const taxo = yaml.load(fs.readFileSync(TAXONOMY, "utf8"));
+  return new Set(Object.keys(taxo?.hardware_profiles || {}));
+}
+
+function listConfigFiles(dir) {
   const out = [];
-  for (const version of fs.readdirSync(GEN_DIR)) {
-    const vDir = path.join(GEN_DIR, version);
-    if (!fs.statSync(vDir).isDirectory()) continue;
-    for (const f of fs.readdirSync(vDir)) {
-      if (!f.endsWith(".yaml")) continue;
-      out.push({ version, doc: yaml.load(fs.readFileSync(path.join(vDir, f), "utf8")) });
-    }
+  if (!fs.existsSync(dir)) return out;
+  for (const rel of fs.readdirSync(dir, { recursive: true })) {
+    const relStr = String(rel);
+    if (relStr.endsWith(".jsx") && !relStr.endsWith("-benchmarks.jsx")) out.push(path.join(dir, relStr));
   }
   return out;
 }
 
-const docs = versionDocs();
-const { ids: recipeIds, precisionByModelId } = scanRecipes();
-const { blocks, skipped } = transform({ versionDocs: docs, recipeHfIds: recipeIds, recipePrecisionByModelId: precisionByModelId });
+const { byLower, precisionByHfId } = scanRecipes();
+const hwIds = taxonomyHwIds();
 
-// Warn about upstream hardware names we don't have a taxonomy mapping for.
-const knownHw = new Set(Object.keys(HW_NAME_MAP));
-const unmapped = new Set();
-for (const { doc } of docs) {
-  for (const fam of doc.families || []) for (const m of fam.models || []) {
-    for (const hw of Object.keys(m.hardware || {})) if (!knownHw.has(hw)) unmapped.add(hw);
+// Wipe+rebuild so upstream deletions/renames propagate.
+fs.rmSync(OUT_DIR, { recursive: true, force: true });
+fs.mkdirSync(OUT_DIR, { recursive: true });
+
+const written = [];
+const skipped = [];
+for (const file of listConfigFiles(CONFIGS_DIR)) {
+  const rel = path.relative(CONFIGS_DIR, file);
+  let config;
+  try { config = parseConfigModule(fs.readFileSync(file, "utf8")); }
+  catch (e) { skipped.push(`${rel} (parse error: ${e.message})`); continue; }
+
+  for (const variantId of configVariantIds(config)) {
+    // First candidate checkpoint that matches a vLLM recipe (case-insensitive).
+    const matched = candidateCheckpoints(config, variantId).find((c) => byLower.has(c.toLowerCase()));
+    if (!matched) { skipped.push(`${rel} [${variantId}] (no matching vLLM recipe)`); continue; }
+    const hfId = byLower.get(matched.toLowerCase());
+
+    const block = configToBlock(config, variantId, hfId, precisionByHfId.get(hfId), hwIds);
+    const outPath = path.join(OUT_DIR, `${hfId}.yaml`);
+    fs.mkdirSync(path.dirname(outPath), { recursive: true });
+    fs.writeFileSync(outPath, `# GENERATED by scripts/sync-sglang.mjs from the new SGLang cookbook — do not edit\n` + yaml.dump(block, { lineWidth: -1 }));
+    written.push(hfId);
   }
 }
 
-// Rewrite the generated tree from scratch so removed-upstream models disappear.
-// NOTE: only OUT_DIR (engines/sglang/) is wiped — hand-authored blocks under
-// engines/sglang-manual/ are deliberately left untouched so they survive
-// re-syncs (see src/lib/engines/sglang-join.js for the generated-wins fallback).
-fs.rmSync(OUT_DIR, { recursive: true, force: true });
-fs.mkdirSync(OUT_DIR, { recursive: true });
-const HEADER = "# GENERATED by scripts/sync-sglang.mjs — do not edit\n";
-for (const { hfId, block } of blocks) {
-  const file = path.join(OUT_DIR, `${hfId}.yaml`);
-  fs.mkdirSync(path.dirname(file), { recursive: true });
-  fs.writeFileSync(file, HEADER + yaml.dump(block, { lineWidth: -1 }));
-}
-
-console.log(`✓ SGLang sync: ${blocks.length} blocks generated, ${skipped.length} SGLang-only models skipped (no vLLM recipe)`);
-if (skipped.length) console.log(`  skipped: ${skipped.join(", ")}`);
-if (unmapped.size) console.log(`  ⚠ unmapped upstream hardware (tp dropped): ${[...unmapped].sort().join(", ")}`);
+written.sort();
+skipped.sort();
+console.log(`✓ SGLang blocks: ${written.length} generated`);
+for (const w of written) console.log(`   ${w}`);
+if (skipped.length) { console.log(`  skipped ${skipped.length}:`); for (const s of skipped) console.log(`   - ${s}`); }
