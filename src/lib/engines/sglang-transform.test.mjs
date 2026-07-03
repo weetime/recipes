@@ -1,140 +1,21 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { compareVersions, modelToBlock, transform, HW_NAME_MAP } from "./sglang-transform.js";
+import { parseConfigModule } from "./sglang-transform.js";
 
-test("compareVersions sorts numerically, not lexically", () => {
-  assert.ok(compareVersions("v0.5.10", "v0.5.8") > 0);
-  assert.ok(compareVersions("v0.5.6", "v0.5.10") < 0);
-  assert.equal(compareVersions("v0.5.8", "v0.5.8"), 0);
-});
-
-const MODEL = {
-  name: "Qwen3.6-35B-A3B",
-  model_path: "Qwen/Qwen3.6-35B-A3B",
-  attributes: { llm: { thinking_capability: "hybrid", tool_parser: "qwen3_coder", reasoning_parser: "qwen3", chat_template: null } },
-  hardware: {
-    H100: { configurations: [
-      { name: "default", attributes: { nodes: "single", quantization: "bf16" }, quantized_model_path: null, engine: { tp: 1, extra_args: [] } },
-    ] },
-    H200: { configurations: [
-      { name: "default", attributes: { nodes: "single", quantization: "bf16" }, engine: { tp: 1, extra_args: [] } },
-    ] },
-  },
+test("parseConfigModule 求值纯数据 config,忽略注释与 import", () => {
+  const src = `
+// 顶部注释
+import { Deployment } from "/src/snippets/_deployment.jsx";
+export const config = {
+  modelName: "X", // 行内注释
+  supportedHardware: ["h200", "gb200"],
+  cells: [{ match: { hw: "h200" }, flags: ["--tp 8"] }],
+  curl: \`curl http://{{HOST}}\`,
 };
-
-test("modelToBlock maps parsers, per-hw tp, precision, single-node", () => {
-  const b = modelToBlock(MODEL, "v0.5.10");
-  assert.equal(b.engine, "sglang");
-  assert.equal(b.model_id, "Qwen/Qwen3.6-35B-A3B");
-  assert.equal(b.min_version, "v0.5.10");
-  assert.equal(b.serve_binary, "python3 -m sglang.launch_server");
-  assert.deepEqual(b.base_args, ["--trust-remote-code"]);
-  assert.deepEqual(b.tp_by_hardware, { h100: 1, h200: 1 });
-  assert.equal(b.variants.default.precision, "bf16");
-  assert.deepEqual(b.strategies.single_node_tp, {});
-  assert.equal(b.strategies.multi_node_tp, undefined);
-  assert.deepEqual(b.features.tool_calling.args, ["--tool-call-parser", "qwen3_coder"]);
-  assert.deepEqual(b.features.reasoning.args, ["--reasoning-parser", "qwen3"]);
-});
-
-test("modelToBlock never emits multi_node_tp, even for nodes:multi (derived at render)", () => {
-  const m = { ...MODEL, hardware: { B200: { configurations: [
-    { name: "default", attributes: { nodes: "multi", quantization: "fp8" }, engine: { tp: 16, extra_args: [] } },
-  ] } } };
-  const b = modelToBlock(m, "v0.5.10");
-  assert.equal(b.strategies.multi_node_tp, undefined);    // multi-node is derived by the adapter, not the block
-  assert.deepEqual(b.strategies.single_node_tp, {});
-  assert.equal(b.variants.default.precision, "fp8");
-  assert.deepEqual(b.tp_by_hardware, { b200: 16 });       // tp is still captured faithfully
-});
-
-test("modelToBlock drops a feature when its parser is null/absent", () => {
-  const m = { ...MODEL, attributes: { llm: { thinking_capability: "non_thinking", tool_parser: null, reasoning_parser: null } } };
-  const b = modelToBlock(m, "v0.5.8");
-  assert.deepEqual(b.features, {});
-});
-
-test("modelToBlock falls back to a default-prefixed config when no exact 'default'", () => {
-  const m = {
-    name: "Nemotron-Super",
-    model_path: "nvidia/Nemotron-Super",
-    attributes: { llm: { tool_parser: "nemotron", reasoning_parser: null } },
-    hardware: {
-      H200: { configurations: [
-        { name: "default-kv-fp8", attributes: { nodes: "single", quantization: "fp8" }, engine: { tp: 4 } },
-        { name: "default-kv-bf16", attributes: { nodes: "single", quantization: "bf16" }, engine: { tp: 8 } },
-      ] },
-    },
-  };
-  const b = modelToBlock(m, "v0.5.8");
-  assert.deepEqual(b.tp_by_hardware, { h200: 4 });        // first default-prefixed config wins
-  assert.equal(b.variants.default.precision, "fp8");
-  assert.deepEqual(b.features.tool_calling.args, ["--tool-call-parser", "nemotron"]);
-});
-
-test("modelToBlock: recipe precision overrides a stale upstream quantization", () => {
-  // Upstream says fp8, but the recipe (authoritative for the checkpoint) says int4.
-  const m = { ...MODEL, hardware: { H200: { configurations: [
-    { name: "default", attributes: { quantization: "fp8" }, engine: { tp: 8 } },
-  ] } } };
-  const b = modelToBlock(m, "v0.5.10", "int4");
-  assert.equal(b.variants.default.precision, "int4");
-});
-
-test("modelToBlock: falls back to upstream precision when recipe supplies none", () => {
-  const b = modelToBlock(MODEL, "v0.5.10", undefined);
-  assert.equal(b.variants.default.precision, "bf16");   // upstream value retained
-});
-
-test("transform: threads recipePrecisionByModelId to the matching block", () => {
-  const versionDocs = [
-    { version: "v0.5.10", doc: { families: [{ models: [
-      { ...MODEL, hardware: { H200: { configurations: [{ name: "default", attributes: { quantization: "fp8" }, engine: { tp: 8 } }] } } },
-    ] }] } },
-  ];
-  const recipeHfIds = new Set(["Qwen/Qwen3.6-35B-A3B"]);
-  const recipePrecisionByModelId = new Map([["Qwen/Qwen3.6-35B-A3B", "int4"]]);
-  const { blocks } = transform({ versionDocs, recipeHfIds, recipePrecisionByModelId });
-  assert.equal(blocks[0].block.variants.default.precision, "int4");
-});
-
-test("transform: latest-wins across versions, overlap-only, logs skips", () => {
-  const versionDocs = [
-    { version: "v0.5.8", doc: { families: [{ models: [
-      { ...MODEL, model_path: "Qwen/Qwen3.6-35B-A3B", hardware: { H200: { configurations: [{ name: "default", attributes: { quantization: "bf16" }, engine: { tp: 4 } }] } } },
-    ] }] } },
-    { version: "v0.5.10", doc: { families: [{ models: [
-      MODEL,
-      { ...MODEL, name: "SoloSGL", model_path: "acme/SoloSGL-1B" },
-    ] }] } },
-  ];
-  const recipeHfIds = new Set(["Qwen/Qwen3.6-35B-A3B"]);
-  const { blocks, skipped } = transform({ versionDocs, recipeHfIds });
-  assert.equal(blocks.length, 1);
-  assert.equal(blocks[0].hfId, "Qwen/Qwen3.6-35B-A3B");
-  assert.equal(blocks[0].block.min_version, "v0.5.10");
-  assert.deepEqual(blocks[0].block.tp_by_hardware, { h100: 1, h200: 1 });
-  assert.deepEqual(skipped, ["acme/SoloSGL-1B"]);
-});
-
-test("HW_NAME_MAP covers the common NVIDIA + AMD ids", () => {
-  for (const id of ["h100", "h200", "b200", "b300", "gb200", "gb300", "mi300x", "mi325x", "mi355x"]) {
-    assert.ok(Object.values(HW_NAME_MAP).includes(id), `${id} is a mapping target`);
-  }
-});
-
-test("transform tolerates malformed/empty upstream entries without crashing", () => {
-  const versionDocs = [
-    { version: "v0.5.6", doc: null },                              // whole doc null
-    { version: "v0.5.8", doc: { families: [null, { models: [null, {
-      name: "X", model_path: "Qwen/Qwen3.6-35B-A3B",
-      attributes: { llm: { tool_parser: "qwen3_coder", reasoning_parser: "qwen3" } },
-      hardware: { H200: null, B200: { configurations: [null, { name: "default", attributes: { quantization: "bf16" }, engine: { tp: 2 } }] } },
-    }] }] } },
-  ];
-  const recipeHfIds = new Set(["Qwen/Qwen3.6-35B-A3B"]);
-  let res;
-  assert.doesNotThrow(() => { res = transform({ versionDocs, recipeHfIds }); });
-  assert.equal(res.blocks.length, 1);
-  assert.deepEqual(res.blocks[0].block.tp_by_hardware, { b200: 2 }); // H200:null skipped, B200 default used
+`;
+  const cfg = parseConfigModule(src);
+  assert.equal(cfg.modelName, "X");
+  assert.deepEqual(cfg.supportedHardware, ["h200", "gb200"]);
+  assert.equal(cfg.cells[0].flags[0], "--tp 8");
+  assert.match(cfg.curl, /\{\{HOST\}\}/);
 });

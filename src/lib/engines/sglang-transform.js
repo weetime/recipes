@@ -8,6 +8,22 @@
  * tp_by_hardware vs the hardware's gpu_count.
  */
 
+/**
+ * 求值一个 SGLang 新 cookbook 的 config 模块文本 → 其 `config` 对象。
+ * 这些模块是纯数据(对象内部不引用任何 import),但带行内注释和模板字符串,
+ * 所以用一个受限的 Function 求值,而不是正则硬抠。
+ */
+export function parseConfigModule(source) {
+  const noImports = String(source).replace(/^\s*import\s.*$/gm, "");
+  // 把 `export const config =` 改成 `return`,并去掉任何其它顶层 export。
+  const body = noImports
+    .replace(/export\s+const\s+config\s*=/, "return ")
+    .replace(/^\s*export\s+.*$/gm, "");
+  // eslint-disable-next-line no-new-func
+  const fn = new Function(`"use strict";\n${body}`);
+  return fn();
+}
+
 // Upstream hardware name → our taxonomy.yaml hardware id. Names not listed are
 // skipped (their tp is dropped) — sync-sglang.mjs logs a warning.
 export const HW_NAME_MAP = {
