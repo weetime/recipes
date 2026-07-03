@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Analytics } from "@vercel/analytics/next";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { SearchBox } from "@/components/recipes/SearchBox";
+import CommunityModal from "@/components/CommunityModal";
 import { getAllRecipes } from "@/lib/recipes";
 import { siteUrl } from "@/lib/site-url";
 import "./globals.css";
@@ -129,27 +130,14 @@ export default async function RootLayout({ children }) {
         {/* Global footer */}
         <footer className="border-t border-border mt-auto">
           <div className="max-w-[1480px] mx-auto px-4 sm:px-6 py-5 text-xs text-muted-foreground">
-            <div className="flex flex-wrap gap-x-5 gap-y-2">
+            <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
               <a href="https://github.com/weetime/recipes" className="hover:text-foreground transition-colors">GitHub</a>
               <a href="https://github.com/weetime/recipes/issues" className="hover:text-foreground transition-colors">Request a recipe</a>
               <a href="https://docs.vllm.ai" className="hover:text-foreground transition-colors">Documentation</a>
               <a href="https://vllm.ai/#compatibility" className="hover:text-foreground transition-colors">Supported Models & Hardware</a>
               <a href="https://vllm.ai/#quick-start" className="hover:text-foreground transition-colors">Install vLLM</a>
               <a href="/models.json" className="hover:text-foreground transition-colors">JSON API</a>
-            </div>
-            {/* Community QR — WeChat group. Black-on-white QR needs a white plate to stay scannable in dark mode. */}
-            <div className="mt-4 flex items-center gap-3">
-              <img
-                src="/community-qr.png"
-                alt="微信交流群二维码"
-                width={60}
-                height={60}
-                className="rounded-md border border-border bg-white p-1 shrink-0"
-              />
-              <div className="leading-tight">
-                <div className="text-foreground font-medium">扫码入群交流</div>
-                <div>微信扫码,加入 weetime 交流群</div>
-              </div>
+              <CommunityModal />
             </div>
           </div>
         </footer>
