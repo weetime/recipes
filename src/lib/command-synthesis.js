@@ -99,6 +99,31 @@ export function recommendStrategy(recipe, _hwProfile, nodeCount = 1) {
 }
 
 /**
+ * PD-cluster pool parallelism modes offered for a recipe, derived from its
+ * `compatible_strategies[]`. Each strategy id encodes a parallelism family in
+ * its suffix — `*_tp` / `*_tp_pp` → TP, `*_tep` → TEP, `*_dep` → DEP — and the
+ * pd_cluster pools reuse that same vocabulary. So a recipe listing
+ * single_node_tp + multi_node_tep + multi_node_dep offers TP / TEP / DEP per
+ * pool, while a dense model that only lists `*_tp` strategies offers TP alone.
+ *
+ * Returns an ordered subset of ["tp", "tep", "dep"]; never empty (falls back to
+ * ["tp"]). EP modes (tep/dep) are inherently MoE-only, which compatible_strategies
+ * already encodes — dense recipes don't list them.
+ */
+export function pdPoolModes(recipe) {
+  const compat = recipe?.compatible_strategies || [];
+  const modes = new Set();
+  for (const s of compat) {
+    if (s === "pd_cluster") continue;
+    if (/(?:^|_)dep$/.test(s)) modes.add("dep");
+    else if (/(?:^|_)tep$/.test(s)) modes.add("tep");
+    else if (/(?:^|_)tp(?:_pp)?$/.test(s)) modes.add("tp");
+  }
+  if (modes.size === 0) modes.add("tp");
+  return ["tp", "tep", "dep"].filter((m) => modes.has(m));
+}
+
+/**
  * Precision → allowed hardware constraint.
  * NVFP4 is NVIDIA Blackwell-only (sm_100+). FP4 generic is also Blackwell-only
  * in practice. AWQ/GPTQ/INT quants run on most NVIDIA+AMD hardware.
@@ -138,13 +163,88 @@ export function isHardwareSupported(recipe, hwId) {
 }
 
 /**
+ * Variant-level hardware allowlist. Missing/empty means the variant inherits
+ * the recipe's normal hardware compatibility; otherwise only listed profile
+ * ids may render or be selected.
+ */
+export function isVariantHardwareSupported(variant, hwId) {
+  const supported = variant?.supported_hardware;
+  return !Array.isArray(supported) || supported.length === 0 || supported.includes(hwId);
+}
+
+/**
+ * A feature with a `modes` map is single-select ("pick one of N") rather than a
+ * boolean toggle — e.g. `spec_decoding` offering MTP / DFlash / DSpark. This
+ * returns which mode is active by default when the feature is turned on:
+ * `default_mode` if it names a real mode, else the first declared mode.
+ * Returns undefined for plain boolean features (no `modes`).
+ */
+export function defaultModeFor(feature) {
+  if (!feature?.modes || typeof feature.modes !== "object") return undefined;
+  const keys = Object.keys(feature.modes);
+  if (feature.default_mode && keys.includes(feature.default_mode)) return feature.default_mode;
+  return keys[0];
+}
+
+/**
+ * Whether a single mode may run on a given hardware profile. A mode can gate
+ * itself with a tri-state `hardware` map keyed by generation (hopper/blackwell/
+ * amd) or gpu-id; a value of `unsupported` disables it (e.g. a DFlash draft
+ * checkpoint that only ships for Blackwell). Absence = runs everywhere.
+ */
+export function isModeSupported(mode, hwProfile, hwId) {
+  const hw = mode?.hardware;
+  if (!hw || typeof hw !== "object") return true;
+  const gen = normalizeGeneration(hwProfile?.generation || hwProfile?.gpu_generation);
+  if (gen && hw[gen] === "unsupported") return false;
+  if (hwId && hw[hwId] === "unsupported") return false;
+  return true;
+}
+
+/**
+ * Whether a mode is available on a given variant. A mode may restrict itself to
+ * specific checkpoints with `variants: [<variant_key>, ...]` — e.g. the dspark
+ * method only exists on the fused DSpark checkpoint, so FP8/NVFP4 offer MTP
+ * only. Absence of `variants` = available on every variant.
+ */
+export function isModeAllowedForVariant(mode, variantKey) {
+  const allow = mode?.variants;
+  return !Array.isArray(allow) || allow.length === 0 || allow.includes(variantKey);
+}
+
+/**
+ * The effective mode key for a (feature, variant, hardware, user-selection)
+ * tuple — the single source of truth shared by the command emitter and the UI.
+ * Only considers modes allowed on this variant + hardware, then prefers, in
+ * order: the user's explicit pick, the variant's `default_modes[featureKey]`,
+ * the feature's `default_mode`, else the first allowed mode. Returns undefined
+ * when the feature has no modes or none are allowed here.
+ */
+export function resolveModeKey(feature, featureKey, variantObj, variantKey, hwProfile, hwId, selectedMode) {
+  if (!feature?.modes || typeof feature.modes !== "object") return undefined;
+  const allowed = Object.keys(feature.modes).filter(
+    (k) => isModeAllowedForVariant(feature.modes[k], variantKey)
+      && isModeSupported(feature.modes[k], hwProfile, hwId)
+  );
+  if (allowed.length === 0) return undefined;
+  for (const c of [selectedMode, variantObj?.default_modes?.[featureKey], feature.default_mode]) {
+    if (c && allowed.includes(c)) return c;
+  }
+  return allowed[0];
+}
+
+/**
  * List hardware profiles compatible with a variant by precision constraint
  * only. VRAM is NOT a blocking constraint — users can scale out via multi-node
  * TP/DP, so any profile that satisfies the precision requirement is valid.
  */
 export function listCompatibleHardware(hwProfiles, variant, recipe) {
   return Object.entries(hwProfiles)
-    .filter(([id, p]) => isPrecisionCompatible(p, variant) && isHardwareSupported(recipe, id))
+    .filter(([id, p]) =>
+      isPrecisionCompatible(p, variant)
+      && isHardwareSupported(recipe, id)
+      && isVariantHardwareSupported(variant, id)
+    )
     .map(([id]) => id);
 }
 
@@ -181,8 +281,9 @@ export function isHardwareScalable(hwProfile) {
  * weights already fit single-node. Used to disable variant pills on
  * non-scalable hardware where the variant has nowhere to shard.
  */
-export function variantRunsOnHardware(hwProfile, variant) {
+export function variantRunsOnHardware(hwProfile, variant, hwId = null) {
   if (!isPrecisionCompatible(hwProfile, variant)) return false;
+  if (hwId && !isVariantHardwareSupported(variant, hwId)) return false;
   if (isHardwareScalable(hwProfile)) return true;
   return fitsSingleNode(hwProfile, variant);
 }
@@ -194,9 +295,9 @@ export function variantRunsOnHardware(hwProfile, variant) {
  * key, or null when nothing fits. Used to auto-fall off an oversized variant
  * (e.g. BF16 → FP8) when the user selects a single-GPU workstation.
  */
-export function pickFittingVariant(recipe, hwProfile) {
+export function pickFittingVariant(recipe, hwProfile, hwId = null) {
   const fitting = Object.entries(recipe.variants || {}).filter(
-    ([, v]) => variantRunsOnHardware(hwProfile, v)
+    ([, v]) => variantRunsOnHardware(hwProfile, v, hwId)
   );
   if (!fitting.length) return null;
   fitting.sort((a, b) => (b[1].vram_minimum_gb || 0) - (a[1].vram_minimum_gb || 0));
@@ -226,7 +327,10 @@ export function pdFitsSingleNode(hwProfile, variant) {
 export function pickDefaultHardware(hwProfiles, variant, recipe) {
   const constraint = PRECISION_HARDWARE_CONSTRAINTS[variant?.precision];
   const compatible = Object.entries(hwProfiles).filter(
-    ([id, p]) => matchesConstraint(p, constraint) && isHardwareSupported(recipe, id)
+    ([id, p]) =>
+      matchesConstraint(p, constraint)
+      && isHardwareSupported(recipe, id)
+      && isVariantHardwareSupported(variant, id)
   );
 
   if (constraint?.generation === "blackwell") {
@@ -257,10 +361,12 @@ export function pickDefaultHardware(hwProfiles, variant, recipe) {
 //   { cu129, cu130 }                   (NVIDIA CUDA-keyed — explicit paired tags,
 //                                        auto-suffix is skipped in favor of these)
 //   { nvidia: { cu129, cu130 }, amd, tpu }  (mixed: NVIDIA value may be a CUDA map)
+// Exact variant+hardware overrides may also set
+//   variants.<key>.hardware_overrides.<hw_id>.docker_image
 //
 // When a CUDA map is in play, `cudaMap` is returned so the caller can pick by
 // the user's `dockerCudaVariant` toggle instead of appending `-cu129`/`-cu130`.
-export function computeDockerMeta(recipe, variant, hwProfile) {
+export function computeDockerMeta(recipe, variant, hwProfile, hwId = null) {
   // When `model.nightly_required: true` and no explicit `docker_image` pin,
   // swap the brand defaults to nightly tags so the Install block matches the
   // nightly pip wheel that's also being rendered. vLLM publishes `:nightly`
@@ -297,25 +403,40 @@ export function computeDockerMeta(recipe, variant, hwProfile) {
   const brandKey = isTpu ? "tpu" : isAmd ? "amd" : isIntel ? "intel" : isAscend ? "ascend"
     : isHygon ? "hygon" : isIluvatar ? "iluvatar" : isPpu ? "ppu"
     : isKunlun ? "kunlun" : isCambricon ? "cambricon" : "nvidia";
-  const override = variant?.docker_image || recipe.model?.docker_image;
+  // Exact variant+hardware image overrides win over variant-wide and
+  // model-wide images (for example, an MI355X-only ROCm nightly).
+  const exactHardwareOverride = hwId
+    ? variant?.hardware_overrides?.[hwId]?.docker_image
+    : null;
 
   const isCudaMap = (v) =>
     v && typeof v === "object" && ("cu129" in v || "cu130" in v);
 
-  let pinned = null;
+  let pinned = typeof exactHardwareOverride === "string" ? exactHardwareOverride : null;
   let cudaMap = null;
-  if (typeof override === "string") {
-    if (brandKey === "nvidia") pinned = override;
-  } else if (override && typeof override === "object") {
-    const isBrandKeyed = "nvidia" in override || "amd" in override || "tpu" in override || "intel" in override || "ascend" in override;
-    if (isBrandKeyed) {
-      const brandValue = override[brandKey];
-      if (typeof brandValue === "string") pinned = brandValue;
-      else if (brandKey === "nvidia" && isCudaMap(brandValue)) cudaMap = brandValue;
-    } else if (brandKey === "nvidia" && isCudaMap(override)) {
-      cudaMap = override;
+
+  function applyOverride(override) {
+    if (!override || pinned || cudaMap) return;
+    if (typeof override === "string") {
+      if (brandKey === "nvidia") pinned = override;
+      return;
+    }
+    if (typeof override === "object") {
+      const isBrandKeyed = "nvidia" in override || "amd" in override || "tpu" in override || "intel" in override || "ascend" in override;
+      if (isBrandKeyed) {
+        const brandValue = override[brandKey];
+        if (typeof brandValue === "string") pinned = brandValue;
+        else if (brandKey === "nvidia" && isCudaMap(brandValue)) cudaMap = brandValue;
+      } else if (brandKey === "nvidia" && isCudaMap(override)) {
+        cudaMap = override;
+      }
     }
   }
+
+  applyOverride(variant?.docker_image);
+  // A partial variant override falls back to the model image for brands it
+  // does not cover instead of skipping directly to the global default.
+  applyOverride(recipe.model?.docker_image);
 
   const image = pinned || DEFAULT_IMAGE[brandKey];
   const gpuFlags = isTpu
@@ -520,7 +641,7 @@ export function resolveOmniCommand(recipe, variantKey, task, hwProfile) {
  * Returns: { command, env, deployType } for single_node/multi_node,
  *          { prefillCommand, decodeCommand, routerConfig, env, deployType } for pd_cluster.
  */
-export function resolveCommand(recipe, variantKey, strategyName, hwProfileId, enabledFeatures, strategies, taxonomy, advancedArgs = [], nodeCount = 1, pdNodes = null) {
+export function resolveCommand(recipe, variantKey, strategyName, hwProfileId, enabledFeatures, strategies, taxonomy, advancedArgs = [], nodeCount = 1, pdNodes = null, featureModes = {}) {
   const variant = recipe.variants?.[variantKey] || recipe.variants?.default || {};
   const strategy = strategies[strategyName] || {};
   const hwProfile = taxonomy.hardware_profiles?.[hwProfileId] || {};
@@ -536,7 +657,13 @@ export function resolveCommand(recipe, variantKey, strategyName, hwProfileId, en
   // TEP/DEP require full TP by topology; multi-node is explicit scale-out.
   const singleNodeTp = resolveSingleNodeTp(recipe, variant, hwProfile, strategyName);
 
+  // The served checkpoint is owned by the variant axis (variant.model_id > base).
+  // Spec-decoding modes are single-select and contribute only args (the
+  // --speculative-config), so exactly one is ever emitted. A fused-spec
+  // checkpoint (e.g. DeepSeek-V4-Pro-DSpark) is a variant that steers the spec
+  // mode via `default_modes`; the mode never overrides model_id.
   const modelId = variant.model_id || recipe.model?.model_id || "unknown";
+  const variantHardwareOverride = variant?.hardware_overrides?.[hwProfileId];
 
   // Helper to merge args
   function buildArgs(roleOverride, nodeRole) {
@@ -556,6 +683,9 @@ export function resolveCommand(recipe, variantKey, strategyName, hwProfileId, en
 
     // 2. Variant extra args
     if (variantKey !== "default" && variant.extra_args) args.push(...variant.extra_args);
+    if (variantKey !== "default" && variantHardwareOverride?.extra_args) {
+      args.push(...variantHardwareOverride.extra_args);
+    }
 
     // 3. Strategy args + parallel size (grouped together so -tp/-dp sits next to -ep etc.)
     if (strategy.deploy_type !== "pd_cluster") {
@@ -599,9 +729,11 @@ export function resolveCommand(recipe, variantKey, strategyName, hwProfileId, en
       // PD splits inference across separate prefill and decode pools.
       //
       // New model (per-role nodes + parallelism):
-      //   pdNodes = { prefill: <int>, decode: <int> } — user-set node counts
+      //   pdNodes = { prefill: {nodes, rank, parallelism?}, decode: {…} }
+      //   parallelism precedence: pdNodes (UI pill) → strategy_overrides →
+      //     strategy YAML → "tp". Modes: "tp" | "tep" | "dep".
       //   role config (strategy_overrides.pd_cluster.<role>):
-      //     parallelism: "tp" | "dep"          (default: "tp")
+      //     parallelism: "tp" | "tep" | "dep"  (default: "tp")
       //     tp:          <int>                  (default: 1 for dep, poolGpus for tp)
       //     parallel_flag: "--…"                (last-resort override)
       //
@@ -624,7 +756,7 @@ export function resolveCommand(recipe, variantKey, strategyName, hwProfileId, en
       const poolGpus = rolePoolNodes === 0
         ? Math.floor(gpuCount / 2)
         : rolePoolNodes * gpuCount;
-      const parallelism = soRoleCfg.parallelism || roleCfg.parallelism || "tp";
+      const parallelism = pdRole.parallelism || soRoleCfg.parallelism || roleCfg.parallelism || "tp";
 
       if (parallelism === "dep") {
         // Data-parallel + expert-parallel pool (Kimi-K2.5 GB200 pattern).
@@ -665,18 +797,31 @@ export function resolveCommand(recipe, variantKey, strategyName, hwProfileId, en
         }
         args.push("--enable-expert-parallel");
       } else {
-        // TP pool. With >1 node, layer on vLLM mp multi-node flags.
+        // TP / TEP pool. A single engine spanning the pool's nodes via vLLM's
+        // mp multi-node backend: every node runs the same command, varying only
+        // --node-rank; rank > 0 adds --headless (no HTTP server). The UI's node
+        // selector picks which rank to render via pdRole.rank, mirroring the
+        // DEP pool's per-node command rendering. TEP = the same TP layout plus
+        // expert parallel (mirrors single_node_tep / multi_node_tep strategies).
         const roleParallelFlag =
           soRoleCfg.parallel_flag ||
           roleCfg.parallel_flag ||
           strategy.parallel_flag ||
           "--tensor-parallel-size";
         args.push(roleParallelFlag, String(Math.max(1, poolGpus)));
+        if (parallelism === "tep") {
+          args.push("--enable-expert-parallel");
+          // Cross-node TEP perf tweak from multi_node_tep; single-node TEP omits it.
+          if (rolePoolNodes > 1) args.push("-cc.pass_config.fuse_allreduce_rms=False");
+        }
         if (rolePoolNodes > 1) {
+          const nodeIdx = Math.max(0, Math.min(rolePoolNodes - 1, pdRole.rank ?? 0));
           args.push("--nnodes", String(rolePoolNodes));
-          args.push("--node-rank", "0");
+          args.push("--node-rank", String(nodeIdx));
           // TP master = node 0 of pool = NODE_1 (same naming as router endpoints).
           args.push("--master-addr", `$${roleKey.toUpperCase()}_NODE_1`);
+          // Followers are GPU workers only — no API server / NIXL side channel.
+          if (nodeIdx > 0) args.push("--headless");
         }
       }
     } else {
@@ -733,6 +878,21 @@ export function resolveCommand(recipe, variantKey, strategyName, hwProfileId, en
     for (const f of enabledFeatures || []) {
       const feat = recipe.features?.[f];
       if (!feat) continue;
+      // Single-select sub-modes: the feature declares `modes` and the user
+      // picks one (spec_decoding → MTP / DFlash / DSpark). Emit only the
+      // effective mode's args — resolveModeKey honours variant + hardware
+      // availability and falls back when the selection isn't valid here.
+      if (feat.modes && typeof feat.modes === "object") {
+        const modeKey = resolveModeKey(feat, f, variant, variantKey, hwProfile, hwProfileId, featureModes?.[f]);
+        const mode = modeKey ? feat.modes[modeKey] : null;
+        if (mode) {
+          const modeHo = mode.hardware_overrides?.[gen]
+            || (isNvidia ? mode.hardware_overrides?.nvidia : null);
+          const modeArgs = modeHo?.args ?? mode.args;
+          if (modeArgs) args.push(...modeArgs);
+        }
+        continue;
+      }
       const featHo = feat.hardware_overrides?.[gen]
         || (isNvidia ? feat.hardware_overrides?.nvidia : null);
       const featArgs = featHo?.args ?? feat.args;
@@ -751,6 +911,9 @@ export function resolveCommand(recipe, variantKey, strategyName, hwProfileId, en
 
     // Variant env
     if (variantKey !== "default" && variant.extra_env) Object.assign(env, variant.extra_env);
+    if (variantKey !== "default" && variantHardwareOverride?.extra_env) {
+      Object.assign(env, variantHardwareOverride.extra_env);
+    }
 
     // Strategy env
     if (strategy.deploy_type !== "pd_cluster") {
@@ -824,10 +987,10 @@ export function resolveCommand(recipe, variantKey, strategyName, hwProfileId, en
 
     // Per-rank node rewrite: strategy YAML carries `$PREFILL_NODE_1` /
     // `$DECODE_NODE_1` as the rank-0 default for per-node bind hosts (NIXL
-    // side channel etc). For DEP pools where the UI shows a non-zero rank's
-    // command, point those values at NODE_{rank+1} so the rendered command
-    // matches that physical node. TP pools always render the head node, so
-    // NODE_1 is already correct.
+    // side channel etc). Only DEP pools open a per-node side channel (one
+    // `vllm serve` per node), so for a non-zero DEP rank point those values at
+    // NODE_{rank+1} to match that physical node. TP followers run --headless
+    // with no side channel, so their host stays pinned to the head (NODE_1).
     if (strategy.deploy_type === "pd_cluster" && roleOverride) {
       const raw = pdNodes ? pdNodes[roleOverride] : undefined;
       const pdRoleObj =
@@ -835,7 +998,10 @@ export function resolveCommand(recipe, variantKey, strategyName, hwProfileId, en
         : (raw && typeof raw === "object") ? raw
         : {};
       const rank = pdRoleObj.rank || 0;
-      if (rank > 0) {
+      const rwSoRoleCfg = recipe.strategy_overrides?.[strategyName]?.[roleOverride] || {};
+      const rwRoleCfg = strategy[roleOverride] || {};
+      const rwParallelism = pdRoleObj.parallelism || rwSoRoleCfg.parallelism || rwRoleCfg.parallelism || "tp";
+      if (rank > 0 && rwParallelism === "dep") {
         const oldVar = `$${roleOverride.toUpperCase()}_NODE_1`;
         const newVar = `$${roleOverride.toUpperCase()}_NODE_${rank + 1}`;
         for (const k of Object.keys(env)) {
@@ -897,7 +1063,7 @@ export function resolveCommand(recipe, variantKey, strategyName, hwProfileId, en
         : (raw && typeof raw === "object") ? raw
         : {};
       const nodes = typeof pdRole.nodes === "number" ? pdRole.nodes : legacyNodes;
-      const parallelism = soRoleCfg.parallelism || roleCfg.parallelism || "tp";
+      const parallelism = pdRole.parallelism || soRoleCfg.parallelism || roleCfg.parallelism || "tp";
       const poolGpus = nodes === 0 ? Math.floor(gpuCount / 2) : nodes * gpuCount;
       const tp = parallelism === "dep"
         ? (soRoleCfg.tp || roleCfg.tp || 1)
@@ -919,12 +1085,18 @@ export function resolveCommand(recipe, variantKey, strategyName, hwProfileId, en
     // Shell-variable form ($PREFILL_NODE_N / $DECODE_NODE_N) so the same name
     // the prefill/decode commands consume is also what the router lists —
     // user fills one set of values in the Endpoints panel, applied everywhere.
+    // Endpoint count per pool depends on the parallelism mode:
+    //   DEP → one `vllm serve` per node, each binds its own HTTP port, so list
+    //         one endpoint per node (NODE_1..NODE_n).
+    //   TP  → a single engine spanning n nodes; only the head node (NODE_1)
+    //         serves HTTP (followers are --headless), so list exactly one.
+    const epCount = (meta) => (meta.parallelism === "dep" ? Math.max(1, meta.nodes || 1) : 1);
     const prefillEndpoints = Array.from(
-      { length: Math.max(1, pMeta.nodes || 1) },
+      { length: epCount(pMeta) },
       (_, i) => `    --prefill http://$PREFILL_NODE_${i + 1}:8001 \\`,
     );
     const decodeEndpoints = Array.from(
-      { length: Math.max(1, dMeta.nodes || 1) },
+      { length: epCount(dMeta) },
       (_, i) => `    --decode http://$DECODE_NODE_${i + 1}:8002 \\`,
     );
     // intra-node-data-parallel-size = max dp_local across the two pools for

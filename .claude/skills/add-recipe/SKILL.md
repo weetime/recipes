@@ -20,7 +20,7 @@ Recipes are YAML files at `models/<hf_org>/<hf_repo>.yaml`. The path mirrors Hug
    - **`dependencies:`** — any pip line beyond `vllm` itself: version pins (`mistral_common >= 1.11.1`, `transformers >= 5.4.0`), extras (`vllm[audio]`), source installs (`pip install git+...`), DeepGEMM pins, etc. Pin them even when the README says "auto-installed" — users on stale wheel caches need an explicit upgrade path. Each entry needs a one-line `note` saying *why*.
    - **Parser flags for `features:`** — `--tool-call-parser <name>`, `--reasoning-parser <name>`, `--enable-auto-tool-choice`. Use the exact parser name the README specifies.
    - **Companion / draft repos** — EAGLE / MTP / Eagle3 heads, NVFP4 quants, instruct vs base. Wire as `spec_decoding` feature (draft pointer in `--speculative-config`) or a sibling variant with `model_id:` override. Copy the recommended `--speculative-config` JSON verbatim from the README.
-   - **Recommended serve flags** — `--tensor-parallel-size`, `--gpu_memory_utilization`, `--max_num_batched_tokens`, `--max_num_seqs` go into the guide's launch command and into variant `extra_args` when they're variant-specific.
+   - **Recommended serve flags** — `--tensor-parallel-size`, `--gpu-memory-utilization`, `--max-num-batched-tokens`, `--max-num-seqs` go into the guide's launch command and into variant `extra_args` when they're variant-specific.
    - **Hardware guidance / sampling defaults** — "recommended on 8xH200" lines inform variant `description` + `vram_minimum_gb`; recommended `temperature` / `top_p` / `reasoning_effort` go in the guide's Client Usage block.
 4. **Cross-check upstream vLLM support.** The README is a snapshot — if it was written at a moment when only nightly worked, that claim rots once stable ships. **Never copy the README's "vLLM nightly" claim verbatim without checking.** Run these in parallel:
    - `gh search issues --repo vllm-project/vllm "<model-name>" --state all --limit 20` — bug reports tell you which versions users are actually running on (e.g. an issue body saying "vLLM 0.18.0 + this model crashes" is positive proof the model loads on 0.18.0).
@@ -147,6 +147,7 @@ variants:
     precision: fp8
     vram_minimum_gb: <integer>
     description: "..."
+    supported_hardware: [mi355x]  # optional exact hardware-profile allowlist
     extra_args: []
     extra_env: {}
 
@@ -204,6 +205,16 @@ guide: |                          # markdown, rendered as the Guide accordion
 Example: a 70B BF16 model → `70 × 2 × 1.2 = 168 GB`. Round up.
 
 If the variant is `model_id`-overridden and the override is a different base model with its own param count (e.g. a distilled FP4 checkpoint), use the override's parameter count — verify it via HF.
+
+**Mixed-precision quants (NVFP4 / ModelOpt) — don't trust the bytes-per-param table.** NVIDIA ModelOpt NVFP4 checkpoints are *not* uniformly 4-bit: only the MLP linears drop to NVFP4 (W4A16), while attention linears + KV cache stay FP8 and embeddings/norms stay higher precision. `hf_quant_config.json` shows `quant_algo: MIXED_PRECISION` in this case. The pure `params × 0.5 × 1.2` formula then **underestimates** — e.g. `nvidia/Qwen3.6-27B-NVFP4` is ~21.9 GB on disk, not the 13.5 GB the table implies, so `27B × 0.5 × 1.2 = 17` is wrong (the weights alone exceed it). For any mixed-precision checkpoint, size from the **real weight footprint** instead:
+
+```bash
+# total_size is in bytes → GB; then × 1.2 for KV/activation overhead
+curl -sL "https://huggingface.co/<org>/<repo>/resolve/main/model.safetensors.index.json" \
+  | python3 -c "import json,sys; print(round(json.load(sys.stdin)['metadata']['total_size']/1e9*1.2))"
+```
+
+So `vram_minimum_gb = ceil(real_checkpoint_GB × 1.2)` (Qwen3.6-27B-NVFP4 → `ceil(21.9 × 1.2) = 27`). The bytes-per-param table stays correct for *uniform* quants (plain int4/awq/gptq/fp8, and full-model FP4).
 
 ## Naming and conventions
 
