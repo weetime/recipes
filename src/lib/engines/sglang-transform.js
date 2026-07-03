@@ -1,21 +1,23 @@
 /**
- * Pure mapping from sgl-cookbook generated model configs to our engines/sglang
- * block schema. No IO — scripts/sync-sglang.mjs does the reading/writing.
+ * Pure mapping from the new SGLang cookbook's declarative config objects
+ * (docs_new/src/snippets/configs/<org>/<model>.jsx) to our engines/sglang block
+ * schema. No IO — scripts/sync-sglang.mjs does the reading/writing/recipe-matching.
  *
- * Scope: TP only. Uses each hardware's `default` named configuration;
- * dp/ep/PD/speculative (non-default) configs are ignored. Multi-node is NOT
- * encoded here — the SGLang adapter derives it at render time from
- * tp_by_hardware vs the hardware's gpu_count.
+ * A config carries a VARIANT axis (config.variants[]) — e.g. ["default"], or
+ * ["flash","pro"], or the LFM2.5 family — and each variant maps, via
+ * config.modelNames, to a distinct HF checkpoint, hence a distinct recipe. So one
+ * config can yield several blocks. Scope: single-node TP only; multi-node is
+ * derived at render time by the SGLang adapter from tp_by_hardware vs gpu_count.
  */
 
 /**
- * 求值一个 SGLang 新 cookbook 的 config 模块文本 → 其 `config` 对象。
- * 这些模块是纯数据(对象内部不引用任何 import),但带行内注释和模板字符串,
- * 所以用一个受限的 Function 求值,而不是正则硬抠。
+ * Evaluate a config module's source text → its `config` object. These modules are
+ * pure data (the object references no imports), but carry inline comments and
+ * template strings, so evaluate via a constrained Function rather than regex.
  */
 export function parseConfigModule(source) {
   const noImports = String(source).replace(/^\s*import\s.*$/gm, "");
-  // 把 `export const config =` 改成 `return`,并去掉任何其它顶层 export。
+  // Turn `export const config =` into `return`, and drop any other top-level export.
   const body = noImports
     .replace(/export\s+const\s+config\s*=/, "return ")
     .replace(/^\s*export\s+.*$/gm, "");
@@ -24,18 +26,29 @@ export function parseConfigModule(source) {
   return fn();
 }
 
-// 已知量化后缀:从 cookbookModel 推基准 recipe hf_id 时剥离。
-const QUANT_SUFFIXES = ["-FP8", "-NVFP4", "-MXFP8", "-MXFP4", "-INT8", "-INT4", "-AWQ", "-GPTQ"];
-
-export function hfIdForConfig(config) {
-  let id = config?.github?.cookbookModel || "";
-  for (const suf of QUANT_SUFFIXES) {
-    if (id.endsWith(suf)) { id = id.slice(0, -suf.length); break; }
-  }
-  return id;
+// A config's variant ids (the served-checkpoint axis). Falls back to ["default"]
+// for a config that omits an explicit variants list.
+export function configVariantIds(config) {
+  const ids = (config?.variants || []).map((v) => v?.id).filter(Boolean);
+  return ids.length ? ids : ["default"];
 }
 
-// cell.flags 每个元素是整条 "--flag value" 字符串。
+// Candidate served-checkpoint ids for one variant: the modelNames values whose
+// key names this variant (keys look like "<variant>|<quant>" or
+// "<hw>|<variant>|<quant>"), plus the cookbook's headline model as a fallback.
+// The caller matches these against the recipe set (case-insensitively) to decide
+// which recipe — if any — this variant belongs to.
+export function candidateCheckpoints(config, variantId) {
+  const out = [];
+  for (const [key, val] of Object.entries(config?.modelNames || {})) {
+    if (key.split("|").includes(variantId) && val) out.push(val);
+  }
+  const headline = config?.github?.cookbookModel;
+  if (headline) out.push(headline);
+  return [...new Set(out)];
+}
+
+// cell.flags entries are whole "--flag value" strings (e.g. "--tp 8").
 function tpFromCell(cell) {
   for (const f of cell?.flags || []) {
     const m = /^--tp\s+(\d+)/.exec(f);
@@ -44,15 +57,16 @@ function tpFromCell(cell) {
   return null;
 }
 
-// 给某硬件挑一条代表 cell:优先 bf16 + single/首个 strategy,回退该 hw 的第一条。
-function pickCell(config, hw) {
-  const cells = (config.cells || []).filter((c) => c?.match?.hw === hw);
-  return cells.find((c) => c.match?.quant === "bf16") || cells[0] || null;
+// Pick a representative cell for a hardware among already variant-scoped cells:
+// prefer a bf16 cell, else the first for that hardware.
+function pickCell(cells, hw) {
+  const forHw = cells.filter((c) => c?.match?.hw === hw);
+  return forHw.find((c) => c.match?.quant === "bf16") || forHw[0] || null;
 }
 
-// 所有 cell 共有、且非 model-path/host/port/tp/parser 的整条 flag → base_args。
-function commonBaseArgs(config) {
-  const cells = config.cells || [];
+// Flags common to ALL of a variant's cells, excluding model-path/host/port/tp and
+// the parser flags (parsers become toggleable features) → base_args.
+function commonBaseArgs(cells) {
   if (!cells.length) return ["--trust-remote-code"];
   const EXCLUDE = /^--(model-path|host|port|tp|reasoning-parser|tool-call-parser)\b/;
   const sets = cells.map((c) => new Set((c.flags || []).filter((f) => !EXCLUDE.test(f))));
@@ -61,18 +75,24 @@ function commonBaseArgs(config) {
   return common.length ? common : ["--trust-remote-code"];
 }
 
-export function configToBlock(config, hfId, recipePrecision, taxonomyHwIds) {
-  const modelId = config.modelNames?.["default|bf16"] || config.github?.cookbookModel || hfId;
+// One (config, variant) → one block. `modelId` is the resolved served checkpoint
+// (the caller matched it against the recipe set, so it equals the recipe hf_id).
+// `recipePrecision` is authoritative for the checkpoint's precision.
+export function configToBlock(config, variantId, modelId, recipePrecision, taxonomyHwIds) {
+  const allCells = config?.cells || [];
+  const variantCells = allCells.filter((c) => c?.match?.variant === variantId);
+  // Single-variant configs may omit match.variant; fall back to all cells then.
+  const cells = variantCells.length ? variantCells : allCells;
 
   const tp_by_hardware = {};
-  for (const hw of config.supportedHardware || []) {
-    if (taxonomyHwIds && !taxonomyHwIds.has(hw)) continue; // 未知硬件跳过
-    const tp = tpFromCell(pickCell(config, hw));
+  for (const hw of config?.supportedHardware || []) {
+    if (taxonomyHwIds && !taxonomyHwIds.has(hw)) continue; // skip unknown hardware
+    const tp = tpFromCell(pickCell(cells, hw));
     if (tp != null) tp_by_hardware[hw] = tp;
   }
 
   const features = {};
-  for (const item of config.playgroundFeatures?.parsers?.items || []) {
+  for (const item of config?.playgroundFeatures?.parsers?.items || []) {
     const parts = String(item.flag || "").trim().split(/\s+/);
     if (parts[0] === "--tool-call-parser") features.tool_calling = { args: parts };
     else if (parts[0] === "--reasoning-parser") features.reasoning = { args: parts };
@@ -83,14 +103,14 @@ export function configToBlock(config, hfId, recipePrecision, taxonomyHwIds) {
     model_id: modelId,
     nightly_required: true,
     serve_binary: "python3 -m sglang.launch_server",
-    base_args: commonBaseArgs(config),
+    base_args: commonBaseArgs(cells),
     tp_by_hardware,
     variants: { default: {} },
     strategies: { single_node_tp: {} },
     features,
   };
 
-  const precision = recipePrecision || config.quantizations?.[0]?.id || null;
+  const precision = recipePrecision || config?.quantizations?.[0]?.id || null;
   if (precision) block.variants.default.precision = precision;
   return block;
 }
