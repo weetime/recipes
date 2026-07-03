@@ -2283,13 +2283,21 @@ function InstallBlock({ recipe, engine = "vllm", variant, dockerMeta, installMod
   // swaps the default pip command to the nightly wheel index and surfaces a
   // pill in the Install header. Manual `install.pip.command` overrides still
   // win — this flag only affects the default.
-  const nightlyRequired = isVllm && (recipe.model?.nightly_required === true || variant?.nightly_required === true);
+  // vLLM reads model/variant nightly_required; SGLang reads it off its block (the
+  // new-cookbook blocks need SGLang main, so nightly_required is set on them).
+  const nightlyRequired = isVllm
+    ? (recipe.model?.nightly_required === true || variant?.nightly_required === true)
+    : (engineBlock?.nightly_required === true);
   // Resolve the CUDA tag for pip's nightly wheel index from the same toggle
   // that drives the Docker tag suffix. "default" → cu130 (today's upstream
   // baseline); explicit picks pass through.
   const pipCudaTag = dockerCudaVariant === "default" ? "cu130" : dockerCudaVariant;
   const defaultPipCmd = !isVllm
-    ? `python3 -m pip install "sglang[all]${minV ? `>=${minV}` : ""}"`
+    ? (nightlyRequired
+        ? `# SGLang support for this model is on main (not yet in a tagged release):
+git clone https://github.com/sgl-project/sglang.git
+cd sglang && uv pip install -e python`
+        : `python3 -m pip install "sglang[all]${minV ? `>=${minV}` : ""}"`)
     : isAmd
     ? `uv venv --python 3.12
 source .venv/bin/activate
@@ -2307,7 +2315,7 @@ uv pip install -U vllm --torch-backend auto`;
   const pipCmd = pipCfg?.command || defaultPipCmd;
   const pipNote =
     pipCfg?.note ||
-    (nightlyRequired && !isAmd
+    (isVllm && nightlyRequired && !isAmd
       ? `vLLM ${minV} isn't released yet — nightly required. For CUDA 12.9, switch the toggle to cu129.`
       : undefined);
 
@@ -2376,7 +2384,7 @@ uv pip install -U vllm --torch-backend auto`;
         <Package size={12} className="text-[var(--command-fg)]/50 shrink-0" />
         <span className="text-[11px] font-semibold text-[var(--command-fg)]/70 uppercase tracking-widest">Install</span>
         <span className="text-[11px] text-[var(--command-fg)]/40 font-mono">
-          {isVllm ? "vLLM" : "SGLang"} {minV}+{isVllm && isOmni ? " · vLLM-Omni nightly" : ""} · {isTpu ? "TPU" : isAmd ? "ROCm" : isAscend ? "Ascend" : "CUDA"}
+          {isVllm ? "vLLM" : "SGLang"}{minV ? ` ${minV}+` : ""}{isVllm && isOmni ? " · vLLM-Omni nightly" : ""} · {isTpu ? "TPU" : isAmd ? "ROCm" : isAscend ? "Ascend" : "CUDA"}
         </span>
         {nightlyRequired && (
           <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-400 border border-amber-500/30 uppercase tracking-wider">
