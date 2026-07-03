@@ -1,140 +1,136 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { compareVersions, modelToBlock, transform, HW_NAME_MAP } from "./sglang-transform.js";
+import { parseConfigModule, configVariantIds, candidateCheckpoints, configToBlock } from "./sglang-transform.js";
 
-test("compareVersions sorts numerically, not lexically", () => {
-  assert.ok(compareVersions("v0.5.10", "v0.5.8") > 0);
-  assert.ok(compareVersions("v0.5.6", "v0.5.10") < 0);
-  assert.equal(compareVersions("v0.5.8", "v0.5.8"), 0);
+test("parseConfigModule evaluates pure-data config, ignoring comments and imports", () => {
+  const src = `
+// top comment
+import { Deployment } from "/src/snippets/_deployment.jsx";
+export const config = {
+  modelName: "X", // inline comment
+  supportedHardware: ["h200", "gb200"],
+  cells: [{ match: { hw: "h200" }, flags: ["--tp 8"] }],
+  curl: \`curl http://{{HOST}}\`,
+};
+`;
+  const cfg = parseConfigModule(src);
+  assert.equal(cfg.modelName, "X");
+  assert.deepEqual(cfg.supportedHardware, ["h200", "gb200"]);
+  assert.equal(cfg.cells[0].flags[0], "--tp 8");
+  assert.match(cfg.curl, /\{\{HOST\}\}/);
 });
 
-const MODEL = {
-  name: "Qwen3.6-35B-A3B",
-  model_path: "Qwen/Qwen3.6-35B-A3B",
-  attributes: { llm: { thinking_capability: "hybrid", tool_parser: "qwen3_coder", reasoning_parser: "qwen3", chat_template: null } },
-  hardware: {
-    H100: { configurations: [
-      { name: "default", attributes: { nodes: "single", quantization: "bf16" }, quantized_model_path: null, engine: { tp: 1, extra_args: [] } },
-    ] },
-    H200: { configurations: [
-      { name: "default", attributes: { nodes: "single", quantization: "bf16" }, engine: { tp: 1, extra_args: [] } },
-    ] },
-  },
-};
+test("configVariantIds reads config.variants, falls back to ['default']", () => {
+  assert.deepEqual(configVariantIds({ variants: [{ id: "flash" }, { id: "pro" }] }), ["flash", "pro"]);
+  assert.deepEqual(configVariantIds({}), ["default"]);
+});
 
-test("modelToBlock maps parsers, per-hw tp, precision, single-node", () => {
-  const b = modelToBlock(MODEL, "v0.5.10");
+test("candidateCheckpoints collects modelNames for a variant + headline fallback", () => {
+  const cfg = {
+    modelNames: {
+      "flash|fp4": "deepseek-ai/DeepSeek-V4-Flash",
+      "flash|nvfp4": "nvidia/DeepSeek-V4-Flash-NVFP4",
+      "h200|flash|fp8": "sgl-project/DeepSeek-V4-Flash-FP8",
+      "pro|fp4": "deepseek-ai/DeepSeek-V4-Pro",
+    },
+    github: { cookbookModel: "deepseek-ai/deepseek-v4" },
+  };
+  assert.deepEqual(candidateCheckpoints(cfg, "flash"), [
+    "deepseek-ai/DeepSeek-V4-Flash",
+    "nvidia/DeepSeek-V4-Flash-NVFP4",
+    "sgl-project/DeepSeek-V4-Flash-FP8",
+    "deepseek-ai/deepseek-v4",
+  ]);
+  assert.deepEqual(candidateCheckpoints(cfg, "pro"), ["deepseek-ai/DeepSeek-V4-Pro", "deepseek-ai/deepseek-v4"]);
+});
+
+const CFG = {
+  modelName: "Laguna-M.1",
+  variants: [{ id: "default" }],
+  supportedHardware: ["h200", "gb200", "mi350x"], // mi350x not in taxonomy → skipped
+  quantizations: [{ id: "bf16" }, { id: "fp8" }],
+  modelNames: { "default|bf16": "poolside/Laguna-M.1", "default|fp8": "poolside/Laguna-M.1-FP8" },
+  github: { cookbookModel: "poolside/Laguna-M.1" },
+  playgroundFeatures: { parsers: { items: [
+    { id: "reasoning", flag: "--reasoning-parser poolside_v1" },
+    { id: "toolCall", flag: "--tool-call-parser poolside_v1" },
+  ] } },
+  cells: [
+    { match: { hw: "h200", variant: "default", quant: "bf16" }, flags: ["--model-path {{MODEL_NAME}}", "--trust-remote-code", "--reasoning-parser poolside_v1", "--tp 8", "--host {{HOST_IP}}"] },
+    { match: { hw: "gb200", variant: "default", quant: "bf16" }, flags: ["--model-path {{MODEL_NAME}}", "--trust-remote-code", "--reasoning-parser poolside_v1", "--tp 4", "--host {{HOST_IP}}"] },
+  ],
+};
+const HW = new Set(["h200", "gb200", "b200"]);
+
+test("configToBlock maps model_id/tp/base_args/features/nightly for the default variant", () => {
+  const b = configToBlock(CFG, "default", "poolside/Laguna-M.1", "bf16", HW);
   assert.equal(b.engine, "sglang");
-  assert.equal(b.model_id, "Qwen/Qwen3.6-35B-A3B");
-  assert.equal(b.min_version, "v0.5.10");
+  assert.equal(b.model_id, "poolside/Laguna-M.1");
+  assert.equal(b.nightly_required, true);
   assert.equal(b.serve_binary, "python3 -m sglang.launch_server");
   assert.deepEqual(b.base_args, ["--trust-remote-code"]);
-  assert.deepEqual(b.tp_by_hardware, { h100: 1, h200: 1 });
+  assert.deepEqual(b.tp_by_hardware, { h200: 8, gb200: 4 }); // mi350x skipped
   assert.equal(b.variants.default.precision, "bf16");
   assert.deepEqual(b.strategies.single_node_tp, {});
   assert.equal(b.strategies.multi_node_tp, undefined);
-  assert.deepEqual(b.features.tool_calling.args, ["--tool-call-parser", "qwen3_coder"]);
-  assert.deepEqual(b.features.reasoning.args, ["--reasoning-parser", "qwen3"]);
+  assert.deepEqual(b.features.tool_calling.args, ["--tool-call-parser", "poolside_v1"]);
+  assert.deepEqual(b.features.reasoning.args, ["--reasoning-parser", "poolside_v1"]);
 });
 
-test("modelToBlock never emits multi_node_tp, even for nodes:multi (derived at render)", () => {
-  const m = { ...MODEL, hardware: { B200: { configurations: [
-    { name: "default", attributes: { nodes: "multi", quantization: "fp8" }, engine: { tp: 16, extra_args: [] } },
-  ] } } };
-  const b = modelToBlock(m, "v0.5.10");
-  assert.equal(b.strategies.multi_node_tp, undefined);    // multi-node is derived by the adapter, not the block
-  assert.deepEqual(b.strategies.single_node_tp, {});
-  assert.equal(b.variants.default.precision, "fp8");
-  assert.deepEqual(b.tp_by_hardware, { b200: 16 });       // tp is still captured faithfully
-});
-
-test("modelToBlock drops a feature when its parser is null/absent", () => {
-  const m = { ...MODEL, attributes: { llm: { thinking_capability: "non_thinking", tool_parser: null, reasoning_parser: null } } };
-  const b = modelToBlock(m, "v0.5.8");
-  assert.deepEqual(b.features, {});
-});
-
-test("modelToBlock falls back to a default-prefixed config when no exact 'default'", () => {
-  const m = {
-    name: "Nemotron-Super",
-    model_path: "nvidia/Nemotron-Super",
-    attributes: { llm: { tool_parser: "nemotron", reasoning_parser: null } },
-    hardware: {
-      H200: { configurations: [
-        { name: "default-kv-fp8", attributes: { nodes: "single", quantization: "fp8" }, engine: { tp: 4 } },
-        { name: "default-kv-bf16", attributes: { nodes: "single", quantization: "bf16" }, engine: { tp: 8 } },
-      ] },
-    },
+test("configToBlock filters cells by variant → each variant gets its own tp", () => {
+  const cfg = {
+    variants: [{ id: "flash" }, { id: "pro" }],
+    supportedHardware: ["h200"],
+    quantizations: [{ id: "fp8" }],
+    playgroundFeatures: { parsers: { items: [{ flag: "--tool-call-parser deepseekv4" }] } },
+    cells: [
+      { match: { hw: "h200", variant: "flash", quant: "fp8" }, flags: ["--trust-remote-code", "--tp 4"] },
+      { match: { hw: "h200", variant: "pro", quant: "fp8" }, flags: ["--trust-remote-code", "--tp 8"] },
+    ],
   };
-  const b = modelToBlock(m, "v0.5.8");
-  assert.deepEqual(b.tp_by_hardware, { h200: 4 });        // first default-prefixed config wins
-  assert.equal(b.variants.default.precision, "fp8");
-  assert.deepEqual(b.features.tool_calling.args, ["--tool-call-parser", "nemotron"]);
+  const flash = configToBlock(cfg, "flash", "deepseek-ai/DeepSeek-V4-Flash", "fp8", HW);
+  const pro = configToBlock(cfg, "pro", "deepseek-ai/DeepSeek-V4-Pro", "fp8", HW);
+  assert.deepEqual(flash.tp_by_hardware, { h200: 4 });
+  assert.deepEqual(pro.tp_by_hardware, { h200: 8 });
+  assert.equal(flash.model_id, "deepseek-ai/DeepSeek-V4-Flash");
+  assert.deepEqual(flash.features.tool_calling.args, ["--tool-call-parser", "deepseekv4"]);
 });
 
-test("modelToBlock: recipe precision overrides a stale upstream quantization", () => {
-  // Upstream says fp8, but the recipe (authoritative for the checkpoint) says int4.
-  const m = { ...MODEL, hardware: { H200: { configurations: [
-    { name: "default", attributes: { quantization: "fp8" }, engine: { tp: 8 } },
+test("configToBlock never mixes variants: a tagged config's absent variant → empty tp (not all-cells)", () => {
+  const cfg = {
+    variants: [{ id: "flash" }, { id: "pro" }],
+    supportedHardware: ["h200"],
+    quantizations: [{ id: "fp8" }],
+    // Only 'flash' cells are present; 'pro' has none.
+    cells: [{ match: { hw: "h200", variant: "flash", quant: "fp8" }, flags: ["--trust-remote-code", "--tp 4"] }],
+  };
+  const pro = configToBlock(cfg, "pro", "org/Pro", "fp8", HW);
+  assert.deepEqual(pro.tp_by_hardware, {}); // must NOT absorb flash's --tp 4
+});
+
+test("configToBlock captures env common to a variant's cells into base_env", () => {
+  const cfg = {
+    variants: [{ id: "vl" }],
+    supportedHardware: ["h200"],
+    quantizations: [{ id: "bf16" }],
+    cells: [
+      { match: { hw: "h200", variant: "vl", quant: "bf16" }, flags: ["--trust-remote-code", "--tp 1"], env: ["SGLANG_USE_CUDA_IPC_TRANSPORT=1", "FOO=bar"] },
+    ],
+  };
+  const b = configToBlock(cfg, "vl", "org/VL", "bf16", HW);
+  assert.deepEqual(b.base_env, { SGLANG_USE_CUDA_IPC_TRANSPORT: "1", FOO: "bar" });
+});
+
+test("configToBlock omits base_env when cells carry no env", () => {
+  const b = configToBlock(CFG, "default", "poolside/Laguna-M.1", "bf16", HW);
+  assert.equal(b.base_env, undefined);
+});
+
+test("configToBlock keeps parser=auto verbatim", () => {
+  const cfg = { ...CFG, playgroundFeatures: { parsers: { items: [
+    { flag: "--reasoning-parser auto" }, { flag: "--tool-call-parser auto" },
   ] } } };
-  const b = modelToBlock(m, "v0.5.10", "int4");
-  assert.equal(b.variants.default.precision, "int4");
-});
-
-test("modelToBlock: falls back to upstream precision when recipe supplies none", () => {
-  const b = modelToBlock(MODEL, "v0.5.10", undefined);
-  assert.equal(b.variants.default.precision, "bf16");   // upstream value retained
-});
-
-test("transform: threads recipePrecisionByModelId to the matching block", () => {
-  const versionDocs = [
-    { version: "v0.5.10", doc: { families: [{ models: [
-      { ...MODEL, hardware: { H200: { configurations: [{ name: "default", attributes: { quantization: "fp8" }, engine: { tp: 8 } }] } } },
-    ] }] } },
-  ];
-  const recipeHfIds = new Set(["Qwen/Qwen3.6-35B-A3B"]);
-  const recipePrecisionByModelId = new Map([["Qwen/Qwen3.6-35B-A3B", "int4"]]);
-  const { blocks } = transform({ versionDocs, recipeHfIds, recipePrecisionByModelId });
-  assert.equal(blocks[0].block.variants.default.precision, "int4");
-});
-
-test("transform: latest-wins across versions, overlap-only, logs skips", () => {
-  const versionDocs = [
-    { version: "v0.5.8", doc: { families: [{ models: [
-      { ...MODEL, model_path: "Qwen/Qwen3.6-35B-A3B", hardware: { H200: { configurations: [{ name: "default", attributes: { quantization: "bf16" }, engine: { tp: 4 } }] } } },
-    ] }] } },
-    { version: "v0.5.10", doc: { families: [{ models: [
-      MODEL,
-      { ...MODEL, name: "SoloSGL", model_path: "acme/SoloSGL-1B" },
-    ] }] } },
-  ];
-  const recipeHfIds = new Set(["Qwen/Qwen3.6-35B-A3B"]);
-  const { blocks, skipped } = transform({ versionDocs, recipeHfIds });
-  assert.equal(blocks.length, 1);
-  assert.equal(blocks[0].hfId, "Qwen/Qwen3.6-35B-A3B");
-  assert.equal(blocks[0].block.min_version, "v0.5.10");
-  assert.deepEqual(blocks[0].block.tp_by_hardware, { h100: 1, h200: 1 });
-  assert.deepEqual(skipped, ["acme/SoloSGL-1B"]);
-});
-
-test("HW_NAME_MAP covers the common NVIDIA + AMD ids", () => {
-  for (const id of ["h100", "h200", "b200", "b300", "gb200", "gb300", "mi300x", "mi325x", "mi355x"]) {
-    assert.ok(Object.values(HW_NAME_MAP).includes(id), `${id} is a mapping target`);
-  }
-});
-
-test("transform tolerates malformed/empty upstream entries without crashing", () => {
-  const versionDocs = [
-    { version: "v0.5.6", doc: null },                              // whole doc null
-    { version: "v0.5.8", doc: { families: [null, { models: [null, {
-      name: "X", model_path: "Qwen/Qwen3.6-35B-A3B",
-      attributes: { llm: { tool_parser: "qwen3_coder", reasoning_parser: "qwen3" } },
-      hardware: { H200: null, B200: { configurations: [null, { name: "default", attributes: { quantization: "bf16" }, engine: { tp: 2 } }] } },
-    }] }] } },
-  ];
-  const recipeHfIds = new Set(["Qwen/Qwen3.6-35B-A3B"]);
-  let res;
-  assert.doesNotThrow(() => { res = transform({ versionDocs, recipeHfIds }); });
-  assert.equal(res.blocks.length, 1);
-  assert.deepEqual(res.blocks[0].block.tp_by_hardware, { b200: 2 }); // H200:null skipped, B200 default used
+  const b = configToBlock(cfg, "default", "x/y", "bf16", HW);
+  assert.deepEqual(b.features.reasoning.args, ["--reasoning-parser", "auto"]);
+  assert.deepEqual(b.features.tool_calling.args, ["--tool-call-parser", "auto"]);
 });

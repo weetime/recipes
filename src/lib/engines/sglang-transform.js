@@ -1,105 +1,138 @@
 /**
- * Pure mapping from sgl-cookbook generated model configs to our engines/sglang
- * block schema. No IO — scripts/sync-sglang.mjs does the reading/writing.
+ * Pure mapping from the new SGLang cookbook's declarative config objects
+ * (docs_new/src/snippets/configs/<org>/<model>.jsx) to our engines/sglang block
+ * schema. No IO — scripts/sync-sglang.mjs does the reading/writing/recipe-matching.
  *
- * Scope: TP only. Uses each hardware's `default` named configuration;
- * dp/ep/PD/speculative (non-default) configs are ignored. Multi-node is NOT
- * encoded here — the SGLang adapter derives it at render time from
- * tp_by_hardware vs the hardware's gpu_count.
+ * A config carries a VARIANT axis (config.variants[]) — e.g. ["default"], or
+ * ["flash","pro"], or the LFM2.5 family — and each variant maps, via
+ * config.modelNames, to a distinct HF checkpoint, hence a distinct recipe. So one
+ * config can yield several blocks. Scope: single-node TP only; multi-node is
+ * derived at render time by the SGLang adapter from tp_by_hardware vs gpu_count.
  */
-
-// Upstream hardware name → our taxonomy.yaml hardware id. Names not listed are
-// skipped (their tp is dropped) — sync-sglang.mjs logs a warning.
-export const HW_NAME_MAP = {
-  H100: "h100", H200: "h200",
-  B200: "b200", B300: "b300",
-  GB200: "gb200", GB300: "gb300",
-  MI300X: "mi300x", MI325X: "mi325x", MI355X: "mi355x",
-};
-
-// Numeric semver-ish compare for "v0.5.10" style tags (so v0.5.10 > v0.5.8).
-export function compareVersions(a, b) {
-  const pa = a.replace(/^v/, "").split(".").map(Number);
-  const pb = b.replace(/^v/, "").split(".").map(Number);
-  for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
-    const d = (pa[i] || 0) - (pb[i] || 0);
-    if (d) return d;
-  }
-  return 0;
-}
-
-// One upstream model → one block. Single `default` variant (quantized siblings
-// are separate upstream models with their own model_path).
-//
-// `recipePrecision` (optional): the authoritative precision for this exact
-// checkpoint, read from the matching vLLM recipe variant. Precision is a
-// property of the on-disk checkpoint — the engine can't change it — so when the
-// recipe (which is hand-verified) disagrees with the upstream SGLang cookbook's
-// `quantization` field, the recipe wins. (Upstream occasionally carries a stale
-// or template `fp8` for INT4/BF16 checkpoints, e.g. Kimi-K2-Thinking,
-// stepfun-ai/Step-3.5-Flash.) When they agree, this is a no-op.
-export function modelToBlock(model, version, recipePrecision) {
-  const block = {
-    engine: "sglang",
-    model_id: model.model_path,
-    min_version: version,
-    serve_binary: "python3 -m sglang.launch_server",
-    base_args: ["--trust-remote-code"],
-    tp_by_hardware: {},
-    variants: { default: {} },
-    strategies: { single_node_tp: {} },
-    features: {},
-  };
-
-  let precision = null;
-  for (const [hwName, hwCfg] of Object.entries(model.hardware || {})) {
-    const taxoId = HW_NAME_MAP[hwName];
-    const configs = hwCfg?.configurations || [];
-    // Prefer an exact "default" config; some models name them "default-kv-fp8"
-    // etc., so fall back to the first "default"-prefixed config.
-    const def = configs.find((c) => c && c.name === "default")
-      || configs.find((c) => c && typeof c.name === "string" && c.name.startsWith("default"));
-    if (def) {
-      if (taxoId && def.engine?.tp != null) block.tp_by_hardware[taxoId] = def.engine.tp;
-      if (!precision && def.attributes?.quantization) precision = def.attributes.quantization;
-    }
-  }
-  // Recipe precision is authoritative for the checkpoint (see above); fall back
-  // to the upstream-derived value only when the recipe doesn't supply one.
-  const resolvedPrecision = recipePrecision || precision;
-  if (resolvedPrecision) block.variants.default.precision = resolvedPrecision;
-
-  const llm = model.attributes?.llm || {};
-  if (llm.tool_parser) block.features.tool_calling = { args: ["--tool-call-parser", llm.tool_parser] };
-  if (llm.reasoning_parser) block.features.reasoning = { args: ["--reasoning-parser", llm.reasoning_parser] };
-
-  return block;
-}
 
 /**
- * @param {{versionDocs: {version:string, doc:any}[], recipeHfIds: Set<string>}} input
- * @returns {{blocks: {hfId:string, block:any}[], skipped: string[]}}
+ * Evaluate a config module's source text → its `config` object. These modules are
+ * pure data (the object references no imports), but carry inline comments and
+ * template strings, so evaluate via a constrained Function rather than regex.
  */
-export function transform({ versionDocs, recipeHfIds, recipePrecisionByModelId }) {
-  const byPath = new Map();
-  for (const { version, doc } of versionDocs) {
-    for (const fam of doc?.families || []) {
-      for (const model of fam?.models || []) {
-        if (!model?.model_path) continue;
-        const prev = byPath.get(model.model_path);
-        if (!prev || compareVersions(version, prev.version) > 0) {
-          byPath.set(model.model_path, { model, version });
-        }
-      }
-    }
+export function parseConfigModule(source) {
+  const noImports = String(source).replace(/^\s*import\s.*$/gm, "");
+  // Turn `export const config =` into `return`, and drop any other top-level export.
+  const body = noImports
+    .replace(/export\s+const\s+config\s*=/, "return ")
+    .replace(/^\s*export\s+.*$/gm, "");
+  // eslint-disable-next-line no-new-func
+  const fn = new Function(`"use strict";\n${body}`);
+  return fn();
+}
+
+// A config's variant ids (the served-checkpoint axis). Falls back to ["default"]
+// for a config that omits an explicit variants list.
+export function configVariantIds(config) {
+  const ids = (config?.variants || []).map((v) => v?.id).filter(Boolean);
+  return ids.length ? ids : ["default"];
+}
+
+// Candidate served-checkpoint ids for one variant: the modelNames values whose
+// key names this variant (keys look like "<variant>|<quant>" or
+// "<hw>|<variant>|<quant>"), plus the cookbook's headline model as a fallback.
+// The caller matches these against the recipe set (case-insensitively) to decide
+// which recipe — if any — this variant belongs to.
+export function candidateCheckpoints(config, variantId) {
+  const out = [];
+  for (const [key, val] of Object.entries(config?.modelNames || {})) {
+    if (key.split("|").includes(variantId) && val) out.push(val);
   }
-  const blocks = [];
-  const skipped = [];
-  for (const [modelPath, { model, version }] of byPath) {
-    if (!recipeHfIds.has(modelPath)) { skipped.push(modelPath); continue; }
-    const recipePrecision = recipePrecisionByModelId?.get(modelPath);
-    blocks.push({ hfId: modelPath, block: modelToBlock(model, version, recipePrecision) });
+  const headline = config?.github?.cookbookModel;
+  if (headline) out.push(headline);
+  return [...new Set(out)];
+}
+
+// cell.flags entries are whole "--flag value" strings (e.g. "--tp 8").
+function tpFromCell(cell) {
+  for (const f of cell?.flags || []) {
+    const m = /^--tp\s+(\d+)/.exec(f);
+    if (m) return Number(m[1]);
   }
-  skipped.sort();
-  return { blocks, skipped };
+  return null;
+}
+
+// Pick a representative cell for a hardware among already variant-scoped cells:
+// prefer a bf16 cell, else the first for that hardware.
+function pickCell(cells, hw) {
+  const forHw = cells.filter((c) => c?.match?.hw === hw);
+  return forHw.find((c) => c.match?.quant === "bf16") || forHw[0] || null;
+}
+
+// Flags common to ALL of a variant's cells, excluding model-path/host/port/tp and
+// the parser flags (parsers become toggleable features) → base_args.
+function commonBaseArgs(cells) {
+  if (!cells.length) return ["--trust-remote-code"];
+  const EXCLUDE = /^--(model-path|host|port|tp|reasoning-parser|tool-call-parser)\b/;
+  const sets = cells.map((c) => new Set((c.flags || []).filter((f) => !EXCLUDE.test(f))));
+  const [first, ...rest] = sets;
+  const common = [...first].filter((f) => rest.every((s) => s.has(f)));
+  return common.length ? common : ["--trust-remote-code"];
+}
+
+// Env vars common to ALL of a variant's cells → base_env (the object form the
+// SGLang adapter merges). cell.env is an array of "KEY=VAL" strings.
+function commonEnv(cells) {
+  const arrays = cells.map((c) => (Array.isArray(c?.env) ? c.env : []));
+  if (!arrays.length || arrays.some((e) => e.length === 0)) return {};
+  const sets = arrays.map((e) => new Set(e));
+  const [first, ...rest] = sets;
+  const common = [...first].filter((kv) => rest.every((s) => s.has(kv)));
+  const env = {};
+  for (const kv of common) {
+    const i = String(kv).indexOf("=");
+    if (i > 0) env[kv.slice(0, i)] = kv.slice(i + 1);
+  }
+  return env;
+}
+
+// One (config, variant) → one block. `modelId` is the resolved served checkpoint
+// (the caller matched it against the recipe set, so it equals the recipe hf_id).
+// `recipePrecision` is authoritative for the checkpoint's precision.
+export function configToBlock(config, variantId, modelId, recipePrecision, taxonomyHwIds) {
+  const allCells = config?.cells || [];
+  // If ANY cell is variant-tagged, trust the tags and use only this variant's
+  // cells — never silently mix variants (an empty result yields empty tp, which
+  // is safe; mixing would fabricate a wrong command). Only fall back to all
+  // cells when NO cell carries a variant tag (a genuinely single-variant config).
+  const anyTagged = allCells.some((c) => c?.match?.variant != null);
+  const cells = anyTagged ? allCells.filter((c) => c?.match?.variant === variantId) : allCells;
+
+  const tp_by_hardware = {};
+  for (const hw of config?.supportedHardware || []) {
+    if (taxonomyHwIds && !taxonomyHwIds.has(hw)) continue; // skip unknown hardware
+    const tp = tpFromCell(pickCell(cells, hw));
+    if (tp != null) tp_by_hardware[hw] = tp;
+  }
+
+  const features = {};
+  for (const item of config?.playgroundFeatures?.parsers?.items || []) {
+    const parts = String(item.flag || "").trim().split(/\s+/);
+    if (parts[0] === "--tool-call-parser") features.tool_calling = { args: parts };
+    else if (parts[0] === "--reasoning-parser") features.reasoning = { args: parts };
+  }
+
+  const block = {
+    engine: "sglang",
+    model_id: modelId,
+    nightly_required: true,
+    serve_binary: "python3 -m sglang.launch_server",
+    base_args: commonBaseArgs(cells),
+    tp_by_hardware,
+    variants: { default: {} },
+    strategies: { single_node_tp: {} },
+    features,
+  };
+
+  const base_env = commonEnv(cells);
+  if (Object.keys(base_env).length) block.base_env = base_env;
+
+  const precision = recipePrecision || config?.quantizations?.[0]?.id || null;
+  if (precision) block.variants.default.precision = precision;
+  return block;
 }

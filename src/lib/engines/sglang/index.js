@@ -9,11 +9,14 @@ const MULTI_NODE_EXTRA = ["--nnodes", "{NNODES}", "--node-rank", "{RANK}", "--di
 // Derive node count from the block's per-hardware TP against the hardware's
 // gpu_count (taxonomy). tp_by_hardware is upstream ground truth and is returned
 // unchanged; nodes = max(1, ceil(tp / gpu_count)). A missing tp falls back to
-// gpu_count (→ single node). Exported for direct unit testing.
+// 1 — SGLang's own default when `--tp` is omitted (a single-node, single-GPU
+// run) — rather than gpu_count, which would emit a wrong high `--tp` for a small
+// model whose cookbook cell carries no `--tp` (e.g. baidu/Unlimited-OCR).
+// Exported for direct unit testing.
 export function deriveSglangNodes(block, hwId, taxonomy) {
   const hwProfile = taxonomy?.hardware_profiles?.[hwId] || {};
   const gpuCount = typeof hwProfile.gpu_count === "number" && hwProfile.gpu_count > 0 ? hwProfile.gpu_count : 1;
-  const tp = block?.tp_by_hardware?.[hwId] ?? gpuCount;
+  const tp = block?.tp_by_hardware?.[hwId] ?? 1;
   const nodes = Math.max(1, Math.ceil(tp / gpuCount));
   return { tp, nodes, gpuCount };
 }
