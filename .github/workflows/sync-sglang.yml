@@ -1,10 +1,12 @@
-name: Sync SGLang blocks (sgl-cookbook)
+name: Sync SGLang blocks (cookbook configs)
 
-# Weekly (+ on-demand) re-vendor of the upstream SGLang cookbook snapshot and
-# regeneration of engines/sglang/ blocks. Purely mechanical — if anything
-# changed it validates and opens a PR. Authoring guides for any newly-covered
-# models (engines/sglang-guides/) is the intelligent follow-up: ping Claude on
-# the PR. (Hand-authored engines/sglang-manual/ blocks are never touched.)
+# Weekly (+ on-demand) re-vendor of the SGLang cookbook's declarative configs
+# (sgl-project/sglang · docs_new/src/snippets/configs) and regeneration of
+# engines/sglang/ blocks. Purely mechanical — if anything changed it validates
+# and opens a PR. Authoring guides for any newly-covered models
+# (engines/sglang-guides/) is the intelligent follow-up: ping Claude on the PR.
+# (Fork-local engines/sglang-overlay/ blocks — e.g. the DeepSeek-V4-Flash PPU
+# config — are never touched by the sync.)
 
 on:
   schedule:
@@ -41,9 +43,9 @@ jobs:
       - name: Install deps
         run: pnpm install --frozen-lockfile
 
-      - name: Re-vendor latest sgl-cookbook + regenerate blocks
+      - name: Re-vendor latest cookbook configs + regenerate blocks
         run: |
-          node scripts/fetch-sglang-upstream.mjs main   # 'main' = latest, not the pinned ref
+          node scripts/fetch-sglang-configs.mjs main   # 'main' = latest, not the pinned ref
           node scripts/sync-sglang.mjs
 
       - name: Anything changed?
@@ -51,7 +53,7 @@ jobs:
         run: |
           if [ -z "$(git status --porcelain)" ]; then
             echo "changed=false" >> "$GITHUB_OUTPUT"
-            echo "sgl-cookbook unchanged since the pinned snapshot — nothing to sync." >> "$GITHUB_STEP_SUMMARY"
+            echo "Cookbook configs unchanged since the pinned snapshot — nothing to sync." >> "$GITHUB_STEP_SUMMARY"
           else
             echo "changed=true" >> "$GITHUB_OUTPUT"
           fi
@@ -70,17 +72,17 @@ jobs:
         run: |
           git checkout -B "$SYNC_BRANCH"
           git add -A
-          git commit -s -m "Sync SGLang blocks from latest sgl-cookbook ($(date -u +%Y-%m-%d))"
+          git commit -s -m "Sync SGLang blocks from the cookbook configs ($(date -u +%Y-%m-%d))"
           git push origin "$SYNC_BRANCH" --force-with-lease
           {
-            echo "Automated re-vendor of the upstream **sgl-cookbook** snapshot + regenerated \`engines/sglang/\` blocks."
+            echo "Automated re-vendor of the SGLang cookbook's declarative configs (\`sgl-project/sglang · docs_new/src/snippets/configs\`) + regenerated \`engines/sglang/\` blocks."
             echo
-            echo "Review the new/changed generated blocks. **Newly-covered models likely need a hand-authored guide** (\`engines/sglang-guides/\`) and possibly removal of a now-redundant \`engines/sglang-manual/\` block — ping Claude to finish those, then merge."
+            echo "Review the new/changed generated blocks. **Newly-covered models may want a hand-authored guide** (\`engines/sglang-guides/\`) — ping Claude to finish those, then merge. Fork-local \`engines/sglang-overlay/\` blocks are untouched."
           } > pr-body.md
           if gh pr view "$SYNC_BRANCH" >/dev/null 2>&1; then
             gh pr edit "$SYNC_BRANCH" --body-file pr-body.md
           else
             gh pr create --base main --head "$SYNC_BRANCH" \
-              --title "Sync SGLang blocks from sgl-cookbook ($(date -u +%Y-%m-%d))" \
+              --title "Sync SGLang blocks from cookbook configs ($(date -u +%Y-%m-%d))" \
               --body-file pr-body.md
           fi
