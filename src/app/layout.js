@@ -103,6 +103,7 @@ export default async function RootLayout({ children }) {
             <nav aria-label="Primary navigation" className="hidden items-center gap-8 border-l border-border pl-7 text-sm font-medium lg:flex">
               <Link href="/browse" className="hover:text-vllm-blue">Models</Link>
               <Link href="/image-selector" className="hover:text-vllm-blue">Images</Link>
+              <Link href="/reports" className="hover:text-vllm-blue">Reports</Link>
             </nav>
 
             <div className="ml-auto hidden w-full max-w-md md:block">
@@ -120,6 +121,7 @@ export default async function RootLayout({ children }) {
             <nav aria-label="Mobile navigation" className="flex shrink-0 gap-3 text-xs font-semibold">
               <Link href="/browse" className="text-vllm-blue">Catalog</Link>
               <Link href="/image-selector" className="text-muted-foreground">Images</Link>
+              <Link href="/reports" className="text-muted-foreground">Reports</Link>
             </nav>
             <div className="min-w-0 flex-1"><SearchBox recipes={searchRecipes} /></div>
           </div>
@@ -139,6 +141,7 @@ export default async function RootLayout({ children }) {
             <div className="flex flex-wrap content-start gap-x-6 gap-y-3 text-sm text-muted-foreground lg:max-w-[420px]">
               <Link href="/browse" className="hover:text-foreground">Browse recipes</Link>
               <Link href="/image-selector" className="hover:text-foreground">Image selector</Link>
+              <Link href="/reports" className="hover:text-foreground">Performance reports</Link>
               <a href="/models.json" className="hover:text-foreground">JSON API</a>
               <a href="https://docs.vllm.ai" className="hover:text-foreground">vLLM docs</a>
               <a href="https://github.com/weetime/recipes/issues" className="hover:text-foreground">Request a recipe</a>

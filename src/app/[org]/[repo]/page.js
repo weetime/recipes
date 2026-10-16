@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { getAllRecipes, getAllRoutablePairs, findVariantRedirect, getRecipeByHfId } from "@/lib/recipes";
+import { getPerformanceReportsForModel } from "@/lib/performance-reports";
 import { recipeHref } from "@/lib/recipe-utils";
 import { getEngineMeta, recipeEngineIds } from "@/lib/engine-meta";
 import { siteUrl } from "@/lib/site-url";
@@ -115,6 +116,7 @@ export default async function RecipePage({ params, searchParams }) {
   const related = (recipe.meta.related_recipes || [])
     .map((s) => allRecipes.find((r) => r.hf_id === s || r.meta.slug === s))
     .filter(Boolean);
+  const performanceReports = getPerformanceReportsForModel(recipe.hf_id);
 
   const recipeUrl = `${siteUrl}/${recipe.hf_org}/${recipe.hf_repo}`;
   const jsonLd = [
@@ -243,6 +245,32 @@ export default async function RecipePage({ params, searchParams }) {
           ))}
         </div>
       </header>
+
+      {performanceReports.length > 0 && (
+        <section aria-label="Performance reports" className="mb-10 border-y border-border py-5">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div>
+              <div className="section-label">MEASURED CONFIGURATIONS / {performanceReports.length}</div>
+              <h2 className="mt-2 text-lg font-semibold tracking-[-.025em]">Performance reports</h2>
+            </div>
+            <Link href="/reports" className="text-xs text-muted-foreground hover:text-vllm-blue">All reports ↗</Link>
+          </div>
+          <div className="mt-4 divide-y divide-border border-t border-border">
+            {performanceReports.map((report) => (
+              <div key={report.slug} className="grid gap-4 py-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
+                <div>
+                  <div className="flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
+                    <span>{report.date}</span><span>{report.hardware}</span><span>{report.precision}</span>
+                  </div>
+                  <p className="mt-1 text-sm font-medium">{report.title}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">{report.highlights[0].value} {report.highlights[0].unit} · {report.highlights[0].label}</p>
+                </div>
+                <a href={report.href} className="text-sm font-semibold text-vllm-blue hover:underline">Read report ↗</a>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       <nav aria-label="Recipe sections" className="mb-10 flex flex-wrap items-center gap-8 border-b border-border pb-4 text-sm font-medium">
         <a href="#configure" className="inline-flex items-center gap-2 text-vllm-blue hover:underline"><span className="font-mono">02</span> Configure</a>

@@ -27,6 +27,10 @@ public/*/
 !public/platform-logos/
 !public/engine-logos/
 !public/hardware-logos/
+!public/reports/
+public/reports/**
+!public/reports/**/
+!public/reports/**/*.html
 
 # Superpowers SDD scratch
 .superpowers/
