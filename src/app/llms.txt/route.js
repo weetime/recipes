@@ -36,7 +36,7 @@ export async function GET() {
   ];
 
   const lines = [
-    "# Inference Atlas",
+    "# Model Index",
     "",
     "> Per-model serving recipes for vLLM: hardware-tuned `vllm serve` commands, flag explanations, and known pitfalls.",
     "",

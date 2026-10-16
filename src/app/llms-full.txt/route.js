@@ -104,7 +104,7 @@ export async function GET() {
   const recipes = getAllRecipes();
 
   const preamble = [
-    "# Inference Atlas — full text",
+    "# Model Index — full text",
     "",
     `Concatenated full text of every recipe on ${siteUrl}, formatted for`,
     "AI-assistant retrieval. Each section is prefixed with its canonical URL,",

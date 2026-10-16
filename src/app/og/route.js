@@ -8,7 +8,7 @@ export const runtime = "edge";
 // (/[org]/[repo]). Uses the same ink-and-mint palette as the workbench.
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
-  const title = searchParams.get("title") || "Inference Atlas";
+  const title = searchParams.get("title") || "Model Index";
   const subtitle = searchParams.get("subtitle") || "";
   const meta = searchParams.get("meta") || "";
   const path = searchParams.get("path") || "";

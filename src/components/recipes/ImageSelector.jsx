@@ -55,7 +55,7 @@ function Pill({ active, onClick, title, disabled, className = "", children }) {
       onClick={onClick}
       disabled={disabled}
       aria-disabled={disabled}
-      className={`inline-flex items-center justify-center rounded-lg border px-2.5 py-1.5 text-xs transition-all ${style} ${className}`}
+      className={`inline-flex items-center justify-center border px-2.5 py-2.5 text-xs transition-all ${style} ${className}`}
     >
       {children}
     </button>
@@ -84,7 +84,7 @@ function Field({ label, hint, children }) {
 function CheckRow({ checked, onChange, label, hint }) {
   return (
     <label
-      className={`flex items-start gap-2.5 p-2 rounded-lg border cursor-pointer transition-colors ${
+      className={`flex items-start gap-2.5 p-2 border cursor-pointer transition-colors ${
         checked ? "border-vllm-blue/40 bg-vllm-blue/5" : "border-border hover:bg-muted/30"
       }`}
     >
@@ -355,9 +355,9 @@ export function ImageSelector({ data, config }) {
 
   return (
     <TooltipProvider>
-      <div className="grid grid-cols-1 lg:grid-cols-[340px_1fr] gap-5 items-start">
+      <div className="image-workspace grid grid-cols-1 gap-12 items-start pt-10 lg:grid-cols-[300px_minmax(0,1fr)]">
         {/* ── Left: Configuration ── */}
-        <div className="min-w-0 rounded-xl border border-border bg-card p-5 flex flex-col gap-5">
+        <div className="image-config min-w-0 flex flex-col gap-7 py-5">
           <h2 className="text-base font-semibold tracking-tight">Configuration</h2>
 
           <Field label="GPU Type">
@@ -429,7 +429,7 @@ export function ImageSelector({ data, config }) {
         </div>
 
         {/* ── Right: Required Images ── */}
-        <div className="min-w-0 rounded-xl border border-border bg-card p-5 flex flex-col gap-4">
+        <div className="image-output min-w-0 flex flex-col gap-6 py-5">
           <div className="flex items-center justify-between gap-3 flex-wrap">
             <h2 className="text-base font-semibold tracking-tight">Required Images</h2>
             <Field label="GPUStack Version">
@@ -469,7 +469,7 @@ export function ImageSelector({ data, config }) {
           </div>
 
           {/* Command block */}
-          <div className="rounded-2xl overflow-hidden bg-[var(--command-bg)] border border-border">
+          <div className="overflow-hidden bg-[var(--command-bg)] border border-border">
             <div className="flex items-center justify-between px-3 py-2 border-b border-border/60">
               <div className="flex gap-0.5 bg-foreground/5 rounded-md p-0.5">
                 {config.components.map((t) => (

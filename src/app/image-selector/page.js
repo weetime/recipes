@@ -14,16 +14,12 @@ export default function ImageSelectorPage() {
   const data = loadGpuStackImages();
 
   return (
-    <main className="max-w-[1480px] mx-auto px-4 sm:px-6 py-8">
-      <header className="atlas-panel relative mb-8 overflow-hidden p-6 sm:p-9">
-        <div className="absolute -right-16 -top-32 h-80 w-80 rounded-full bg-[#d9f5e2] blur-3xl dark:bg-[#1c5b4b]/40" aria-hidden="true" />
-        <div className="relative">
-          <div className="atlas-kicker">Atlas / prepare</div>
-          <h1 className="mt-3 text-3xl font-extrabold tracking-[-0.05em] sm:text-5xl">Choose the right image.</h1>
-          <p className="mt-4 max-w-2xl text-sm leading-6 text-muted-foreground sm:text-base">
-            Set your GPUStack version, accelerator, framework and backend. Copy the exact{" "}
-            <code className="rounded-md bg-muted px-1.5 py-0.5 font-mono text-[12px]">docker pull</code> commands for server and worker nodes.
-          </p>
+    <main className="page-frame pb-20">
+      <header className="border-b border-border pb-10 pt-10 lg:pb-16 lg:pt-16">
+        <div className="section-label">IMAGE REFERENCE / GPUSTACK</div>
+        <div className="mt-5 flex flex-wrap items-end justify-between gap-8">
+          <h1 className="text-[clamp(3.2rem,7vw,7rem)] font-semibold leading-none tracking-[-.075em]">Choose your<br />image set.</h1>
+          <p className="max-w-sm text-base leading-7 text-muted-foreground">Select the accelerator and runtime. Copy the exact images for the server and worker nodes.</p>
         </div>
       </header>
       <ImageSelector data={data} config={gpustackConfig} />

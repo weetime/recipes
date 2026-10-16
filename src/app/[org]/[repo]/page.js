@@ -8,7 +8,6 @@ import { siteUrl } from "@/lib/site-url";
 import { loadStrategies } from "@/lib/strategies";
 import { loadTaxonomy } from "@/lib/taxonomy";
 import { resolveRecipePlatforms } from "@/lib/platforms";
-import { getProviderLogo, getProviderLogoClass } from "@/lib/providers";
 import { CommandBuilder } from "@/components/recipes/CommandBuilder";
 import { EngineAwareGuide } from "@/components/recipes/EngineAwareGuide";
 import { GuideLinks } from "@/components/recipes/GuideLinks";
@@ -105,7 +104,6 @@ export default async function RecipePage({ params, searchParams }) {
 
   const strategies = loadStrategies();
   const taxonomy = loadTaxonomy();
-  const logo = getProviderLogo(recipe.hf_org);
 
   // Per-recipe platform opt-in. Each entry is either a bare id ("modal") or
   // an object with overrides ({ id: "modal", install, url, blurb }) for
@@ -139,7 +137,7 @@ export default async function RecipePage({ params, searchParams }) {
       "@context": "https://schema.org",
       "@type": "BreadcrumbList",
       itemListElement: [
-        { "@type": "ListItem", position: 1, name: "Inference Atlas", item: siteUrl },
+        { "@type": "ListItem", position: 1, name: "Model Index", item: siteUrl },
         { "@type": "ListItem", position: 2, name: recipe.meta.provider, item: `${siteUrl}/${recipe.hf_org}` },
         { "@type": "ListItem", position: 3, name: recipe.hf_repo, item: recipeUrl },
       ],
@@ -147,7 +145,7 @@ export default async function RecipePage({ params, searchParams }) {
   ];
 
   return (
-    <main className="py-8 w-full min-w-0">
+    <main className="py-10 w-full min-w-0">
       <script
         type="application/ld+json"
         // eslint-disable-next-line react/no-danger
@@ -161,21 +159,18 @@ export default async function RecipePage({ params, searchParams }) {
         <span className="max-w-[220px] truncate font-mono text-foreground">{recipe.hf_repo}</span>
       </nav>
       {/* ── Model header ── */}
-      <header className="atlas-panel mb-6 p-6 sm:p-8">
-        <div className="atlas-kicker mb-5">Model workspace / 01 Overview</div>
+      <header className="mb-8 border-b border-border pb-8 pt-6">
+        <div className="atlas-kicker mb-5">MODEL REFERENCE / {recipe.hf_org}</div>
         <div className="flex items-start gap-4 mb-4">
-          {logo && (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={logo} alt={recipe.meta.provider} width={44} height={44} className={`rounded-xl mt-0.5 shrink-0 ${getProviderLogoClass(recipe.hf_org)}`} />
-          )}
+          <span className="provider-monogram mt-0.5 h-11 w-11 shrink-0 text-lg" aria-hidden="true">{recipe.hf_org.charAt(0)}</span>
           <div className="min-w-0 flex-1">
-            <h1 className="text-2xl sm:text-4xl font-extrabold tracking-[-0.045em] break-all">
+            <h1 className="text-3xl sm:text-6xl font-semibold tracking-[-0.07em] break-all">
               <span className="text-muted-foreground font-normal">{recipe.hf_org}/</span>
               {recipe.hf_repo}
             </h1>
             <p className="text-sm text-muted-foreground mt-3 max-w-4xl leading-6">{recipe.meta.description}</p>
             {recipe.meta.performance_headline && (
-              <p className="text-xs text-muted-foreground/70 italic mt-1 leading-snug">{recipe.meta.performance_headline}</p>
+              <p className="text-[13px] text-muted-foreground italic mt-1 leading-relaxed">{recipe.meta.performance_headline}</p>
             )}
             <div className="flex items-center gap-4 mt-2">
               <a
@@ -249,10 +244,10 @@ export default async function RecipePage({ params, searchParams }) {
         </div>
       </header>
 
-      <nav aria-label="Recipe sections" className="mb-8 flex flex-wrap items-center gap-2 text-xs font-semibold">
-        <a href="#configure" className="inline-flex items-center gap-2 rounded-full bg-accent px-4 py-2 text-accent-foreground hover:bg-vllm-blue/15"><span className="font-mono">02</span> Configure</a>
+      <nav aria-label="Recipe sections" className="mb-10 flex flex-wrap items-center gap-8 border-b border-border pb-4 text-sm font-medium">
+        <a href="#configure" className="inline-flex items-center gap-2 text-vllm-blue hover:underline"><span className="font-mono">02</span> Configure</a>
         {(recipe.guide || Object.values(recipe.engines ?? {}).some((e) => e?.guide)) && (
-          <a href="#recipe-guide" className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-4 py-2 text-muted-foreground hover:text-vllm-blue"><span className="font-mono">03</span> Read the guide</a>
+          <a href="#recipe-guide" className="inline-flex items-center gap-2 text-muted-foreground hover:text-vllm-blue"><span className="font-mono">03</span> Read the guide</a>
         )}
       </nav>
 
@@ -260,7 +255,7 @@ export default async function RecipePage({ params, searchParams }) {
       <section id="configure" className="mb-10 scroll-mt-28">
         <div className="mb-5">
           <div className="atlas-kicker">02 / Configure</div>
-          <h2 className="mt-1 text-2xl font-extrabold tracking-[-0.04em]">Build your serve command</h2>
+          <h2 className="mt-1 text-2xl font-extrabold tracking-[-0.04em]">Configure serving</h2>
           <p className="mt-1 text-sm text-muted-foreground">Choose engine, hardware and deployment options. The command updates as you go.</p>
         </div>
         <Suspense fallback={<div className="h-40 rounded-2xl bg-muted animate-pulse" />}>
@@ -274,7 +269,7 @@ export default async function RecipePage({ params, searchParams }) {
           <>
             <div>
               <div className="atlas-kicker">03 / Understand</div>
-              <h2 className="mt-1 text-2xl font-extrabold tracking-[-0.04em]">Implementation guide</h2>
+              <h2 className="mt-1 text-2xl font-extrabold tracking-[-0.04em]">Technical notes</h2>
             </div>
             <Accordion title="Model notes and examples" defaultOpen>
             <Suspense fallback={null}>
@@ -285,6 +280,7 @@ export default async function RecipePage({ params, searchParams }) {
         )}
 
       </section>
+
 
       {/* ── Footer ── */}
       <footer className="mt-10 pt-4 border-t border-border text-sm text-muted-foreground flex flex-wrap gap-x-4 gap-y-2">

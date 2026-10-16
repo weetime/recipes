@@ -4,7 +4,6 @@ import { Analytics } from "@vercel/analytics/next";
 import { ArrowUpRight } from "lucide-react";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { SearchBox } from "@/components/recipes/SearchBox";
-import { AtlasMark } from "@/components/AtlasMark";
 import CommunityModal from "@/components/CommunityModal";
 import { getAllRecipes } from "@/lib/recipes";
 import { siteUrl } from "@/lib/site-url";
@@ -23,28 +22,28 @@ const jetbrainsMono = JetBrains_Mono({
   display: "swap",
 });
 
-const defaultOgUrl = "/og?title=" + encodeURIComponent("Inference Atlas")
+const defaultOgUrl = "/og?title=" + encodeURIComponent("Model Index")
   + "&subtitle=" + encodeURIComponent("Find a model. Fit your hardware. Run it.");
 
 export const metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: "Inference Atlas",
-    template: "%s | Inference Atlas",
+    default: "Model Index",
+    template: "%s | Model Index",
   },
   description: "Find deployment recipes for your hardware and workload, then configure a vLLM or SGLang serve command.",
   openGraph: {
     type: "website",
     locale: "en_US",
     url: siteUrl,
-    siteName: "Inference Atlas",
-    title: "Inference Atlas",
+    siteName: "Model Index",
+    title: "Model Index",
     description: "A model deployment workbench for vLLM and SGLang.",
-    images: [{ url: defaultOgUrl, width: 1200, height: 630, alt: "Inference Atlas" }],
+    images: [{ url: defaultOgUrl, width: 1200, height: 630, alt: "Model Index" }],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Inference Atlas",
+    title: "Model Index",
     description: "Find a model. Fit your hardware. Run it.",
     images: [defaultOgUrl],
   },
@@ -82,8 +81,13 @@ export default async function RootLayout({ children }) {
   };
 
   return (
-    <html lang="en" className={inter.variable + " " + jetbrainsMono.variable}>
+    <html lang="en" className={inter.variable + " " + jetbrainsMono.variable + " dark"} suppressHydrationWarning>
       <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: "try{document.documentElement.classList.toggle('dark',localStorage.getItem('theme')!=='light')}catch{}",
+          }}
+        />
         <script
           type="application/ld+json"
           // eslint-disable-next-line react/no-danger
@@ -91,19 +95,14 @@ export default async function RootLayout({ children }) {
         />
       </head>
       <body className="antialiased bg-background text-foreground min-h-screen flex flex-col">
-        <header className="sticky top-0 z-40 border-b border-border/80 bg-background/95 backdrop-blur-xl">
-          <div className="mx-auto flex max-w-[1480px] items-center gap-4 px-4 py-3 sm:px-6 lg:gap-8">
-            <Link href="/" className="group flex shrink-0 items-center gap-3" aria-label="Inference Atlas home">
-              <AtlasMark className="transition-transform group-hover:rotate-12" />
-              <span className="flex flex-col leading-none">
-                <span className="text-[15px] font-extrabold tracking-[-0.035em]">Inference <span className="text-vllm-blue">Atlas</span></span>
-                <span className="mt-1.5 font-mono text-[8px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">deployment workbench</span>
-              </span>
+        <header className="sticky top-0 z-40 border-b border-border bg-background">
+          <div className="page-frame flex items-center gap-6 py-4">
+            <Link href="/" className="flex shrink-0 items-center gap-2 text-lg font-bold uppercase tracking-[-.06em]" aria-label="Model Index home">
+              <span className="inline-block h-5 w-2 bg-vllm-blue" /> MODEL INDEX<span className="text-vllm-blue">.</span>
             </Link>
-
-            <nav aria-label="Primary navigation" className="hidden items-center gap-1 rounded-full border border-border bg-card p-1 text-sm font-medium shadow-sm lg:flex">
-              <Link href="/browse" className="rounded-full px-4 py-2 text-foreground hover:bg-accent hover:text-accent-foreground transition-colors">Catalog</Link>
-              <Link href="/image-selector" className="rounded-full px-4 py-2 text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors">Image selector</Link>
+            <nav aria-label="Primary navigation" className="hidden items-center gap-8 border-l border-border pl-7 text-sm font-medium lg:flex">
+              <Link href="/browse" className="hover:text-vllm-blue">Models</Link>
+              <Link href="/image-selector" className="hover:text-vllm-blue">Images</Link>
             </nav>
 
             <div className="ml-auto hidden w-full max-w-md md:block">
@@ -128,13 +127,10 @@ export default async function RootLayout({ children }) {
 
         <div className="flex-1">{children}</div>
 
-        <footer className="mt-20 border-t border-border bg-card/75">
+        <footer className="mt-20 border-t border-border">
           <div className="mx-auto grid max-w-[1480px] gap-8 px-4 py-10 sm:px-6 lg:grid-cols-[1fr_auto]">
             <div>
-              <div className="flex items-center gap-3">
-                <AtlasMark className="h-8 w-8 rounded-lg" />
-                <div className="text-sm font-bold">Inference Atlas</div>
-              </div>
+              <div className="text-lg font-bold uppercase tracking-[-.06em]">MODEL INDEX<span className="text-vllm-blue">.</span></div>
               <p className="mt-3 max-w-md text-sm leading-6 text-muted-foreground">
                 A practical route from model and hardware to a runnable command. Recipes are community maintained; serving engines include vLLM and SGLang.
               </p>

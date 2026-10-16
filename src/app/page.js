@@ -1,100 +1,143 @@
-import { Suspense } from "react";
 import Link from "next/link";
-import { ArrowRight, Cpu, ScanEye, Sparkles, Workflow } from "lucide-react";
+import { ArrowRight, ArrowUpRight } from "lucide-react";
+import { HomeSignal } from "@/components/HomeSignal";
+import { isHardwareSupported, variantRunsOnHardware } from "@/lib/command-synthesis";
 import { getAllRecipes } from "@/lib/recipes";
 import { loadTaxonomy } from "@/lib/taxonomy";
-import { RecipeCardGrid } from "@/components/recipes/RecipeCardGrid";
+import { compareRecipesByDateAdded } from "@/lib/recipe-utils";
 
 export const metadata = {
-  title: { absolute: "Inference Atlas — Find a model. Fit your hardware. Run it." },
-  description: "A deployment workbench for vLLM and SGLang. Start with your hardware or workload, find a recipe, and generate a runnable command.",
+  title: { absolute: "Model Index — Deployment recipes for real hardware" },
+  description: "A practical index of model serving recipes for vLLM and SGLang.",
 };
 
-const hardwareStarts = [
-  { id: "h200", label: "H200", brand: "NVIDIA", tone: "bg-[#def2e7] text-[#175746] dark:bg-[#25453d] dark:text-[#a7ead0]" },
-  { id: "b200", label: "B200", brand: "NVIDIA", tone: "bg-[#e5e9f7] text-[#414e87] dark:bg-[#303958] dark:text-[#c6d1ff]" },
-  { id: "mi300x", label: "MI300X", brand: "AMD", tone: "bg-[#faeee3] text-[#9a562b] dark:bg-[#48382e] dark:text-[#f1c499]" },
-  { id: "ascend_910b4", label: "910B4", brand: "Ascend", tone: "bg-[#f5e9eb] text-[#9f4b59] dark:bg-[#4c343d] dark:text-[#f2bdc5]" },
+const hardware = [
+  { label: "NVIDIA H200", short: "H200", brand: "NVIDIA", id: "h200" },
+  { label: "NVIDIA B200", short: "B200", brand: "NVIDIA", id: "b200" },
+  { label: "AMD MI300X", short: "MI300X", brand: "AMD", id: "mi300x" },
+  { label: "Ascend 910B4", short: "910B4", brand: "ASCEND", id: "ascend_910b4" },
 ];
 
-const taskStarts = [
-  { id: "text", label: "Language", icon: Workflow },
-  { id: "multimodal", label: "Vision", icon: ScanEye },
-  { id: "omni", label: "Media", icon: Sparkles },
-  { id: "embedding", label: "Embeddings", icon: Cpu },
-];
-
-export default async function HomePage() {
+export default function HomePage() {
   const recipes = getAllRecipes();
-  const hardwareCount = Object.keys(loadTaxonomy().hardware_profiles).length;
+  const recent = [...recipes].sort(compareRecipesByDateAdded).slice(0, 8);
+  const taxonomy = loadTaxonomy();
+  const hardwareCount = Object.keys(taxonomy.hardware_profiles).length;
   const sglangCount = recipes.filter((recipe) => recipe.engines?.sglang).length;
-
+  const options = hardware.map((item) => {
+    const profile = taxonomy.hardware_profiles[item.id];
+    const matches = recipes.filter((recipe) =>
+      isHardwareSupported(recipe, item.id)
+      && (!profile.restricted || item.id in (recipe.meta?.hardware || {}))
+      && Object.values(recipe.variants || {}).some((variant) => variantRunsOnHardware(profile, variant, item.id))
+    );
+    const sample = [...matches].sort(compareRecipesByDateAdded)[0];
+    const variant = sample && Object.entries(sample.variants || {}).find(([, value]) =>
+      variantRunsOnHardware(profile, value, item.id)
+    );
+    const sampleQuery = new URLSearchParams({ hardware: item.id });
+    if (variant?.[0] && variant[0] !== "default") sampleQuery.set("variant", variant[0]);
+    return {
+      ...item,
+      count: matches.length,
+      sample: sample?.hf_repo || "Explore recipes",
+      sampleHref: sample ? `/${sample.hf_id}?${sampleQuery}` : `/browse?hw=${item.id}`,
+      engine: "vLLM",
+    };
+  });
   return (
-    <main className="mx-auto max-w-[1480px] px-4 pb-8 pt-6 sm:px-6 sm:pt-8">
-      <section className="atlas-hero grid grid-cols-[minmax(0,1fr)] gap-8 px-6 py-9 sm:px-10 sm:py-12 lg:grid-cols-[minmax(0,1.05fr)_minmax(390px,0.95fr)] lg:gap-14 lg:px-14 lg:py-16">
-        <div className="flex min-w-0 flex-col items-start">
-          <div className="mb-7 inline-flex items-center gap-2 rounded-full border border-[#8bc5af]/30 bg-white/5 px-3 py-1.5 font-mono text-[10px] font-semibold uppercase tracking-[0.16em] text-[#a9e2c6]">
-            <span className="h-1.5 w-1.5 rounded-full bg-[#9ef0bd] shadow-[0_0_10px_#9ef0bd]" />
-            The deployment workbench
+    <main className="pb-24">
+      <section className="home-hero">
+        <div className="page-frame relative z-10">
+          <div className="home-hero-meta">
+            <span>MODEL INDEX / SERVING RECIPES</span>
+            <span className="hidden sm:inline">VLLM + SGLANG&nbsp; / &nbsp;OPEN CATALOG</span>
           </div>
-          <h1 className="max-w-2xl text-[clamp(2.8rem,5.4vw,5.75rem)] font-extrabold leading-[1.02] tracking-[-0.07em]">
-            From model to <span className="text-[#90e5ba]">running endpoint.</span>
-          </h1>
-          <p className="mt-6 max-w-xl text-base leading-7 text-[#bdd2ca] sm:text-lg">
-            Start with the hardware you have or the workload you need. Find a compatible recipe, tune the serving engine, and take the command to your cluster.
-          </p>
-          <div className="mt-8 flex flex-wrap gap-3">
-            <Link href="/browse" className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-[#9ce8bb] px-5 py-3 text-sm font-bold text-[#102c29] transition-colors hover:bg-[#c5f4d6]">
-              Explore all recipes <ArrowRight size={16} />
-            </Link>
-            <Link href="/image-selector" className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-[#a4cbbd]/35 px-5 py-3 text-sm font-semibold text-[#e5f8ec] transition-colors hover:bg-white/10">
-              Find a GPUStack image
-            </Link>
-          </div>
-          <div className="mt-auto grid w-full grid-cols-3 gap-5 border-t border-white/15 pt-7 text-[#b7d0c7] max-lg:mt-10">
-            <div><strong className="block text-2xl font-bold tracking-tight text-white">{recipes.length}</strong><span className="text-xs">model recipes</span></div>
-            <div><strong className="block text-2xl font-bold tracking-tight text-white">2</strong><span className="text-xs">serving engines</span></div>
-            <div><strong className="block text-2xl font-bold tracking-tight text-white">{hardwareCount}</strong><span className="text-xs">hardware profiles</span></div>
-          </div>
-        </div>
-
-        <div className="min-w-0 self-center rounded-[1.5rem] border border-[#b4e2ce]/20 bg-[#f9fffa] p-5 text-[#17302c] shadow-[0_24px_75px_rgba(0,0,0,0.18)] sm:p-7">
-          <div className="mb-6 flex items-start justify-between gap-3">
-            <div>
-              <div className="font-mono text-[10px] font-bold uppercase tracking-[0.17em] text-[#357e68]">Start your route</div>
-              <h2 className="mt-2 text-2xl font-bold tracking-[-0.04em]">What are you deploying on?</h2>
+          <div className="home-hero-grid">
+            <div className="home-hero-copy">
+              <div className="home-eyebrow"><span className="home-eyebrow-line" /> AN ENGINEERING REFERENCE FOR MODEL SERVING</div>
+              <h1>From model<br /><em>to machine.</em></h1>
+              <p>Find a deployment recipe that fits your hardware. Configure the engine, inspect the command, and run it on your terms.</p>
+              <div className="home-hero-actions">
+                <Link href="/browse" className="home-primary-action">Explore recipes <ArrowUpRight size={18} /></Link>
+                <Link href="/image-selector" className="home-secondary-action">Image reference <ArrowRight size={16} /></Link>
+              </div>
+              <div className="home-hero-proof"><span className="home-proof-dot" /> CURATED FOR REAL HARDWARE <span className="home-proof-separator">/</span> UPDATED FROM SOURCE RECIPES</div>
             </div>
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#def5e7] font-mono text-xs font-bold text-[#137257]">01</div>
+            <HomeSignal options={options} />
           </div>
-          <div className="grid grid-cols-2 gap-2.5">
-            {hardwareStarts.map((hardware) => (
-              <Link key={hardware.id} href={"/browse?hw=" + hardware.id + "&panel=open"} className="group flex min-h-20 min-w-0 items-center gap-2 rounded-xl border border-[#dce8df] bg-white px-2.5 py-3 transition-all hover:-translate-y-0.5 hover:border-[#5fb394] hover:shadow-md sm:gap-3 sm:px-3">
-                <span className={"flex h-10 w-10 shrink-0 items-center justify-center rounded-lg font-mono text-[11px] font-bold " + hardware.tone}>{hardware.brand.slice(0, 2).toUpperCase()}</span>
-                <span className="min-w-0">
-                  <span className="block truncate text-sm font-bold">{hardware.label}</span>
-                  <span className="block text-[11px] text-[#6a8277]">{hardware.brand}</span>
-                </span>
-                <ArrowRight size={14} className="ml-auto shrink-0 text-[#7aaca0] transition-transform group-hover:translate-x-0.5" />
-              </Link>
-            ))}
+          <div className="home-hero-stats">
+            <div><strong>{recipes.length}</strong><span>MODEL RECIPES</span></div>
+            <div><strong>{hardwareCount}</strong><span>HARDWARE PROFILES</span></div>
+            <div><strong>{sglangCount}</strong><span>SGLANG PATHS</span></div>
+            <Link href="/browse" className="home-stats-link">OPEN THE INDEX <ArrowUpRight size={17} /></Link>
           </div>
-          <div className="my-6 flex items-center gap-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-[#82988e]"><span className="h-px flex-1 bg-[#e1e9e2]" />or begin with a task<span className="h-px flex-1 bg-[#e1e9e2]" /></div>
-          <div className="flex flex-wrap gap-2">
-            {taskStarts.map(({ id, label, icon: Icon }) => (
-              <Link key={id} href={"/browse?task=" + id + "&panel=open"} className="inline-flex items-center gap-1.5 rounded-full border border-[#dce8df] bg-[#f7faf6] px-3 py-2 text-xs font-semibold text-[#3b6255] transition-colors hover:border-[#5fb394] hover:bg-[#edf8ee]">
-                <Icon size={13} /> {label}
-              </Link>
-            ))}
-          </div>
-          <p className="mt-5 border-t border-[#e6eee7] pt-4 text-xs leading-5 text-[#698279]">
-            {sglangCount} recipes include an SGLang path. Engine and hardware choices remain editable on every model page.
-          </p>
         </div>
       </section>
+      <div className="page-frame">
+        <section className="home-hardware-section" aria-labelledby="hardware-heading">
+          <div className="home-section-heading">
+            <div>
+              <div className="section-label">01 / COMPUTE INDEX</div>
+              <h2 id="hardware-heading">Start with your hardware.</h2>
+            </div>
+            <p>Choose the accelerator you already run. The index narrows to recipes with a compatible checkpoint and serving path.</p>
+          </div>
+          <div className="hardware-grid">
+            {options.map((option, index) => (
+              <Link key={option.id} href={"/browse?hw=" + option.id + "&panel=open"} className="hardware-card group">
+                <div className="hardware-card-top"><span>{String(index + 1).padStart(2, "0")} / {option.brand}</span><ArrowUpRight size={18} /></div>
+                <div className="hardware-card-name">{option.short}</div>
+                <div className="hardware-card-rule"><span style={{ width: (option.count / recipes.length * 100) + "%" }} /></div>
+                <div className="hardware-card-foot"><strong>{option.count}</strong><span>compatible recipes</span></div>
+              </Link>
+            ))}
+          </div>
+        </section>
 
-      <Suspense fallback={<div className="py-12 text-sm text-muted-foreground">Loading recipes…</div>}>
-        <RecipeCardGrid recipes={recipes} />
-      </Suspense>
+        <section className="home-recent-section" aria-labelledby="recent-heading">
+          <div className="home-section-heading">
+            <div>
+              <div className="section-label">02 / RECENT ADDITIONS</div>
+              <h2 id="recent-heading">Fresh from the index.</h2>
+            </div>
+            <Link href="/browse?sort=updated" className="action-link">View all recipes <ArrowUpRight size={17} /></Link>
+          </div>
+          <div className="home-recent-grid">
+            {recent[0] && (
+              <Link href={"/" + recent[0].hf_id} className="home-featured-recipe group">
+                <span className="section-label">LATEST RECIPE / {recent[0].hf_org}</span>
+                <div>
+                  <h3>{recent[0].hf_repo}</h3>
+                  <p>{recent[0].meta?.description}</p>
+                </div>
+                <div className="home-featured-foot">
+                  <span>{recent[0].model?.parameter_count || "—"} / {recent[0].variants?.default?.precision?.toUpperCase() || "—"}</span>
+                  <span className="inline-flex items-center gap-2 text-vllm-blue">OPEN RECIPE <ArrowUpRight size={17} /></span>
+                </div>
+              </Link>
+            )}
+            <div className="home-recent-list">
+              {recent.slice(1, 8).map((recipe, index) => (
+                <Link key={recipe.hf_id} href={"/" + recipe.hf_id} className="home-recent-row group">
+                  <span className="font-mono text-xs text-muted-foreground">{String(index + 2).padStart(2, "0")}</span>
+                  <span className="min-w-0"><strong className="block truncate font-medium group-hover:text-vllm-blue">{recipe.hf_repo}</strong><small className="block truncate text-muted-foreground">{recipe.hf_org}</small></span>
+                  <span className="hidden font-mono text-xs text-muted-foreground sm:block">{recipe.model?.parameter_count || "—"}</span>
+                  <ArrowUpRight size={16} className="text-vllm-blue" />
+                </Link>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section className="home-image-cta">
+          <div className="section-label">03 / IMAGE REFERENCE</div>
+          <div className="mt-7 flex flex-wrap items-end justify-between gap-8">
+            <div><h2>One stack.<br />The right images.</h2><p>Resolve GPUStack server and worker images for your accelerator, runtime, architecture and registry.</p></div>
+            <Link href="/image-selector" className="home-image-link">Open image selector <ArrowUpRight size={20} /></Link>
+          </div>
+        </section>
+      </div>
     </main>
   );
 }

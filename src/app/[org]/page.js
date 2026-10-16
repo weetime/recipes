@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { getAllRecipes, getRecipesByOrg } from "@/lib/recipes";
-import { getProviderLogo, getProviderLogoClass, getProviderDisplayName } from "@/lib/providers";
+import { getProviderDisplayName } from "@/lib/providers";
 import { primaryRecipeTask, recipeHref } from "@/lib/recipe-utils";
 import { siteUrl } from "@/lib/site-url";
 import { Badge } from "@/components/ui/badge";
@@ -63,7 +63,6 @@ export default async function OrgPage({ params }) {
     redirect(`/${canonicalOrg}`);
   }
 
-  const logo = getProviderLogo(org);
   const displayName = getProviderDisplayName(org);
 
   // Group by capability, independently of the order of meta.tasks.
@@ -93,7 +92,7 @@ export default async function OrgPage({ params }) {
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",
     itemListElement: [
-      { "@type": "ListItem", position: 1, name: "Inference Atlas", item: siteUrl },
+      { "@type": "ListItem", position: 1, name: "Model Index", item: siteUrl },
       { "@type": "ListItem", position: 2, name: displayName, item: `${siteUrl}/${org}` },
     ],
   };
@@ -106,18 +105,11 @@ export default async function OrgPage({ params }) {
         dangerouslySetInnerHTML={jsonLdScript(breadcrumbLd)}
       />
       <Link href="/browse" className="mb-5 inline-flex text-xs font-semibold text-vllm-blue hover:underline">← Back to catalog</Link>
-      <header className="atlas-panel mb-8 flex flex-wrap items-center gap-4 p-6 sm:p-8">
-        {logo ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={logo} alt="" width={56} height={56} className={`rounded-xl shrink-0 ${getProviderLogoClass(org)}`} />
-        ) : (
-          <div className="w-14 h-14 rounded-xl bg-muted flex items-center justify-center text-2xl font-bold text-muted-foreground">
-            {displayName.charAt(0)}
-          </div>
-        )}
+      <header className="mb-12 flex flex-wrap items-end gap-6 border-b border-border pb-10 pt-8">
+        <span className="provider-monogram h-14 w-14 shrink-0 text-2xl" aria-hidden="true">{displayName.charAt(0)}</span>
         <div>
           <div className="atlas-kicker mb-1">Provider collection</div>
-          <h1 className="text-3xl font-extrabold tracking-[-0.045em]">{displayName}</h1>
+          <h1 className="text-4xl font-semibold tracking-[-0.065em] sm:text-7xl">{displayName}</h1>
           <div className="flex items-center gap-3 mt-1 text-sm text-muted-foreground">
             <span className="font-mono text-xs">{org}</span>
             <span>·</span>
@@ -148,7 +140,7 @@ export default async function OrgPage({ params }) {
                 </h2>
                 <span className="text-xs text-muted-foreground/60 tabular-nums">{list.length}</span>
               </div>
-              <div className="atlas-panel divide-y divide-border/60 overflow-hidden">
+              <div className="divide-y divide-border border-t-2 border-foreground">
                 {list.map((r) => (
                   <ModelRow key={r.hf_id} recipe={r} />
                 ))}
@@ -170,7 +162,7 @@ function ModelRow({ recipe }) {
   return (
     <Link
       href={recipeHref(recipe)}
-      className="flex flex-wrap items-center gap-x-3 gap-y-1.5 px-4 py-3 hover:bg-muted/40 transition-all group"
+      className="flex flex-wrap items-center gap-x-4 gap-y-2 px-2 py-5 hover:bg-muted/40 transition-all group"
     >
       <div className="min-w-[220px] shrink-0">
         <div className="text-sm font-semibold font-mono group-hover:text-vllm-blue transition-colors">

@@ -67,37 +67,15 @@ export default function BrowsePage() {
   });
 
   return (
-    <main className="max-w-[1480px] mx-auto px-4 sm:px-6 py-8">
-      <header className="atlas-panel relative overflow-hidden p-6 sm:p-9">
-        <div className="absolute -right-16 -top-32 h-80 w-80 rounded-full bg-[#d9f5e2] blur-3xl dark:bg-[#1c5b4b]/40" aria-hidden="true" />
-        <div className="relative">
-          <div className="atlas-kicker">Atlas / discover</div>
-          <h1 className="mt-3 max-w-2xl text-3xl font-extrabold tracking-[-0.05em] sm:text-5xl">Find a recipe for your stack.</h1>
-          <p className="mt-4 max-w-2xl text-sm leading-6 text-muted-foreground sm:text-base">
-            Explore {slim.length} model recipes. Start with hardware or workload, then refine by engine, precision and provider.
-          </p>
-          <div className="mt-7 flex flex-wrap gap-2">
-            {[
-              ["H200", "h200"], ["B200", "b200"], ["MI300X", "mi300x"], ["Ascend 910B4", "ascend_910b4"],
-            ].map(([label, id]) => (
-              <Link key={id} href={"/browse?hw=" + id + "&panel=open"} className="inline-flex items-center gap-2 rounded-full border border-border bg-background px-3.5 py-2 text-xs font-semibold transition-colors hover:border-vllm-blue hover:text-vllm-blue">
-                {label} <ArrowRight size={13} />
-              </Link>
-            ))}
-            <Link href="/browse?engine=sglang&panel=open" className="inline-flex items-center gap-2 rounded-full border border-border bg-background px-3.5 py-2 text-xs font-semibold transition-colors hover:border-vllm-blue hover:text-vllm-blue">
-              SGLang <ArrowRight size={13} />
-            </Link>
-          </div>
+    <main className="page-frame pb-20">
+      <header className="border-b border-border pb-10 pt-10 lg:pb-16 lg:pt-16">
+        <div className="section-label">THE MODEL INDEX / {slim.length} RECIPES</div>
+        <div className="mt-5 flex flex-wrap items-end justify-between gap-6">
+          <h1 className="text-[clamp(3.2rem,7vw,7rem)] font-semibold leading-none tracking-[-.075em]">Find your<br />deployment.</h1>
+          <p className="max-w-sm text-base leading-7 text-muted-foreground">Search by serving engine, workload, precision, or the accelerator already in your rack.</p>
         </div>
       </header>
-      <section id="catalog-results" className="mt-10">
-        <div className="mb-5 flex items-end justify-between gap-4">
-          <div>
-            <div className="atlas-kicker">Refine your route</div>
-            <h2 className="mt-1 text-2xl font-extrabold tracking-[-0.04em]">Model catalog</h2>
-          </div>
-          <span className="hidden font-mono text-xs text-muted-foreground sm:inline">03 / Select a recipe</span>
-        </div>
+      <section id="catalog-results" className="pt-10">
         <Suspense fallback={<div className="text-sm text-muted-foreground py-8">Loading...</div>}>
           <BrowseList
             recipes={slim}

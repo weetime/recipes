@@ -1,10 +1,10 @@
 "use client";
 
-import { useMemo, useCallback } from "react";
+import { useMemo, useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
-import { Layers, Cpu, X, ArrowDownUp, Type, Eye, Sparkles, Hash, SlidersHorizontal, ChevronDown } from "lucide-react";
-import { getProviderLogo, getProviderLogoClass, getProviderDisplayName } from "@/lib/providers";
+import { Layers, Cpu, X, ArrowDownUp, Type, Eye, Sparkles, Hash, SlidersHorizontal, ChevronDown, Search } from "lucide-react";
+import { getProviderDisplayName } from "@/lib/providers";
 import { searchRecipes } from "@/lib/search";
 
 // Per-row decorations: icon (tasks/arch) or colored dot (precision/hardware).
@@ -234,6 +234,19 @@ export function BrowseList({ recipes, hardwareOptions }) {
     },
     [router, searchParams]
   );
+  const [queryInput, setQueryInput] = useState(searchParams.get("q") || "");
+  const queryTimer = useRef(null);
+  const updateRef = useRef(update);
+  updateRef.current = update;
+  useEffect(() => {
+    setQueryInput(searchParams.get("q") || "");
+  }, [searchParams]);
+  useEffect(() => () => clearTimeout(queryTimer.current), []);
+  const changeQuery = (value) => {
+    setQueryInput(value);
+    clearTimeout(queryTimer.current);
+    queryTimer.current = setTimeout(() => updateRef.current({ q: value.trim() }), 250);
+  };
 
   const toggle = useCallback(
     (key, value) => {
@@ -378,74 +391,32 @@ export function BrowseList({ recipes, hardwareOptions }) {
   };
 
   return (
-    <div className="space-y-3">
-      {/* Status bar — always visible. Result count + Filter toggle + Sort.
-          Collapsed by default; the heavy filter panel only renders when the
-          user opts in or arrives via a filtered URL. */}
-      <div className="flex flex-wrap items-center gap-2 sm:gap-3 px-1">
-        <span className="text-sm text-foreground">
-          <span className="font-semibold tabular-nums">{filtered.length}</span>
-          {hasFilters && (
-            <span className="text-muted-foreground"> of {recipes.length}</span>
-          )}
-          <span className="text-muted-foreground"> {filtered.length === 1 ? "recipe" : "recipes"}</span>
-        </span>
-
-        <button
-          onClick={() => setOpen((v) => !v)}
-          className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-[13px] transition-colors ${
-            open
-              ? "border-vllm-blue bg-vllm-blue/10 text-foreground ring-1 ring-vllm-blue/30"
-              : "border-foreground/20 text-foreground/80 hover:text-foreground hover:border-foreground/40 hover:bg-muted/40"
-          }`}
-          aria-expanded={open}
-        >
-          <SlidersHorizontal size={13} />
-          <span className="font-medium">Filter</span>
-          {activeCount > 0 && (
-            <span className="inline-flex items-center justify-center rounded-full bg-vllm-blue text-white text-[10px] font-semibold px-1.5 min-w-[18px] h-[18px] tabular-nums">
-              {activeCount}
-            </span>
-          )}
-          <ChevronDown size={13} className={`transition-transform ${open ? "rotate-180" : ""}`} />
-        </button>
-
-        {/* Active filter pills — only when collapsed (the open panel makes
-            its own selection visible via highlighted chips). */}
-        {!open && hasFilters && (
-          <div className="flex flex-wrap items-center gap-1.5">
-            {activeFilters.map((f) => (
-              <ActivePill key={`${f.key}:${f.value}`} onRemove={() => removeOne(f.key)}>
-                {f.label}
-              </ActivePill>
-            ))}
-          </div>
-        )}
-
-        <div className="flex items-center gap-2 ml-auto">
-          <ArrowDownUp size={13} className="text-muted-foreground" />
-          <select
-            value={sort}
-            onChange={(e) => update({ sort: e.target.value === "released" ? "" : e.target.value })}
-            className="rounded-lg border border-foreground/20 bg-background px-3 py-1.5 text-[13px] focus:outline-none focus:ring-2 focus:ring-vllm-blue/40 hover:border-foreground/40 transition-colors"
-          >
-            {SORT_OPTIONS.map((s) => (
-              <option key={s.id} value={s.id}>{s.label}</option>
-            ))}
-          </select>
-          {hasFilters && (
-            <button
-              onClick={clearAll}
-              className="inline-flex items-center gap-1 rounded-lg border border-foreground/20 px-2.5 py-1.5 text-[13px] text-muted-foreground hover:text-foreground hover:border-foreground/40 hover:bg-muted/40 transition-colors"
-            >
-              <X size={12} /> Clear
-            </button>
-          )}
+    <div className="catalog-layout">
+      <aside className="catalog-filter">
+        <div className="flex items-center justify-between border-b border-border py-4">
+          <span className="section-label">FILTER THE INDEX</span>
+          {hasFilters && <button onClick={clearAll} className="text-xs text-vllm-blue hover:underline">Clear all</button>}
         </div>
-      </div>
-
-      {open && (
-      <div className="rounded-xl border border-foreground/15 divide-y divide-foreground/10 bg-card/40">
+        <label className="catalog-search">
+          <Search size={14} aria-hidden="true" />
+          <input
+            type="search"
+            value={queryInput}
+            onChange={(event) => changeQuery(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") {
+                event.preventDefault();
+                clearTimeout(queryTimer.current);
+                update({ q: queryInput.trim() });
+              }
+              if (event.key === "Escape") changeQuery("");
+            }}
+            placeholder="Filter by model or provider"
+            aria-label="Filter catalog by model or provider"
+          />
+        </label>
+        <button className="lg:hidden flex w-full items-center justify-between border-b border-border py-3 text-sm" onClick={() => setOpen((v) => !v)} aria-expanded={open}>Filters <ChevronDown size={14} className={open ? "rotate-180" : ""} /></button>
+        <div className={open ? "block" : "hidden lg:block"}>
         <FilterRow label="Engine">
           <PillGroup>
             {[
@@ -543,17 +514,7 @@ export function BrowseList({ recipes, hardwareOptions }) {
             {hardwareBrands.map((brand) => (
               <div key={brand.name} className="flex flex-wrap items-center gap-3">
                 <span className="inline-flex items-center gap-2 w-28 shrink-0">
-                  {brand.logo ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={brand.logo} alt="" width={20} height={20} className="rounded shrink-0" aria-hidden />
-                  ) : (
-                    <span
-                      className="inline-flex items-center justify-center w-5 h-5 rounded bg-muted text-[10px] font-bold text-muted-foreground shrink-0"
-                      aria-hidden
-                    >
-                      {brand.name.charAt(0)}
-                    </span>
-                  )}
+                  <span className="provider-monogram h-5 w-5 shrink-0 text-[10px]" aria-hidden="true">{brand.name.charAt(0)}</span>
                   <span className="text-[12px] font-semibold uppercase tracking-wider text-foreground/80">
                     {brand.name}
                   </span>
@@ -588,16 +549,21 @@ export function BrowseList({ recipes, hardwareOptions }) {
             ))}
           </select>
         </FilterRow>
-      </div>
-      )}
-
+        </div>
+      </aside>
+      <div className="catalog-results">
+        <div className="mb-5 flex flex-wrap items-center justify-between gap-4 border-b border-border pb-5">
+          <div><strong className="text-3xl font-medium tabular-nums">{filtered.length}</strong><span className="ml-2 text-sm text-muted-foreground">of {recipes.length} recipes</span></div>
+          <label className="flex items-center gap-2 text-xs text-muted-foreground">SORT BY <select value={sort} onChange={(e) => update({ sort: e.target.value === "released" ? "" : e.target.value })} className="border-b border-border bg-transparent px-2 py-1 text-sm text-foreground">{SORT_OPTIONS.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}</select></label>
+        </div>
+        {hasFilters && <div className="mb-5 flex flex-wrap gap-2">{activeFilters.map((item) => <ActivePill key={item.key + item.value} onRemove={() => removeOne(item.key)}>{item.label}</ActivePill>)}</div>}
       {/* List */}
       {filtered.length === 0 ? (
         <div className="rounded-xl border border-dashed border-border p-10 text-center text-sm text-muted-foreground">
           No recipes match these filters. <button onClick={clearAll} className="text-vllm-blue hover:underline">Clear all</button>
         </div>
       ) : (
-        <div className="rounded-xl border border-border overflow-hidden">
+        <div className="border-t-2 border-foreground overflow-hidden">
           {/* Header — desktop only */}
           <div className="hidden md:grid grid-cols-[1fr_72px_64px_72px_140px_1fr] gap-3 px-4 py-2 border-b border-border bg-muted/30 text-[10px] font-semibold text-muted-foreground uppercase tracking-widest">
             <div>Model</div>
@@ -612,6 +578,7 @@ export function BrowseList({ recipes, hardwareOptions }) {
           </ul>
         </div>
       )}
+      </div>
     </div>
   );
 }
@@ -622,17 +589,17 @@ function FilterRow({ label, children }) {
   // vs text-[10px]) because this is a dedicated filter surface, not a
   // sidebar packed next to a command card.
   return (
-    <div className="px-4 py-3.5 flex flex-col sm:flex-row sm:items-start gap-2 sm:gap-5">
-      <div className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest sm:w-24 sm:pt-2 shrink-0">
+    <div className="filter-row">
+      <div className="section-label text-muted-foreground">
         {label}
       </div>
-      <div className="flex-1 min-w-0">{children}</div>
+      <div className="min-w-0">{children}</div>
     </div>
   );
 }
 
 function PillGroup({ children }) {
-  return <div className="flex flex-wrap gap-2">{children}</div>;
+  return <div className="filter-options">{children}</div>;
 }
 
 function ActivePill({ children, onRemove }) {
@@ -677,7 +644,7 @@ function Chip({ active, count, onClick, icon: Icon, iconClass, dot, logo, mono, 
       onClick={onClick}
       disabled={disabled}
       aria-pressed={active}
-      className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-[13px] transition-all ${style}`}
+      className={`filter-chip inline-flex items-center gap-1.5 transition-colors ${style}`}
     >
       {Icon && <Icon size={13} className={leadIconColor} aria-hidden />}
       {dot && <span className={`inline-block rounded-full shrink-0 ${dotClass}`} aria-hidden />}
@@ -721,7 +688,6 @@ function Row({ recipe, hardware, precision, engine, hardwareById }) {
   const params = r.model.parameter_count || "—";
   const active = r.model.active_parameters;
   const sizeLabel = isMoe && active && active !== params ? `${params}/${active}` : params;
-  const logo = getProviderLogo(r.hf_org);
   const verified = Object.entries(r.meta.hardware || {})
     .filter(([, s]) => s === "verified")
     .map(([h]) => h);
@@ -731,18 +697,11 @@ function Row({ recipe, hardware, precision, engine, hardwareById }) {
     <li>
       <Link
         href={`/${r.hf_id}${query ? `?${query}` : ""}`}
-        className="group block px-4 py-3 hover:bg-muted/30 transition-colors md:grid md:grid-cols-[1fr_72px_64px_72px_140px_1fr] md:gap-3 md:items-center"
+        className="group block px-2 py-5 hover:bg-muted/60 transition-colors md:grid md:grid-cols-[1fr_72px_64px_72px_140px_1fr] md:gap-3 md:items-center"
       >
         {/* Model */}
         <div className="flex items-start gap-2.5 min-w-0">
-          {logo ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={logo} alt="" width={24} height={24} className={`rounded shrink-0 mt-0.5 ${getProviderLogoClass(r.hf_org)}`} />
-          ) : (
-            <div className="w-6 h-6 rounded bg-muted flex items-center justify-center text-[10px] font-bold text-muted-foreground shrink-0">
-              {r.hf_org.charAt(0)}
-            </div>
-          )}
+          <span className="provider-monogram h-6 w-6 shrink-0 text-[11px]" aria-hidden="true">{r.hf_org.charAt(0)}</span>
           <div className="min-w-0">
             <div className="font-medium text-sm group-hover:text-vllm-blue transition-colors truncate">
               {r.hf_repo}

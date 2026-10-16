@@ -1982,46 +1982,12 @@ export function CommandBuilder({ recipe, strategies, taxonomy }) {
     return (
       <TooltipProvider>
         <div className="space-y-4">
-          <InstallBlock
-            recipe={recipe}
-            engine={engine}
-            variant={currentVariant}
-            dockerMeta={dockerMeta}
-            installMode={effectiveInstallMode}
-            setInstallMode={setInstallMode}
-            dockerCudaVariant={dockerCudaVariant}
-            setDockerCudaVariant={setDockerCudaVariant}
-            altCudaSuffix={altCudaSuffix}
-            hwInstall={hwInstall}
-          />
-
-          {modeDependencies.length > 0 && (
-            <DependenciesBlock deps={modeDependencies} />
-          )}
-
-          <div
-            className={`rounded-2xl overflow-hidden bg-[var(--command-bg)] border border-border transition-shadow ${changed ? "ring-2 ring-vllm-blue/30" : ""}`}
-          >
-            <SingleCommandBlock
-              command={omniSubbedCommand}
-              env={omniSubbedEnv}
-              verifyCmd={omniCurl}
-              benchCmd={omniBench}
-              statusHeader={statusHeader}
-              installMode={effectiveInstallMode}
-              dockerMeta={dockerMeta}
-              configSummary={omniConfigSummary}
-              endpointsControls={omniEndpointsControls}
-              commandNote={commandNote}
-            />
-          </div>
-
-          <div className="rounded-xl border border-border divide-y divide-border">
+          <div className="border-t-2 border-foreground divide-y divide-border">
             <ConfigRow label="Hardware">
               <div className="space-y-1.5">
                 {hwByBrand.map(([brand, profiles]) => (
                   <div key={brand} className="flex flex-wrap items-center gap-2">
-                    <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70 w-14 shrink-0">
+                    <span className="text-[11px] font-semibold uppercase tracking-wider text-foreground/65 w-14 shrink-0">
                       {brand}
                     </span>
                     <PillGroup>
@@ -2158,6 +2124,41 @@ export function CommandBuilder({ recipe, strategies, taxonomy }) {
               </ConfigRow>
             )}
           </div>
+
+          <InstallBlock
+            recipe={recipe}
+            engine={engine}
+            variant={currentVariant}
+            dockerMeta={dockerMeta}
+            installMode={effectiveInstallMode}
+            setInstallMode={setInstallMode}
+            dockerCudaVariant={dockerCudaVariant}
+            setDockerCudaVariant={setDockerCudaVariant}
+            altCudaSuffix={altCudaSuffix}
+            hwInstall={hwInstall}
+          />
+
+          {modeDependencies.length > 0 && (
+            <DependenciesBlock deps={modeDependencies} />
+          )}
+
+          <div
+            className={`overflow-hidden bg-[var(--command-bg)] border border-border transition-shadow ${changed ? "ring-2 ring-vllm-blue/30" : ""}`}
+          >
+            <SingleCommandBlock
+              command={omniSubbedCommand}
+              env={omniSubbedEnv}
+              verifyCmd={omniCurl}
+              benchCmd={omniBench}
+              statusHeader={statusHeader}
+              installMode={effectiveInstallMode}
+              dockerMeta={dockerMeta}
+              configSummary={omniConfigSummary}
+              endpointsControls={omniEndpointsControls}
+              commandNote={commandNote}
+            />
+          </div>
+
         </div>
       </TooltipProvider>
     );
@@ -2166,124 +2167,8 @@ export function CommandBuilder({ recipe, strategies, taxonomy }) {
   return (
     <TooltipProvider>
       <div className="space-y-4">
-        {/* ── Install (tabs: pip / docker — mirrors the command-card mode toggle
-          so switching from either place keeps them in sync). */}
-        <InstallBlock
-          recipe={recipe}
-          engine={engine}
-          variant={currentVariant}
-          dockerMeta={dockerMeta}
-          installMode={effectiveInstallMode}
-          setInstallMode={setInstallMode}
-          dockerCudaVariant={dockerCudaVariant}
-          setDockerCudaVariant={setDockerCudaVariant}
-          altCudaSuffix={altCudaSuffix}
-          extraMinVersion={isKvStoreActive ? strategies[activeKvOffload]?.min_vllm_version : null}
-          hwInstall={hwInstall}
-        />
-
-        {/* ── Dependencies / extra install ──
-            Hidden in docker mode: today every entry is a host-level
-            `pip install` / `bash install_*.sh`, which doesn't apply when
-            vLLM ships as a container image. Revisit if a dep ever needs
-            to run inside the container. */}
-        {modeDependencies.length > 0 && (
-          <DependenciesBlock deps={modeDependencies} />
-        )}
-
-        {/* ── VRAM shortfall warning (single-node only) ── */}
-        {vramShortfall && (
-          <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-[12px] leading-snug flex items-start gap-2">
-            <span aria-hidden="true" className="text-amber-500 mt-px">⚠</span>
-            <div className="text-foreground/90">
-              <span className="font-semibold text-amber-600 dark:text-amber-400">Insufficient VRAM for single-node: </span>
-              {vramShortfall.hwName} provides {vramShortfall.gpuCount}×
-              {Math.round(vramShortfall.availGb / vramShortfall.gpuCount)}G = {vramShortfall.availGb}GB,
-              but this variant needs at least {vramShortfall.needGb}GB for weights alone
-              (KV cache requires more).{" "}
-              <span className="text-muted-foreground">Switch to a higher-memory GPU, use multi-node TP, or lower <code className="font-mono text-[11px] px-1 py-px rounded bg-muted/50">--max-model-len</code> to shrink the KV cache footprint.</span>
-            </div>
-          </div>
-        )}
-
-        {/* ── Command output ── */}
-        {(() => {
-          const endpointsControls = (
-            <EndpointsPopoverButton
-              isPd={isPd}
-              isKvStore={kvHasRouter}
-              isMultiNode={isMultiNode}
-              engine={engine}
-              placeholders={placeholdersInUse}
-              endpoints={endpoints}
-              onChange={updateEndpoint}
-              onReset={resetEndpoints}
-            />
-          );
-          return (
-        <div
-          className={`rounded-2xl overflow-hidden bg-[var(--command-bg)] border border-border transition-shadow ${changed ? "ring-2 ring-vllm-blue/30" : ""
-            }`}
-        >
-          {isPd ? (
-            <PdClusterBlock
-              result={displayedResult}
-              verifyCmd={verifyCmd}
-              benchCmd={benchCmd}
-              statusHeader={statusHeader}
-              onRankChange={setPdRank}
-              installMode={effectiveInstallMode}
-              dockerMeta={dockerMeta}
-              configSummary={configSummary}
-              endpointsControls={endpointsControls}
-              commandNote={commandNote}
-            />
-          ) : isKvStore ? (
-            <KvStoreLbBlock
-              result={displayedResult}
-              verifyCmd={verifyCmd}
-              benchCmd={benchCmd}
-              statusHeader={statusHeader}
-              onInstanceChange={selectKvInstanceIdx}
-              installMode={effectiveInstallMode}
-              dockerMeta={dockerMeta}
-              configSummary={configSummary}
-              endpointsControls={endpointsControls}
-              commandNote={commandNote}
-            />
-          ) : isMultiNode ? (
-            <MultiNodeBlock
-              result={displayedResult}
-              verifyCmd={verifyCmd}
-              benchCmd={benchCmd}
-              statusHeader={statusHeader}
-              installMode={effectiveInstallMode}
-              dockerMeta={dockerMeta}
-              configSummary={configSummary}
-              endpointsControls={endpointsControls}
-              commandNote={commandNote}
-            />
-          ) : (
-            <SingleCommandBlock
-              command={displayedResult.command}
-              env={displayedResult.env}
-              companions={displayedResult.companions}
-              verifyCmd={verifyCmd}
-              benchCmd={benchCmd}
-              statusHeader={statusHeader}
-              installMode={effectiveInstallMode}
-              dockerMeta={dockerMeta}
-              configSummary={configSummary}
-              endpointsControls={endpointsControls}
-              commandNote={commandNote}
-            />
-          )}
-        </div>
-          );
-        })()}
-
         {/* ── Configuration ── */}
-        <div className="rounded-xl border border-border divide-y divide-border">
+        <div className="border-t-2 border-foreground divide-y divide-border">
           {/* Engine (only shown when the recipe ships >1 inference engine) */}
           {engineIds.length > 1 && (
             <ConfigRow label="Engine">
@@ -2339,7 +2224,7 @@ export function CommandBuilder({ recipe, strategies, taxonomy }) {
             <div className="space-y-1.5">
               {hwByBrand.map(([brand, profiles]) => (
                 <div key={brand} className="flex flex-wrap items-center gap-2">
-                  <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70 w-14 shrink-0">
+                  <span className="text-[11px] font-semibold uppercase tracking-wider text-foreground/65 w-14 shrink-0">
                     {brand}
                   </span>
                   <PillGroup>
@@ -3052,6 +2937,123 @@ export function CommandBuilder({ recipe, strategies, taxonomy }) {
             </div>
           </details>
         </div>
+
+        {/* ── Install (tabs: pip / docker — mirrors the command-card mode toggle
+          so switching from either place keeps them in sync). */}
+        <InstallBlock
+          recipe={recipe}
+          engine={engine}
+          variant={currentVariant}
+          dockerMeta={dockerMeta}
+          installMode={effectiveInstallMode}
+          setInstallMode={setInstallMode}
+          dockerCudaVariant={dockerCudaVariant}
+          setDockerCudaVariant={setDockerCudaVariant}
+          altCudaSuffix={altCudaSuffix}
+          extraMinVersion={isKvStoreActive ? strategies[activeKvOffload]?.min_vllm_version : null}
+          hwInstall={hwInstall}
+        />
+
+        {/* ── Dependencies / extra install ──
+            Hidden in docker mode: today every entry is a host-level
+            `pip install` / `bash install_*.sh`, which doesn't apply when
+            vLLM ships as a container image. Revisit if a dep ever needs
+            to run inside the container. */}
+        {modeDependencies.length > 0 && (
+          <DependenciesBlock deps={modeDependencies} />
+        )}
+
+        {/* ── VRAM shortfall warning (single-node only) ── */}
+        {vramShortfall && (
+          <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-[12px] leading-snug flex items-start gap-2">
+            <span aria-hidden="true" className="text-amber-500 mt-px">⚠</span>
+            <div className="text-foreground/90">
+              <span className="font-semibold text-amber-600 dark:text-amber-400">Insufficient VRAM for single-node: </span>
+              {vramShortfall.hwName} provides {vramShortfall.gpuCount}×
+              {Math.round(vramShortfall.availGb / vramShortfall.gpuCount)}G = {vramShortfall.availGb}GB,
+              but this variant needs at least {vramShortfall.needGb}GB for weights alone
+              (KV cache requires more).{" "}
+              <span className="text-muted-foreground">Switch to a higher-memory GPU, use multi-node TP, or lower <code className="font-mono text-[11px] px-1 py-px rounded bg-muted/50">--max-model-len</code> to shrink the KV cache footprint.</span>
+            </div>
+          </div>
+        )}
+
+        {/* ── Command output ── */}
+        {(() => {
+          const endpointsControls = (
+            <EndpointsPopoverButton
+              isPd={isPd}
+              isKvStore={kvHasRouter}
+              isMultiNode={isMultiNode}
+              engine={engine}
+              placeholders={placeholdersInUse}
+              endpoints={endpoints}
+              onChange={updateEndpoint}
+              onReset={resetEndpoints}
+            />
+          );
+          return (
+        <div
+          className={`overflow-hidden bg-[var(--command-bg)] border border-border transition-shadow ${changed ? "ring-2 ring-vllm-blue/30" : ""
+            }`}
+        >
+          {isPd ? (
+            <PdClusterBlock
+              result={displayedResult}
+              verifyCmd={verifyCmd}
+              benchCmd={benchCmd}
+              statusHeader={statusHeader}
+              onRankChange={setPdRank}
+              installMode={effectiveInstallMode}
+              dockerMeta={dockerMeta}
+              configSummary={configSummary}
+              endpointsControls={endpointsControls}
+              commandNote={commandNote}
+            />
+          ) : isKvStore ? (
+            <KvStoreLbBlock
+              result={displayedResult}
+              verifyCmd={verifyCmd}
+              benchCmd={benchCmd}
+              statusHeader={statusHeader}
+              onInstanceChange={selectKvInstanceIdx}
+              installMode={effectiveInstallMode}
+              dockerMeta={dockerMeta}
+              configSummary={configSummary}
+              endpointsControls={endpointsControls}
+              commandNote={commandNote}
+            />
+          ) : isMultiNode ? (
+            <MultiNodeBlock
+              result={displayedResult}
+              verifyCmd={verifyCmd}
+              benchCmd={benchCmd}
+              statusHeader={statusHeader}
+              installMode={effectiveInstallMode}
+              dockerMeta={dockerMeta}
+              configSummary={configSummary}
+              endpointsControls={endpointsControls}
+              commandNote={commandNote}
+            />
+          ) : (
+            <SingleCommandBlock
+              command={displayedResult.command}
+              env={displayedResult.env}
+              companions={displayedResult.companions}
+              verifyCmd={verifyCmd}
+              benchCmd={benchCmd}
+              statusHeader={statusHeader}
+              installMode={effectiveInstallMode}
+              dockerMeta={dockerMeta}
+              configSummary={configSummary}
+              endpointsControls={endpointsControls}
+              commandNote={commandNote}
+            />
+          )}
+        </div>
+          );
+        })()}
+
       </div>
     </TooltipProvider>
   );
@@ -3146,8 +3148,8 @@ function ConfigRow({ label, hint, nested, children }) {
   // Features): a blue left rail + slight tint expresses the ownership that
   // the flat divide-y list otherwise hides.
   return (
-    <div className={`px-4 py-3 flex flex-col sm:flex-row sm:items-start gap-2 sm:gap-4 ${nested ? "border-l-2 border-vllm-blue/30 bg-muted/20" : ""}`}>
-      <div className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest sm:w-28 sm:pt-1.5 shrink-0 inline-flex items-center gap-1">
+    <div className={`config-row px-2 py-4 flex flex-col sm:flex-row sm:items-start gap-2 sm:gap-6 ${nested ? "border-l-2 border-vllm-blue/30 bg-muted/20" : ""}`}>
+      <div className="text-[11px] font-semibold text-foreground/75 uppercase tracking-wider sm:w-28 sm:pt-1.5 shrink-0 inline-flex items-center gap-1">
         {label}
         {hint && (
           <InfoTip content={hint}>
@@ -3181,12 +3183,12 @@ function Pill({ active, onClick, title, dimmed, disabled, pressed, children }) {
   // clearly look disabled (e.g. PD that was pre-selected but no longer fits).
   // dimmed de-emphasizes a selectable pill (dashed border, muted text).
   const style = disabled
-    ? "border-dashed border-border/40 text-muted-foreground/30 cursor-not-allowed bg-muted/20 line-through decoration-muted-foreground/30"
+    ? "border-dashed border-border text-muted-foreground cursor-not-allowed bg-muted/15"
     : active
       ? "border-vllm-blue bg-vllm-blue/5 text-foreground ring-1 ring-vllm-blue/20 shadow-sm"
       : dimmed
-        ? "border-dashed border-border/60 text-muted-foreground/50 hover:text-muted-foreground hover:border-muted-foreground/30"
-        : "border-border text-muted-foreground hover:text-foreground hover:border-muted-foreground/40 hover:bg-muted/30";
+        ? "border-dashed border-border text-muted-foreground hover:text-foreground hover:border-muted-foreground/70"
+        : "border-border text-foreground/85 hover:text-foreground hover:border-muted-foreground/70 hover:bg-muted/30";
   const btn = (
     <button
       onClick={onClick}
@@ -3194,7 +3196,7 @@ function Pill({ active, onClick, title, dimmed, disabled, pressed, children }) {
       aria-disabled={disabled}
       aria-pressed={pressed}
       aria-label={typeof title === "string" ? title : undefined}
-      className={`inline-flex items-center rounded-lg border px-2.5 py-1.5 text-xs transition-all ${style} ${disabled ? "pointer-events-none" : ""}`}
+      className={`inline-flex items-center border px-2.5 py-2 text-[13px] transition-all ${style} ${disabled ? "pointer-events-none" : ""}`}
     >
       {children}
     </button>
@@ -3632,7 +3634,7 @@ uv pip install -U vllm --torch-backend auto`;
   const summary = tabs.map((t) => (t.id === "pip" ? "pip" : "Docker")).join(" / ");
 
   return (
-    <div className="rounded-2xl overflow-hidden bg-[var(--command-bg)] border border-border">
+    <div className="overflow-hidden bg-[var(--command-bg)] border border-border">
       <button
         onClick={() => setOpen(!open)}
         className="w-full flex items-center gap-3 px-4 py-2.5 text-left hover:bg-white/[0.02] transition-colors"
@@ -3726,7 +3728,7 @@ function DependenciesBlock({ deps }) {
   const requiredCount = requiredDeps.length;
   const optionalCount = deps.length - requiredCount;
   return (
-    <div className="rounded-2xl overflow-hidden bg-[var(--command-bg)] border border-border">
+    <div className="overflow-hidden bg-[var(--command-bg)] border border-border">
       <div className="flex items-center justify-between px-4 pt-3">
         <span className="text-[11px] text-[var(--command-fg)]/50 font-mono inline-flex items-center gap-1.5">
           <Package size={11} /> extra install
