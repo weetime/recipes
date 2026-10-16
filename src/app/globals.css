@@ -8,11 +8,12 @@
   --font-sans: var(--font-inter), Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
   --font-mono: var(--font-jetbrains), "JetBrains Mono", ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
 
-  /* vLLM Brand Colors */
-  --color-vllm-yellow: #fdb517;
-  --color-vllm-blue: #30a2ff;
-  --color-vllm-yellow-hover: #e5a315;
-  --color-vllm-blue-hover: #2891e6;
+  /* Shared accent for the deployment workbench. Keep the existing utility
+     names so command-builder controls inherit the new identity together. */
+  --color-vllm-yellow: #e5a450;
+  --color-vllm-blue: var(--atlas-link);
+  --color-vllm-yellow-hover: #c98a36;
+  --color-vllm-blue-hover: var(--atlas-link-hover);
 
   --color-ring: var(--ring);
   --color-input: var(--input);
@@ -37,36 +38,40 @@
 }
 
 :root {
-  --radius: 0.625rem;
+  --atlas-link: #087f73;
+  --atlas-link-hover: #056b61;
+  --radius: 0.9rem;
   --code-bg: oklch(0.97 0.005 265);
   --code-fg: oklch(0.25 0.04 265);
   --code-block-bg: oklch(0.95 0.007 265);
   --code-block-fg: oklch(0.2 0.04 265);
   --command-bg: oklch(0.965 0.005 265);
   --command-fg: oklch(0.18 0.04 265);
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.129 0.042 264.695);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.129 0.042 264.695);
+  --background: #f7f8f4;
+  --foreground: #17252a;
+  --card: #ffffff;
+  --card-foreground: #17252a;
   /* Tooltip/popover surface follows the inline-code palette so floating UI
      blends with the rest of the surface ladder (code / command / popover). */
   --popover: var(--code-bg);
   --popover-foreground: var(--code-fg);
-  --primary: oklch(0.208 0.042 265.755);
-  --primary-foreground: oklch(0.984 0.003 247.858);
-  --secondary: oklch(0.968 0.007 247.896);
-  --secondary-foreground: oklch(0.208 0.042 265.755);
-  --muted: oklch(0.968 0.007 247.896);
-  --muted-foreground: oklch(0.554 0.046 257.417);
-  --accent: oklch(0.968 0.007 247.896);
-  --accent-foreground: oklch(0.208 0.042 265.755);
+  --primary: #087f73;
+  --primary-foreground: #ffffff;
+  --secondary: #eaf2ee;
+  --secondary-foreground: #23443e;
+  --muted: #eef1ed;
+  --muted-foreground: #61716f;
+  --accent: #e6f3ec;
+  --accent-foreground: #075e57;
   --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.929 0.013 255.508);
-  --input: oklch(0.929 0.013 255.508);
-  --ring: oklch(0.704 0.04 256.788);
+  --border: #dbe4df;
+  --input: #cbdad2;
+  --ring: #087f73;
 }
 
 .dark {
+  --atlas-link: #61d6bd;
+  --atlas-link-hover: #89e4d0;
   /* Warmer, slightly lighter code palette — avoid pure-black command block.
      Command < code-block < code (inline) ≤ card, for a subtle depth ladder
      against --background oklch(0.129 ...) without any slab reading as black. */
@@ -76,24 +81,99 @@
   --code-block-fg: oklch(0.93 0.008 245);
   --command-bg: oklch(0.175 0.018 258);
   --command-fg: oklch(0.95 0.008 245);
-  --background: oklch(0.129 0.042 264.695);
-  --foreground: oklch(0.984 0.003 247.858);
-  --card: oklch(0.208 0.042 265.755);
-  --card-foreground: oklch(0.984 0.003 247.858);
+  --background: #101c20;
+  --foreground: #edf4ef;
+  --card: #19292d;
+  --card-foreground: #edf4ef;
   --popover: var(--code-bg);
   --popover-foreground: var(--code-fg);
-  --primary: oklch(0.929 0.013 255.508);
-  --primary-foreground: oklch(0.208 0.042 265.755);
-  --secondary: oklch(0.279 0.041 260.031);
-  --secondary-foreground: oklch(0.984 0.003 247.858);
-  --muted: oklch(0.279 0.041 260.031);
-  --muted-foreground: oklch(0.704 0.04 256.788);
-  --accent: oklch(0.279 0.041 260.031);
-  --accent-foreground: oklch(0.984 0.003 247.858);
+  --primary: #61d6bd;
+  --primary-foreground: #092923;
+  --secondary: #22363a;
+  --secondary-foreground: #edf4ef;
+  --muted: #25383b;
+  --muted-foreground: #a7bab5;
+  --accent: #28443f;
+  --accent-foreground: #c4f0df;
   --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.551 0.027 264.364);
+  --border: #385054;
+  --input: #456066;
+  --ring: #61d6bd;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-image: radial-gradient(circle at 50% -25%, rgba(20, 153, 131, 0.08), transparent 46rem);
+}
+
+:is(a, button, input, select, summary):focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 3px;
+}
+
+.atlas-kicker {
+  color: var(--color-vllm-blue);
+  font-family: var(--font-mono);
+  font-size: 0.69rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.atlas-hero {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  background: #10272b;
+  color: #f2fbf6;
+  border-radius: 1.75rem;
+  box-shadow: 0 24px 72px rgba(8, 35, 37, 0.16);
+}
+
+.atlas-hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background-image: linear-gradient(rgba(137, 227, 196, 0.075) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(137, 227, 196, 0.075) 1px, transparent 1px);
+  background-size: 34px 34px;
+  mask-image: linear-gradient(90deg, transparent 10%, black 100%);
+}
+
+.atlas-hero::after {
+  content: "";
+  position: absolute;
+  width: 34rem;
+  height: 34rem;
+  top: -17rem;
+  right: -10rem;
+  z-index: -1;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(72, 211, 165, 0.28), transparent 68%);
+}
+
+.atlas-panel {
+  border: 1px solid var(--border);
+  border-radius: 1.35rem;
+  background: var(--card);
+  box-shadow: 0 12px 34px rgba(19, 50, 47, 0.035);
+}
+
+.atlas-step {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.65rem;
+  height: 1.65rem;
+  border: 1px solid currentColor;
+  border-radius: 0.55rem;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 700;
 }
 
 /* Scrollbars — soften dark mode (default WebKit scrollbar reads as white) */

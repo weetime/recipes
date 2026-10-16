@@ -5,12 +5,10 @@ export const runtime = "edge";
 // OG image generator, 1200×630.
 //   /og?title=...&subtitle=...&meta=...&path=...
 // Shared by the homepage, provider pages (/[org]), and recipe detail pages
-// (/[org]/[repo]). Matches the vLLM blog OG design (top brand-gradient bar,
-// three bottom-right ring accents, system font) and adds a recipes-specific
-// "/ Recipes" wordmark next to the logo.
+// (/[org]/[repo]). Uses the same ink-and-mint palette as the workbench.
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
-  const title = searchParams.get("title") || "Model Recipes";
+  const title = searchParams.get("title") || "Inference Atlas";
   const subtitle = searchParams.get("subtitle") || "";
   const meta = searchParams.get("meta") || "";
   const path = searchParams.get("path") || "";
@@ -30,7 +28,7 @@ export async function GET(request) {
           width: "100%",
           display: "flex",
           flexDirection: "column",
-          backgroundColor: "#ffffff",
+          backgroundColor: "#10272b",
           fontFamily: "system-ui, -apple-system, sans-serif",
           position: "relative",
           overflow: "hidden",
@@ -44,7 +42,7 @@ export async function GET(request) {
             left: 0,
             right: 0,
             height: "6px",
-            background: "linear-gradient(90deg, #fdb517 0%, #f59e0b 35%, #30a2ff 100%)",
+            background: "linear-gradient(90deg, #9ce8bb 0%, #087f73 100%)",
             display: "flex",
           }}
         />
@@ -58,7 +56,7 @@ export async function GET(request) {
             width: "480px",
             height: "480px",
             borderRadius: "50%",
-            border: "48px solid rgba(253,181,23,0.10)",
+            border: "48px solid rgba(156,232,187,0.10)",
             display: "flex",
           }}
         />
@@ -70,7 +68,7 @@ export async function GET(request) {
             width: "640px",
             height: "640px",
             borderRadius: "50%",
-            border: "40px solid rgba(253,181,23,0.06)",
+            border: "40px solid rgba(156,232,187,0.06)",
             display: "flex",
           }}
         />
@@ -82,7 +80,7 @@ export async function GET(request) {
             width: "800px",
             height: "800px",
             borderRadius: "50%",
-            border: "32px solid rgba(48,162,255,0.05)",
+            border: "32px solid rgba(156,232,187,0.05)",
             display: "flex",
           }}
         />
@@ -97,13 +95,13 @@ export async function GET(request) {
             padding: "56px 80px 52px",
           }}
         >
-          {/* Hexagon mark + Model Recipes wordmark (engine-neutral) */}
+          {/* Atlas mark and wordmark */}
           <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
             <svg width="46" height="46" viewBox="0 0 32 32" fill="none">
               <defs>
                 <linearGradient id="og-mark" x1="3" y1="3" x2="29" y2="29" gradientUnits="userSpaceOnUse">
-                  <stop stopColor="#38bdf8" />
-                  <stop offset="1" stopColor="#6366f1" />
+                  <stop stopColor="#9ce8bb" />
+                  <stop offset="1" stopColor="#f4c67b" />
                 </linearGradient>
               </defs>
               <polygon points="16,1.5 28.4,8.75 28.4,23.25 16,30.5 3.6,23.25 3.6,8.75" stroke="url(#og-mark)" strokeWidth="2.5" strokeLinejoin="round" />
@@ -117,8 +115,8 @@ export async function GET(request) {
                 display: "flex",
               }}
             >
-              <span style={{ color: "#64748b", fontWeight: 400 }}>Model&nbsp;</span>
-              <span style={{ color: "#111827" }}>Recipes</span>
+              <span style={{ color: "#f1fbf4", fontWeight: 700 }}>Inference&nbsp;</span>
+              <span style={{ color: "#9ce8bb" }}>Atlas</span>
             </span>
           </div>
 
@@ -127,7 +125,7 @@ export async function GET(request) {
             <div
               style={{
                 display: "flex",
-                color: "#111827",
+                color: "#f1fbf4",
                 fontSize: titleSize,
                 fontWeight: 700,
                 lineHeight: 1.2,
@@ -142,7 +140,7 @@ export async function GET(request) {
                   display: "flex",
                   marginTop: 18,
                   fontSize: 26,
-                  color: "#30a2ff",
+                  color: "#9ce8bb",
                   fontWeight: 600,
                   letterSpacing: "-0.01em",
                 }}
@@ -156,7 +154,7 @@ export async function GET(request) {
                   display: "flex",
                   marginTop: 12,
                   fontSize: 20,
-                  color: "#4b5563",
+                  color: "#b9d0c5",
                   fontWeight: 500,
                   fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, monospace",
                 }}
@@ -180,9 +178,9 @@ export async function GET(request) {
                   display: "flex",
                   alignItems: "center",
                   padding: "6px 14px",
-                  border: "1px solid rgba(48,162,255,0.35)",
+                  border: "1px solid rgba(156,232,187,0.45)",
                   borderRadius: 999,
-                  color: "#30a2ff",
+                  color: "#9ce8bb",
                   fontSize: 16,
                   fontWeight: 600,
                   fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, monospace",
@@ -195,7 +193,7 @@ export async function GET(request) {
               <div
                 style={{
                   display: "flex",
-                  color: "#30a2ff",
+                  color: "#9ce8bb",
                   fontSize: 20,
                   fontWeight: 600,
                   letterSpacing: "-0.01em",
@@ -209,12 +207,12 @@ export async function GET(request) {
             <div
               style={{
                 display: "flex",
-                color: "#9ca3af",
+                color: "#b9d0c5",
                 fontSize: 16,
                 fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, monospace",
               }}
             >
-              {`recipes.vllm.ai${path}`}
+              {`recipes.mcpinfra.net${path}`}
             </div>
           </div>
         </div>

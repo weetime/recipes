@@ -18,13 +18,13 @@ export async function generateMetadata({ params }) {
   const { org } = await params;
   const displayName = getProviderDisplayName(org);
   const count = getRecipesByOrg(org).length;
-  const description = `vLLM serve recipes for ${displayName} models — ${count} recipe${count === 1 ? "" : "s"} with hardware-tuned commands.`;
+  const description = `Explore ${count} ${displayName} deployment recipes with hardware-tuned vLLM and SGLang commands.`;
   const ogUrl = `/og?title=${encodeURIComponent(displayName)}&subtitle=${encodeURIComponent(
     `${count} recipe${count === 1 ? "" : "s"}`
   )}&path=${encodeURIComponent(`/${org}`)}`;
   // Page <title> "{displayName} on vLLM" + layout template " | vLLM Recipes"
   // would double the brand. Use absolute and include the count for tab UX.
-  const titleText = `${displayName} on vLLM — ${count} recipe${count === 1 ? "" : "s"}`;
+  const titleText = `${displayName} deployment recipes — ${count} model${count === 1 ? "" : "s"}`;
   return {
     title: { absolute: titleText },
     description,
@@ -93,7 +93,7 @@ export default async function OrgPage({ params }) {
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",
     itemListElement: [
-      { "@type": "ListItem", position: 1, name: "Model Recipes", item: siteUrl },
+      { "@type": "ListItem", position: 1, name: "Inference Atlas", item: siteUrl },
       { "@type": "ListItem", position: 2, name: displayName, item: `${siteUrl}/${org}` },
     ],
   };
@@ -105,7 +105,8 @@ export default async function OrgPage({ params }) {
         // eslint-disable-next-line react/no-danger
         dangerouslySetInnerHTML={jsonLdScript(breadcrumbLd)}
       />
-      <header className="mb-8 flex items-center gap-4">
+      <Link href="/browse" className="mb-5 inline-flex text-xs font-semibold text-vllm-blue hover:underline">← Back to catalog</Link>
+      <header className="atlas-panel mb-8 flex flex-wrap items-center gap-4 p-6 sm:p-8">
         {logo ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={logo} alt="" width={56} height={56} className={`rounded-xl shrink-0 ${getProviderLogoClass(org)}`} />
@@ -115,7 +116,8 @@ export default async function OrgPage({ params }) {
           </div>
         )}
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">{displayName}</h1>
+          <div className="atlas-kicker mb-1">Provider collection</div>
+          <h1 className="text-3xl font-extrabold tracking-[-0.045em]">{displayName}</h1>
           <div className="flex items-center gap-3 mt-1 text-sm text-muted-foreground">
             <span className="font-mono text-xs">{org}</span>
             <span>·</span>
@@ -141,12 +143,12 @@ export default async function OrgPage({ params }) {
             <section key={task}>
               <div className="flex items-center gap-2 mb-3">
                 <Icon size={14} className="text-muted-foreground" />
-                <h2 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground">
+                <h2 className="text-sm font-bold uppercase tracking-widest text-foreground">
                   {tmeta?.label || task}
                 </h2>
                 <span className="text-xs text-muted-foreground/60 tabular-nums">{list.length}</span>
               </div>
-              <div className="border border-border rounded-xl divide-y divide-border/60 overflow-hidden">
+              <div className="atlas-panel divide-y divide-border/60 overflow-hidden">
                 {list.map((r) => (
                   <ModelRow key={r.hf_id} recipe={r} />
                 ))}

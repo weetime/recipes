@@ -1,7 +1,7 @@
-// Centralised schema.org JSON-LD builders for recipes.vllm.ai.
+// Centralised schema.org JSON-LD builders for Inference Atlas.
 //
 // Every page emits a single `<script type="application/ld+json">` rooted in
-// an `@graph` so we can reference shared entities (the vLLM Organization, the
+// an `@graph` so we can reference shared entities (the site Organization, the
 // site WebSite) by `@id` instead of inlining them on each schema.
 //
 // Schemas wired here:
@@ -19,30 +19,20 @@
 import { siteUrl } from "@/lib/site-url";
 import { loadTaxonomy } from "@/lib/taxonomy";
 
-const ORG_NAME = "vLLM";
-const ORG_LEGAL_NAME = "vLLM Project";
+const ORG_NAME = "Inference Atlas";
 const ORG_DESCRIPTION =
-  "vLLM is a high-throughput, memory-efficient inference and serving engine for large language models.";
-// Use vllm.ai as the brand anchor so all three properties (vllm.ai,
-// docs.vllm.ai, recipes.vllm.ai) reference the same Organization @id.
-// This is the single most important architectural choice in the SEO
-// bundle — it stitches three subdomains into one authority cluster.
-const VLLM_BRAND_ID = "https://vllm.ai/#organization";
+  "Inference Atlas helps teams find and configure model deployment recipes for vLLM and SGLang.";
+const ATLAS_BRAND_ID = `${siteUrl}/#organization`;
 
 export function buildOrganizationLd() {
   return {
     "@type": "Organization",
-    "@id": VLLM_BRAND_ID,
+    "@id": ATLAS_BRAND_ID,
     name: ORG_NAME,
-    legalName: ORG_LEGAL_NAME,
-    url: "https://vllm.ai",
+    url: siteUrl,
     description: ORG_DESCRIPTION,
-    logo: { "@type": "ImageObject", url: "https://vllm.ai/vLLM-Logo.png" },
-    sameAs: [
-      "https://github.com/vllm-project/vllm",
-      "https://x.com/vllm_project",
-      "https://huggingface.co/vllm-project",
-    ],
+    logo: { "@type": "ImageObject", url: `${siteUrl}/icon.svg` },
+    sameAs: ["https://github.com/weetime/recipes"],
   };
 }
 
@@ -50,11 +40,11 @@ export function buildWebSiteLd() {
   return {
     "@type": "WebSite",
     "@id": `${siteUrl}/#website`,
-    name: "vLLM Recipes",
+    name: "Inference Atlas",
     url: siteUrl,
     description:
-      "Per-model vLLM serving recipes: hardware-tuned vllm serve commands, flag explanations, and known pitfalls.",
-    publisher: { "@id": VLLM_BRAND_ID },
+      "A deployment workbench with hardware-tuned vLLM and SGLang serving recipes.",
+    publisher: { "@id": ATLAS_BRAND_ID },
     inLanguage: "en",
     potentialAction: {
       "@type": "SearchAction",
@@ -128,8 +118,7 @@ export function buildTechArticleLd(recipe) {
       name: recipe.hf_id,
       url: `https://huggingface.co/${recipe.hf_id}`,
     },
-    author: { "@id": VLLM_BRAND_ID },
-    publisher: { "@id": VLLM_BRAND_ID },
+    publisher: { "@id": ATLAS_BRAND_ID },
     isPartOf: { "@id": `${siteUrl}/#website` },
   };
 }

@@ -189,7 +189,7 @@ export function BrowseList({ recipes, hardwareOptions }) {
 
   // Single useMemo so the Sets keep stable identity across renders. Each row
   // holds at most one choice, including when opening an older multi-select URL.
-  const { tasks, archs, sizes, precisions, hardware, provider, sort, q } = useMemo(() => {
+  const { tasks, archs, sizes, precisions, hardware, engine, provider, sort, q } = useMemo(() => {
     const setOf = (k) => new Set((searchParams.get(k) || "").split(",").filter(Boolean).slice(0, 1));
     return {
       tasks: setOf("task"),
@@ -197,6 +197,7 @@ export function BrowseList({ recipes, hardwareOptions }) {
       sizes: setOf("size"),
       precisions: setOf("precision"),
       hardware: setOf("hw"),
+      engine: setOf("engine"),
       provider: searchParams.get("provider") || "",
       sort: searchParams.get("sort") || "released",
       q: (searchParams.get("q") || "").trim().toLowerCase(),
@@ -216,7 +217,7 @@ export function BrowseList({ recipes, hardwareOptions }) {
   const update = useCallback(
     (patch) => {
       const sp = new URLSearchParams(searchParams.toString());
-      for (const key of ["task", "arch", "size", "precision", "hw"]) {
+      for (const key of ["task", "arch", "size", "precision", "hw", "engine"]) {
         const first = sp.get(key)?.split(",").find(Boolean);
         if (first) sp.set(key, first);
         else sp.delete(key);
@@ -264,6 +265,7 @@ export function BrowseList({ recipes, hardwareOptions }) {
   const counts = useMemo(() => {
     const matchExcept = (r, exclude) => {
       if (!matchesQ(r)) return false;
+      if (exclude !== "engine" && engine.size > 0 && !(r.engines || []).some((id) => engine.has(id))) return false;
       if (exclude !== "task" && tasks.size > 0 && !(r.meta.tasks || []).some((t) => tasks.has(t))) return false;
       if (exclude !== "arch" && archs.size > 0 && !archs.has(r.model.architecture)) return false;
       if (exclude !== "size" && sizes.size > 0) {
@@ -289,6 +291,7 @@ export function BrowseList({ recipes, hardwareOptions }) {
       return out;
     };
     return {
+      engine: tally("engine", (r) => r.engines || ["vllm"]),
       task: tally("task", (r) => r.meta.tasks || []),
       arch: tally("arch", (r) => [r.model.architecture]),
       size: tally("size", (r) => {
@@ -303,11 +306,12 @@ export function BrowseList({ recipes, hardwareOptions }) {
         .filter((variant) => !selectedPrecision || variant.precision === selectedPrecision)
         .flatMap((variant) => variant.hardware))]),
     };
-  }, [recipes, tasks, archs, sizes, selectedPrecision, selectedHardware, provider, matchesQ]);
+  }, [recipes, tasks, archs, sizes, selectedPrecision, selectedHardware, engine, provider, matchesQ]);
 
   const filtered = useMemo(() => {
     const out = recipes.filter((r) => {
       if (!matchesQ(r)) return false;
+      if (engine.size > 0 && !(r.engines || []).some((id) => engine.has(id))) return false;
       if (tasks.size > 0 && !(r.meta.tasks || []).some((t) => tasks.has(t))) return false;
       if (archs.size > 0 && !archs.has(r.model.architecture)) return false;
       if (sizes.size > 0) {
@@ -328,10 +332,10 @@ export function BrowseList({ recipes, hardwareOptions }) {
       name: (a, b) => a.hf_id.localeCompare(b.hf_id),
     }[sort] || ((a, b) => 0);
     return [...out].sort(cmp);
-  }, [recipes, tasks, archs, sizes, selectedPrecision, selectedHardware, provider, sort, matchesQ]);
+  }, [recipes, tasks, archs, sizes, selectedPrecision, selectedHardware, engine, provider, sort, matchesQ]);
 
   const activeCount =
-    tasks.size + archs.size + sizes.size + precisions.size + hardware.size +
+    tasks.size + archs.size + sizes.size + precisions.size + hardware.size + engine.size +
     (provider ? 1 : 0) + (q ? 1 : 0);
   const hasFilters = activeCount > 0;
 
@@ -342,6 +346,7 @@ export function BrowseList({ recipes, hardwareOptions }) {
     const out = [];
     if (q) out.push({ key: "q", value: q, label: `"${q}"` });
     for (const t of tasks) out.push({ key: "task", value: t, label: t });
+    for (const id of engine) out.push({ key: "engine", value: id, label: id === "sglang" ? "SGLang" : "vLLM" });
     for (const a of archs) out.push({ key: "arch", value: a, label: ARCH_META[a]?.label || a });
     for (const id of sizes) {
       const b = SIZE_BUCKETS.find((x) => x.id === id);
@@ -354,7 +359,7 @@ export function BrowseList({ recipes, hardwareOptions }) {
     }
     if (provider) out.push({ key: "provider", value: provider, label: getProviderDisplayName(provider) });
     return out;
-  }, [q, tasks, archs, sizes, precisions, hardware, provider, hardwareById]);
+  }, [q, tasks, archs, sizes, precisions, hardware, engine, provider, hardwareById]);
 
   // Panel state persists in the URL (`?panel=open`) so a refresh keeps
   // whatever the user had. Default is closed — applied filters are
@@ -441,6 +446,23 @@ export function BrowseList({ recipes, hardwareOptions }) {
 
       {open && (
       <div className="rounded-xl border border-foreground/15 divide-y divide-foreground/10 bg-card/40">
+        <FilterRow label="Engine">
+          <PillGroup>
+            {[
+              { id: "vllm", label: "vLLM" },
+              { id: "sglang", label: "SGLang" },
+            ].map(({ id, label }) => (
+              <Chip
+                key={id}
+                active={engine.has(id)}
+                count={counts.engine[id]}
+                onClick={() => toggle("engine", id)}
+              >
+                {label}
+              </Chip>
+            ))}
+          </PillGroup>
+        </FilterRow>
         <FilterRow label="Task">
           <PillGroup>
             {TASK_OPTIONS.map((t) => {
@@ -586,7 +608,7 @@ export function BrowseList({ recipes, hardwareOptions }) {
             <div>Notes</div>
           </div>
           <ul className="divide-y divide-border">
-            {filtered.map((r) => <Row key={r.hf_id} recipe={r} hardware={selectedHardware} precision={selectedPrecision} hardwareById={hardwareById} />)}
+            {filtered.map((r) => <Row key={r.hf_id} recipe={r} hardware={selectedHardware} precision={selectedPrecision} engine={[...engine][0] || null} hardwareById={hardwareById} />)}
           </ul>
         </div>
       )}
@@ -686,13 +708,14 @@ function Chip({ active, count, onClick, icon: Icon, iconClass, dot, logo, mono, 
   );
 }
 
-function Row({ recipe, hardware, precision, hardwareById }) {
+function Row({ recipe, hardware, precision, engine, hardwareById }) {
   const r = recipe;
   const variant = matchingVariant(r, precision, hardware);
   const displayedPrecision = variant?.precision || r.variant?.precision;
   const queryParams = new URLSearchParams();
   if (variant?.key && variant.key !== "default") queryParams.set("variant", variant.key);
   if (hardware) queryParams.set("hardware", hardware);
+  if (engine && engine !== "vllm") queryParams.set("engine", engine);
   const query = queryParams.toString();
   const isMoe = r.model.architecture === "moe";
   const params = r.model.parameter_count || "—";
@@ -727,6 +750,7 @@ function Row({ recipe, hardware, precision, hardwareById }) {
             <div className="font-mono text-[10px] text-muted-foreground truncate">
               {r.hf_org}
               {tasks.length > 0 && <span className="ml-2">· {tasks.join(" · ")}</span>}
+              {r.engines?.includes("sglang") && <span className="ml-2 font-semibold text-vllm-blue">· SGLang</span>}
             </div>
           </div>
         </div>

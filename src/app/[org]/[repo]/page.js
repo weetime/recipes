@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { getAllRecipes, getAllRoutablePairs, findVariantRedirect, getRecipeByHfId } from "@/lib/recipes";
 import { recipeHref } from "@/lib/recipe-utils";
+import { getEngineMeta, recipeEngineIds } from "@/lib/engine-meta";
 import { siteUrl } from "@/lib/site-url";
 import { loadStrategies } from "@/lib/strategies";
 import { loadTaxonomy } from "@/lib/taxonomy";
@@ -14,7 +15,7 @@ import { GuideLinks } from "@/components/recipes/GuideLinks";
 import { DeployDialog } from "@/components/recipes/DeployDialog";
 import { HuggingFaceIcon, ModelScopeIcon } from "@/components/icons/PlatformLogos";
 import { Badge } from "@/components/ui/badge";
-import { Cpu, Layers, Pencil, Bug, ExternalLink, Link2 } from "lucide-react";
+import { ArrowLeft, Cpu, Layers, Pencil, Bug, ExternalLink, Link2 } from "lucide-react";
 import {
   buildBreadcrumbLd,
   buildSoftwareApplicationLd,
@@ -138,7 +139,7 @@ export default async function RecipePage({ params, searchParams }) {
       "@context": "https://schema.org",
       "@type": "BreadcrumbList",
       itemListElement: [
-        { "@type": "ListItem", position: 1, name: "Model Recipes", item: siteUrl },
+        { "@type": "ListItem", position: 1, name: "Inference Atlas", item: siteUrl },
         { "@type": "ListItem", position: 2, name: recipe.meta.provider, item: `${siteUrl}/${recipe.hf_org}` },
         { "@type": "ListItem", position: 3, name: recipe.hf_repo, item: recipeUrl },
       ],
@@ -146,25 +147,33 @@ export default async function RecipePage({ params, searchParams }) {
   ];
 
   return (
-    <main className="py-6 w-full min-w-0">
+    <main className="py-8 w-full min-w-0">
       <script
         type="application/ld+json"
         // eslint-disable-next-line react/no-danger
         dangerouslySetInnerHTML={jsonLdScript(jsonLd)}
       />
+      <nav aria-label="Breadcrumb" className="mb-5 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+        <Link href="/browse" className="inline-flex items-center gap-1.5 font-semibold hover:text-vllm-blue"><ArrowLeft size={13} /> Catalog</Link>
+        <span aria-hidden="true">/</span>
+        <Link href={"/" + recipe.hf_org} className="hover:text-vllm-blue">{recipe.meta.provider}</Link>
+        <span aria-hidden="true">/</span>
+        <span className="max-w-[220px] truncate font-mono text-foreground">{recipe.hf_repo}</span>
+      </nav>
       {/* ── Model header ── */}
-      <header className="mb-8">
+      <header className="atlas-panel mb-6 p-6 sm:p-8">
+        <div className="atlas-kicker mb-5">Model workspace / 01 Overview</div>
         <div className="flex items-start gap-4 mb-4">
           {logo && (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={logo} alt={recipe.meta.provider} width={44} height={44} className={`rounded-xl mt-0.5 shrink-0 ${getProviderLogoClass(recipe.hf_org)}`} />
           )}
           <div className="min-w-0 flex-1">
-            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight font-mono break-all">
+            <h1 className="text-2xl sm:text-4xl font-extrabold tracking-[-0.045em] break-all">
               <span className="text-muted-foreground font-normal">{recipe.hf_org}/</span>
               {recipe.hf_repo}
             </h1>
-            <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{recipe.meta.description}</p>
+            <p className="text-sm text-muted-foreground mt-3 max-w-4xl leading-6">{recipe.meta.description}</p>
             {recipe.meta.performance_headline && (
               <p className="text-xs text-muted-foreground/70 italic mt-1 leading-snug">{recipe.meta.performance_headline}</p>
             )}
@@ -197,6 +206,9 @@ export default async function RecipePage({ params, searchParams }) {
 
         {/* Tags — single row, no duplication */}
         <div className="flex flex-wrap gap-1.5">
+          {recipeEngineIds(recipe).map((id) => (
+            <Badge key={id} variant="secondary" className="text-xs font-semibold">{getEngineMeta(id).label}</Badge>
+          ))}
           <Badge variant="outline" className="gap-1 text-xs capitalize">
             {recipe.model.architecture === "moe" ? <Layers size={11} /> : <Cpu size={11} />}
             {recipe.model.architecture}
@@ -237,21 +249,39 @@ export default async function RecipePage({ params, searchParams }) {
         </div>
       </header>
 
+      <nav aria-label="Recipe sections" className="mb-8 flex flex-wrap items-center gap-2 text-xs font-semibold">
+        <a href="#configure" className="inline-flex items-center gap-2 rounded-full bg-accent px-4 py-2 text-accent-foreground hover:bg-vllm-blue/15"><span className="font-mono">02</span> Configure</a>
+        {(recipe.guide || Object.values(recipe.engines ?? {}).some((e) => e?.guide)) && (
+          <a href="#recipe-guide" className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-4 py-2 text-muted-foreground hover:text-vllm-blue"><span className="font-mono">03</span> Read the guide</a>
+        )}
+      </nav>
+
       {/* ── Command Builder ── */}
-      <section className="mb-10">
+      <section id="configure" className="mb-10 scroll-mt-28">
+        <div className="mb-5">
+          <div className="atlas-kicker">02 / Configure</div>
+          <h2 className="mt-1 text-2xl font-extrabold tracking-[-0.04em]">Build your serve command</h2>
+          <p className="mt-1 text-sm text-muted-foreground">Choose engine, hardware and deployment options. The command updates as you go.</p>
+        </div>
         <Suspense fallback={<div className="h-40 rounded-2xl bg-muted animate-pulse" />}>
           <CommandBuilder recipe={recipe} strategies={strategies} taxonomy={taxonomy} />
         </Suspense>
       </section>
 
       {/* ── Reference sections ── */}
-      <section className="space-y-2">
+      <section id="recipe-guide" className="space-y-3 scroll-mt-28">
         {(recipe.guide || Object.values(recipe.engines ?? {}).some((e) => e?.guide)) && (
-          <Accordion title="Guide" defaultOpen>
+          <>
+            <div>
+              <div className="atlas-kicker">03 / Understand</div>
+              <h2 className="mt-1 text-2xl font-extrabold tracking-[-0.04em]">Implementation guide</h2>
+            </div>
+            <Accordion title="Model notes and examples" defaultOpen>
             <Suspense fallback={null}>
               <EngineAwareGuide recipe={recipe} defaultEngine={recipe.default_engine || "vllm"} />
             </Suspense>
-          </Accordion>
+            </Accordion>
+          </>
         )}
 
       </section>

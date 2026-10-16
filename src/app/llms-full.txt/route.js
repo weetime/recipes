@@ -104,7 +104,7 @@ export async function GET() {
   const recipes = getAllRecipes();
 
   const preamble = [
-    "# vLLM Recipes — full text",
+    "# Inference Atlas — full text",
     "",
     `Concatenated full text of every recipe on ${siteUrl}, formatted for`,
     "AI-assistant retrieval. Each section is prefixed with its canonical URL,",

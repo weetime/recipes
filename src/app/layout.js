@@ -1,16 +1,14 @@
 import { Inter, JetBrains_Mono } from "next/font/google";
 import Link from "next/link";
 import { Analytics } from "@vercel/analytics/next";
+import { ArrowUpRight } from "lucide-react";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { SearchBox } from "@/components/recipes/SearchBox";
+import { AtlasMark } from "@/components/AtlasMark";
 import CommunityModal from "@/components/CommunityModal";
 import { getAllRecipes } from "@/lib/recipes";
 import { siteUrl } from "@/lib/site-url";
-import {
-  buildOrganizationLd,
-  buildWebSiteLd,
-  jsonLdScript,
-} from "@/lib/jsonld";
+import { buildOrganizationLd, buildWebSiteLd, jsonLdScript } from "@/lib/jsonld";
 import "./globals.css";
 
 const inter = Inter({
@@ -25,38 +23,36 @@ const jetbrainsMono = JetBrains_Mono({
   display: "swap",
 });
 
-const defaultOgUrl = `/og?title=${encodeURIComponent("Model Recipes")}&subtitle=${encodeURIComponent("Deploy any model on any hardware")}`;
+const defaultOgUrl = "/og?title=" + encodeURIComponent("Inference Atlas")
+  + "&subtitle=" + encodeURIComponent("Find a model. Fit your hardware. Run it.");
 
 export const metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: "Model Recipes",
-    template: "%s | Model Recipes",
+    default: "Inference Atlas",
+    template: "%s | Inference Atlas",
   },
-  description: "Deploy any model on any hardware with vLLM or SGLang. Interactive command builder for model serving.",
+  description: "Find deployment recipes for your hardware and workload, then configure a vLLM or SGLang serve command.",
   openGraph: {
     type: "website",
     locale: "en_US",
     url: siteUrl,
-    siteName: "Model Recipes",
-    title: "Model Recipes",
-    description: "Deploy any model on any hardware with vLLM or SGLang. Interactive command builder for model serving.",
-    images: [{ url: defaultOgUrl, width: 1200, height: 630, alt: "Model Recipes" }],
+    siteName: "Inference Atlas",
+    title: "Inference Atlas",
+    description: "A model deployment workbench for vLLM and SGLang.",
+    images: [{ url: defaultOgUrl, width: 1200, height: 630, alt: "Inference Atlas" }],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Model Recipes",
-    description: "Deploy any model on any hardware with vLLM or SGLang.",
+    title: "Inference Atlas",
+    description: "Find a model. Fit your hardware. Run it.",
     images: [defaultOgUrl],
   },
   alternates: { canonical: siteUrl },
 };
 
 export default async function RootLayout({ children }) {
-  // Recipes are small (~50 KB) — fine to load into every page for the
-  // global search box. Server-rendered, cached across requests.
   const recipes = getAllRecipes();
-  // Drop the heavy `guide` field before sending to the client
   const searchRecipes = recipes.map((r) => ({
     hf_org: r.hf_org,
     hf_repo: r.hf_repo,
@@ -80,16 +76,13 @@ export default async function RootLayout({ children }) {
     )],
   }));
 
-  // Sitewide JSON-LD graph. Per-page schemas reference these by @id so search
-  // engines and AI assistants can stitch the three vLLM properties (vllm.ai,
-  // docs.vllm.ai, recipes.vllm.ai) into one Organization-rooted graph.
   const siteGraph = {
     "@context": "https://schema.org",
     "@graph": [buildOrganizationLd(), buildWebSiteLd()],
   };
 
   return (
-    <html lang="en" className={`${inter.variable} ${jetbrainsMono.variable}`}>
+    <html lang="en" className={inter.variable + " " + jetbrainsMono.variable}>
       <head>
         <script
           type="application/ld+json"
@@ -98,67 +91,61 @@ export default async function RootLayout({ children }) {
         />
       </head>
       <body className="antialiased bg-background text-foreground min-h-screen flex flex-col">
-        {/* Global header */}
-        <header className="border-b border-border bg-background/95 backdrop-blur-sm sticky top-0 z-30">
-          <div className="max-w-[1480px] mx-auto px-4 sm:px-6 h-16 flex items-center gap-4">
-            <Link href="/" className="flex items-center gap-2.5 hover:opacity-80 transition-opacity group shrink-0" aria-label="Model Recipes — home">
-              {/* Engine-neutral mark: a hexagon "hub" with a center node. The
-                  sky→indigo gradient is theme-independent (reads on light and
-                  dark); the wordmark below uses text tokens so it adapts. We
-                  dropped the vLLM wordmark here because the site is now
-                  multi-engine (vLLM + SGLang, extensible). */}
-              <svg width="32" height="32" viewBox="0 0 32 32" fill="none" className="shrink-0" aria-hidden="true">
-                <defs>
-                  <linearGradient id="mr-mark" x1="3" y1="3" x2="29" y2="29" gradientUnits="userSpaceOnUse">
-                    <stop stopColor="#38bdf8" />
-                    <stop offset="1" stopColor="#6366f1" />
-                  </linearGradient>
-                </defs>
-                <polygon
-                  points="16,1.5 28.4,8.75 28.4,23.25 16,30.5 3.6,23.25 3.6,8.75"
-                  stroke="url(#mr-mark)" strokeWidth="2.5" strokeLinejoin="round"
-                />
-                <polygon
-                  points="16,10.5 20.76,13.25 20.76,18.75 16,21.5 11.24,18.75 11.24,13.25"
-                  fill="url(#mr-mark)"
-                />
-              </svg>
-              <span className="text-base leading-none">
-                <span className="text-muted-foreground font-normal">Model </span>
-                <span className="font-semibold group-hover:text-vllm-blue transition-colors">Recipes</span>
+        <header className="sticky top-0 z-40 border-b border-border/80 bg-background/95 backdrop-blur-xl">
+          <div className="mx-auto flex max-w-[1480px] items-center gap-4 px-4 py-3 sm:px-6 lg:gap-8">
+            <Link href="/" className="group flex shrink-0 items-center gap-3" aria-label="Inference Atlas home">
+              <AtlasMark className="transition-transform group-hover:rotate-12" />
+              <span className="flex flex-col leading-none">
+                <span className="text-[15px] font-extrabold tracking-[-0.035em]">Inference <span className="text-vllm-blue">Atlas</span></span>
+                <span className="mt-1.5 font-mono text-[8px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">deployment workbench</span>
               </span>
             </Link>
 
-            {/* Search — flex-1 so it expands to fill available space */}
-            <div className="flex-1 flex justify-center max-w-xl mx-auto">
+            <nav aria-label="Primary navigation" className="hidden items-center gap-1 rounded-full border border-border bg-card p-1 text-sm font-medium shadow-sm lg:flex">
+              <Link href="/browse" className="rounded-full px-4 py-2 text-foreground hover:bg-accent hover:text-accent-foreground transition-colors">Catalog</Link>
+              <Link href="/image-selector" className="rounded-full px-4 py-2 text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors">Image selector</Link>
+            </nav>
+
+            <div className="ml-auto hidden w-full max-w-md md:block">
               <SearchBox recipes={searchRecipes} />
             </div>
 
-            <nav className="flex items-center gap-4 text-sm text-muted-foreground shrink-0">
-              <Link href="/image-selector" className="hover:text-foreground transition-colors hidden sm:inline">Image Selector</Link>
-              <Link href="/browse" className="hover:text-foreground transition-colors hidden sm:inline">Browse</Link>
-              <a href="https://docs.vllm.ai" className="hover:text-foreground transition-colors hidden sm:inline">Docs</a>
-              <a href="https://github.com/weetime/recipes" className="hover:text-foreground transition-colors hidden sm:inline">GitHub</a>
+            <div className="ml-auto flex items-center gap-2 md:ml-0">
+              <a href="https://github.com/weetime/recipes" target="_blank" rel="noopener noreferrer" className="hidden items-center gap-1.5 text-xs font-semibold text-muted-foreground hover:text-foreground xl:inline-flex">
+                GitHub <ArrowUpRight size={13} />
+              </a>
               <ThemeToggle />
+            </div>
+          </div>
+          <div className="mx-auto flex max-w-[1480px] items-center gap-3 border-t border-border/70 px-4 py-2 sm:px-6 md:hidden">
+            <nav aria-label="Mobile navigation" className="flex shrink-0 gap-3 text-xs font-semibold">
+              <Link href="/browse" className="text-vllm-blue">Catalog</Link>
+              <Link href="/image-selector" className="text-muted-foreground">Images</Link>
             </nav>
+            <div className="min-w-0 flex-1"><SearchBox recipes={searchRecipes} /></div>
           </div>
         </header>
 
-        {/* Content */}
-        <div className="flex-1">
-          {children}
-        </div>
+        <div className="flex-1">{children}</div>
 
-        {/* Global footer */}
-        <footer className="border-t border-border mt-auto">
-          <div className="max-w-[1480px] mx-auto px-4 sm:px-6 py-5 text-xs text-muted-foreground">
-            <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
-              <a href="https://github.com/weetime/recipes" className="hover:text-foreground transition-colors">GitHub</a>
-              <a href="https://github.com/weetime/recipes/issues" className="hover:text-foreground transition-colors">Request a recipe</a>
-              <a href="https://docs.vllm.ai" className="hover:text-foreground transition-colors">Documentation</a>
-              <a href="https://vllm.ai/#compatibility" className="hover:text-foreground transition-colors">Supported Models & Hardware</a>
-              <a href="https://vllm.ai/#quick-start" className="hover:text-foreground transition-colors">Install vLLM</a>
-              <a href="/models.json" className="hover:text-foreground transition-colors">JSON API</a>
+        <footer className="mt-20 border-t border-border bg-card/75">
+          <div className="mx-auto grid max-w-[1480px] gap-8 px-4 py-10 sm:px-6 lg:grid-cols-[1fr_auto]">
+            <div>
+              <div className="flex items-center gap-3">
+                <AtlasMark className="h-8 w-8 rounded-lg" />
+                <div className="text-sm font-bold">Inference Atlas</div>
+              </div>
+              <p className="mt-3 max-w-md text-sm leading-6 text-muted-foreground">
+                A practical route from model and hardware to a runnable command. Recipes are community maintained; serving engines include vLLM and SGLang.
+              </p>
+              <p className="mt-3 text-xs text-muted-foreground">Built from the open vLLM Recipes catalog.</p>
+            </div>
+            <div className="flex flex-wrap content-start gap-x-6 gap-y-3 text-sm text-muted-foreground lg:max-w-[420px]">
+              <Link href="/browse" className="hover:text-foreground">Browse recipes</Link>
+              <Link href="/image-selector" className="hover:text-foreground">Image selector</Link>
+              <a href="/models.json" className="hover:text-foreground">JSON API</a>
+              <a href="https://docs.vllm.ai" className="hover:text-foreground">vLLM docs</a>
+              <a href="https://github.com/weetime/recipes/issues" className="hover:text-foreground">Request a recipe</a>
               <CommunityModal />
             </div>
           </div>
