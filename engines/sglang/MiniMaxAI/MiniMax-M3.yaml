@@ -12,6 +12,7 @@ tp_by_hardware:
   gb300: 4
   mi300x: 8
   mi325x: 8
+  mi350x: 8
   mi355x: 8
   h200: 8
 variants:

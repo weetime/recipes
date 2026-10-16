@@ -1,7 +1,7 @@
 name: Sync SGLang blocks (cookbook configs)
 
 # Weekly (+ on-demand) re-vendor of the SGLang cookbook's declarative configs
-# (sgl-project/sglang · docs_new/src/snippets/configs) and regeneration of
+# (sgl-project/sglang · docs/src/snippets/configs) and regeneration of
 # engines/sglang/ blocks. Purely mechanical — if anything changed it validates
 # and opens a PR. Authoring guides for any newly-covered models
 # (engines/sglang-guides/) is the intelligent follow-up: ping Claude on the PR.
@@ -75,7 +75,7 @@ jobs:
           git commit -s -m "Sync SGLang blocks from the cookbook configs ($(date -u +%Y-%m-%d))"
           git push origin "$SYNC_BRANCH" --force-with-lease
           {
-            echo "Automated re-vendor of the SGLang cookbook's declarative configs (\`sgl-project/sglang · docs_new/src/snippets/configs\`) + regenerated \`engines/sglang/\` blocks."
+            echo "Automated re-vendor of the SGLang cookbook's declarative configs (\`sgl-project/sglang · docs/src/snippets/configs\`) + regenerated \`engines/sglang/\` blocks."
             echo
             echo "Review the new/changed generated blocks. **Newly-covered models may want a hand-authored guide** (\`engines/sglang-guides/\`) — ping Claude to finish those, then merge. Fork-local \`engines/sglang-overlay/\` blocks are untouched."
           } > pr-body.md

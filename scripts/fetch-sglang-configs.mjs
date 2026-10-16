@@ -1,6 +1,6 @@
 /**
  * Vendor 新 SGLang cookbook 的结构化 config 到 upstream/sglang-configs/。
- * Sparse shallow-clone sgl-project/sglang,只取 docs_new/src/snippets/configs/,
+ * Sparse shallow-clone sgl-project/sglang,只取 docs/src/snippets/configs/,
  * 跳过 *-benchmarks.jsx,写 upstream/sglang-configs.lock 钉住 commit。
  * Usage: node scripts/fetch-sglang-configs.mjs [ref]
  */
@@ -10,7 +10,7 @@ import os from "os";
 import { execFileSync } from "child_process";
 
 const REPO = "sgl-project/sglang";
-const SUBDIR = "docs_new/src/snippets/configs";
+const SUBDIR = "docs/src/snippets/configs";
 const ROOT = process.cwd();
 const DEST = path.join(ROOT, "upstream", "sglang-configs");
 const LOCK = path.join(ROOT, "upstream", "sglang-configs.lock");
@@ -40,6 +40,7 @@ try {
     if (!relStr.endsWith(".jsx") || relStr.endsWith("-benchmarks.jsx")) continue;
     const from = path.join(srcDir, relStr);
     if (!fs.statSync(from).isFile()) continue;
+    if (!/export\s+const\s+config\s*=/.test(fs.readFileSync(from, "utf8"))) continue;
     const to = path.join(DEST, SUBDIR, relStr);
     fs.mkdirSync(path.dirname(to), { recursive: true });
     fs.copyFileSync(from, to);

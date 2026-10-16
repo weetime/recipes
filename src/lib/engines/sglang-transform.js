@@ -1,6 +1,6 @@
 /**
  * Pure mapping from the new SGLang cookbook's declarative config objects
- * (docs_new/src/snippets/configs/<org>/<model>.jsx) to our engines/sglang block
+ * (docs/src/snippets/configs/<org>/<model>.jsx) to our engines/sglang block
  * schema. No IO — scripts/sync-sglang.mjs does the reading/writing/recipe-matching.
  *
  * A config carries a VARIANT axis (config.variants[]) — e.g. ["default"], or
