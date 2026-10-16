@@ -1741,7 +1741,36 @@ export function CommandBuilder({ recipe, strategies, taxonomy }) {
       const allowed = Array.isArray(d.brand) ? d.brand : [d.brand];
       return allowed.includes(brand);
     });
-  }, [recipe.dependencies, hwProfile?.brand, engine]);
+    const kvOpt = kvOffloadOptions[activeKvOffload];
+    if (kvOpt?.install) {
+      deps.push({
+        note: `${kvOpt.display_name || activeKvOffload} — required by the selected KV Offload option`,
+        command: kvOpt.install,
+      });
+    } else if (isKvStoreActive) {
+      const raw = strategies[activeKvOffload]?.vllm?.install;
+      const cmd = raw && typeof raw === "object"
+        ? (raw[brand === "AMD" ? "amd" : "nvidia"] || null)
+        : (raw || null);
+      if (cmd) {
+        deps.push({
+          note: "Mooncake transfer engine — required by MooncakeStoreConnector on every vLLM node",
+          command: cmd,
+        });
+      }
+    }
+    if (result.orchestrator === "dynamo") {
+      for (const step of result.dynamoInstall || []) {
+        deps.push({ ...step, install_modes: ["pip", "docker"] });
+      }
+    }
+    if (result.orchestrator === "smg") {
+      if (result.workerInstall) deps.push({ command: result.workerInstall, note: "gRPC servicer — install on every prefill/decode node", install_modes: ["pip"] });
+      deps.push({ command: result.router.install, note: "SMG — install on the router host", install_modes: ["pip"] });
+      deps.push({ command: result.router.dockerInstall, note: "SMG — pull on the router host", install_modes: ["docker"] });
+    }
+    return deps;
+  }, [recipe.dependencies, hwProfile?.brand, engine, kvOffloadOptions, activeKvOffload, isKvStoreActive, strategies, result.orchestrator, result.dynamoInstall, result.router?.install, result.router?.dockerInstall, result.workerInstall]);
 
   // Status caption for the command block header.
   // Only `verified` is a positive signal worth surfacing; anything else
