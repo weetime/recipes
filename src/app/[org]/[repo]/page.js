@@ -10,10 +10,18 @@ import { resolveRecipePlatforms } from "@/lib/platforms";
 import { getProviderLogo, getProviderLogoClass } from "@/lib/providers";
 import { CommandBuilder } from "@/components/recipes/CommandBuilder";
 import { EngineAwareGuide } from "@/components/recipes/EngineAwareGuide";
+import { GuideLinks } from "@/components/recipes/GuideLinks";
 import { DeployDialog } from "@/components/recipes/DeployDialog";
 import { HuggingFaceIcon, ModelScopeIcon } from "@/components/icons/PlatformLogos";
 import { Badge } from "@/components/ui/badge";
-import { Cpu, Layers, Pencil, Bug, ExternalLink } from "lucide-react";
+import { Cpu, Layers, Pencil, Bug, ExternalLink, Link2 } from "lucide-react";
+import {
+  buildBreadcrumbLd,
+  buildSoftwareApplicationLd,
+  buildTechArticleLd,
+  hardwareLabel,
+  jsonLdScript,
+} from "@/lib/jsonld";
 
 export async function generateStaticParams() {
   return getAllRoutablePairs();
@@ -24,8 +32,10 @@ export async function generateMetadata({ params }) {
   const recipe = getRecipeByHfId(org, repo);
   if (!recipe) return {};
   const { meta, model } = recipe;
+  // Page <title> uses the canonical hf_id (e.g. "deepseek-ai/DeepSeek-V3.2")
+  // — that's what people search for. The layout template appends " | vLLM
+  // Recipes" so the final tab reads "deepseek-ai/DeepSeek-V3.2 | vLLM Recipes".
   const title = `${org}/${repo}`;
-  const description = meta.description || meta.title;
   const paramStr = model.parameter_count
     ? model.active_parameters && model.active_parameters !== model.parameter_count
       ? `${model.parameter_count} / ${model.active_parameters} active`
@@ -36,17 +46,24 @@ export async function generateMetadata({ params }) {
     .filter(Boolean)
     .join(" · ");
   const versionStr = model.min_vllm_version ? `vLLM ${model.min_vllm_version}+` : "";
-  // Provider subtitle is redundant with the "org/" prefix in the title, so
-  // the recipe OG uses: title + meta (spec strip) + version pill.
+  // og:title follows the umbrella spec (PROD-5):
+  //   "<Model Name> on vLLM — Serve command for <hardware list>"
+  // The og:site_name already provides "vLLM Recipes" branding, so the on-vLLM
+  // suffix here is purely a SERP-snippet signal. Falls back to the model meta
+  // line when no verified hardware is listed.
+  const hwList = hardwareLabel(recipe);
+  const ogTitle = hwList
+    ? `${repo} on vLLM — Serve command for ${hwList}`
+    : metaLine
+    ? `${title} — ${metaLine}`
+    : title;
+  // <meta name="description"> follows the umbrella spec template too. Prefer
+  // the recipe's own description, then fall back to the templated form.
+  const templateDescription = `Recommended vllm serve command, hardware matrix, and flag explanations for serving ${recipe.hf_id} with vLLM${hwList ? ` on ${hwList}` : ""}.`;
+  const description = meta.description || templateDescription;
   const ogUrl = `/og?title=${encodeURIComponent(title)}&meta=${encodeURIComponent(
     metaLine
   )}&version=${encodeURIComponent(versionStr)}&path=${encodeURIComponent(`/${org}/${repo}`)}`;
-  // og:title — aim for 50–60 chars for optimal preview width. Skip the
-  // " on vLLM" suffix since og:site_name already provides it.
-  const ogTitle = metaLine ? `${title} — ${metaLine}` : title;
-  // Page <title> uses the canonical hf_id (e.g. "deepseek-ai/DeepSeek-V3.2")
-  // — that's what people search for. The layout template appends " | vLLM
-  // Recipes" so the final tab reads "deepseek-ai/DeepSeek-V3.2 | vLLM Recipes".
   return {
     title,
     description,
@@ -67,13 +84,22 @@ export async function generateMetadata({ params }) {
   };
 }
 
-export default async function RecipePage({ params }) {
+export default async function RecipePage({ params, searchParams }) {
   const { org, repo } = await params;
   const recipe = getRecipeByHfId(org, repo);
   if (!recipe) {
     const v = findVariantRedirect(org, repo);
-    if (v) redirect(`/${v.parent.hf_org}/${v.parent.hf_repo}?variant=${encodeURIComponent(v.variantKey)}`);
+    // `?variant=default` is redundant — the builder already opens on the
+    // default variant, so a default-variant checkpoint lands on a clean URL.
+    if (v) {
+      const qs = v.variantKey === "default" ? "" : `?variant=${encodeURIComponent(v.variantKey)}`;
+      redirect(`/${v.parent.hf_org}/${v.parent.hf_repo}${qs}`);
+    }
     notFound();
+  }
+  if (org !== recipe.hf_org || repo !== recipe.hf_repo) {
+    const qs = new URLSearchParams(await searchParams).toString();
+    redirect(`/${recipe.hf_org}/${recipe.hf_repo}${qs ? `?${qs}` : ""}`);
   }
 
   const strategies = loadStrategies();
@@ -124,7 +150,7 @@ export default async function RecipePage({ params }) {
       <script
         type="application/ld+json"
         // eslint-disable-next-line react/no-danger
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        dangerouslySetInnerHTML={jsonLdScript(jsonLd)}
       />
       {/* ── Model header ── */}
       <header className="mb-8">
@@ -234,11 +260,28 @@ export default async function RecipePage({ params }) {
       <footer className="mt-10 pt-4 border-t border-border text-sm text-muted-foreground flex flex-wrap gap-x-4 gap-y-2">
         <span>Updated {recipe.meta.date_updated}</span>
         <a
-          href={`https://github.com/weetime/recipes/edit/main/models/${recipe.hf_org}/${recipe.hf_repo}.yaml`}
+          href={recipe.source?.edit_url || `https://github.com/vllm-project/recipes/edit/main/models/${recipe.hf_org}/${recipe.hf_repo}.yaml`}
           className="inline-flex items-center gap-1 hover:text-foreground transition-colors"
         >
           <Pencil size={12} /> Edit recipe
         </a>
+        {recipe.source?.overlays?.map((o) => o.edit_url && (
+          <a
+            key={o.path}
+            href={o.edit_url}
+            className="inline-flex items-center gap-1 hover:text-foreground transition-colors"
+          >
+            <Pencil size={12} /> Edit {o.source} overlay
+          </a>
+        ))}
+        {recipe.source?.sha && (
+          <a
+            href={`https://github.com/${recipe.source.repo}/blob/${recipe.source.sha}/${recipe.source.path}`}
+            className="font-mono hover:text-foreground transition-colors"
+          >
+            {recipe.source.repo}@{recipe.source.sha.slice(0, 7)}
+          </a>
+        )}
         <a
           href="https://github.com/weetime/recipes/issues"
           className="inline-flex items-center gap-1 hover:text-foreground transition-colors"
@@ -262,12 +305,27 @@ export default async function RecipePage({ params }) {
   );
 }
 
-function Accordion({ title, children, defaultOpen = false }) {
+function HeadingLink({ id }) {
+  return (
+    <a href={`#${id}`} data-guide-link className="guide-heading-link" aria-label="Copy link to this section" title="Copy link to this section">
+      <Link2 size={16} aria-hidden="true" />
+    </a>
+  );
+}
+
+const guideHeadings = Object.fromEntries(
+  ["h1", "h2", "h3", "h4", "h5", "h6"].map((Tag) => [Tag, function GuideHeading({ id, children }) {
+    return <Tag id={id}>{children}{id && <HeadingLink id={id} />}</Tag>;
+  }])
+);
+
+function Accordion({ title, children, id, defaultOpen = false }) {
   // Stronger border than bare `--border` (10% in dark mode) so the outline is
   // visible on both themes. `foreground/15` stays subtle but catches enough
   // contrast to define the card.
   return (
     <details
+      id={id}
       className="group rounded-xl border border-foreground/15 bg-card/40 overflow-hidden"
       open={defaultOpen || undefined}
     >

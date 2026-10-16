@@ -6,6 +6,11 @@ import { SearchBox } from "@/components/recipes/SearchBox";
 import CommunityModal from "@/components/CommunityModal";
 import { getAllRecipes } from "@/lib/recipes";
 import { siteUrl } from "@/lib/site-url";
+import {
+  buildOrganizationLd,
+  buildWebSiteLd,
+  jsonLdScript,
+} from "@/lib/jsonld";
 import "./globals.css";
 
 const inter = Inter({
@@ -61,6 +66,8 @@ export default async function RootLayout({ children }) {
       title: r.meta.title,
       provider: r.meta.provider,
       description: r.meta.description,
+      date_added: r.meta.date_added,
+      date_updated: r.meta.date_updated,
       tasks: r.meta.tasks,
       hardware: r.meta.hardware || {},
     },
@@ -73,8 +80,23 @@ export default async function RootLayout({ children }) {
     )],
   }));
 
+  // Sitewide JSON-LD graph. Per-page schemas reference these by @id so search
+  // engines and AI assistants can stitch the three vLLM properties (vllm.ai,
+  // docs.vllm.ai, recipes.vllm.ai) into one Organization-rooted graph.
+  const siteGraph = {
+    "@context": "https://schema.org",
+    "@graph": [buildOrganizationLd(), buildWebSiteLd()],
+  };
+
   return (
     <html lang="en" className={`${inter.variable} ${jetbrainsMono.variable}`}>
+      <head>
+        <script
+          type="application/ld+json"
+          // eslint-disable-next-line react/no-danger
+          dangerouslySetInnerHTML={jsonLdScript(siteGraph)}
+        />
+      </head>
       <body className="antialiased bg-background text-foreground min-h-screen flex flex-col">
         {/* Global header */}
         <header className="border-b border-border bg-background/95 backdrop-blur-sm sticky top-0 z-30">

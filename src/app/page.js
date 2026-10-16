@@ -14,7 +14,7 @@ export default async function HomePage() {
 
   return (
     <main className="max-w-[1480px] mx-auto px-4 sm:px-6 py-8">
-      {/* ── Hero (compact) ── */}
+      {/* ── Hero ── */}
       <header className="mb-6">
         <h1 className="sr-only">Model Recipes — Deploy any model on any hardware with vLLM or SGLang</h1>
         <p className="text-sm text-muted-foreground max-w-3xl">
