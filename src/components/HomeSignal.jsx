@@ -8,11 +8,14 @@ const ticks = Array.from({ length: 60 }, (_, index) => {
   const angle = (index / 60) * Math.PI * 2 - Math.PI / 2;
   const outer = 248;
   const inner = index % 5 === 0 ? 235 : 242;
+  // Keep SVG attributes identical between the server and browser runtimes.
+  // Their trig implementations can differ by a few floating-point bits.
+  const coordinate = (radius, fn) => Number((260 + fn(angle) * radius).toFixed(3));
   return {
-    x1: 260 + Math.cos(angle) * inner,
-    y1: 260 + Math.sin(angle) * inner,
-    x2: 260 + Math.cos(angle) * outer,
-    y2: 260 + Math.sin(angle) * outer,
+    x1: coordinate(inner, Math.cos),
+    y1: coordinate(inner, Math.sin),
+    x2: coordinate(outer, Math.cos),
+    y2: coordinate(outer, Math.sin),
     major: index % 5 === 0,
   };
 });

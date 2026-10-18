@@ -1,0 +1,531 @@
+{
+  "title": "GLM-5.3-Flash FP8 · MI308X",
+  "breadcrumb": "GLM-5.3-Flash",
+  "kicker": "SERVING BENCHMARK · FP8 / ROCm",
+  "lede": {
+    "zh": "本报告呈现 GLM-5.3-Flash FP8 在 MI308X 上已完成的短输入服务矩阵、开放环到达测试，以及原始 ROCm 路径的长上下文兼容性结果。",
+    "en": "This report presents completed short-input and open-loop measurements for GLM-5.3-Flash FP8 on MI308X, plus long-context compatibility results for the original ROCm path."
+  },
+  "chips": [
+    "8 × AMD MI308X · 192 GB",
+    "FP8",
+    "vLLM ROCm nightly",
+    "TP8",
+    "Measured 2026-09"
+  ],
+  "snapshot": {
+    "zh": "短输入矩阵 · 开放环到达率 · Agent · 上下文故障边界",
+    "en": "Short-input matrix · open-loop arrivals · Agent · context-failure boundary"
+  },
+  "sections": [
+    {
+      "id": "short-input",
+      "zh": "短输入",
+      "en": "Short input"
+    },
+    {
+      "id": "open-loop",
+      "zh": "开放环",
+      "en": "Open loop"
+    },
+    {
+      "id": "compatibility",
+      "zh": "上下文兼容",
+      "en": "Context compatibility"
+    },
+    {
+      "id": "agent",
+      "zh": "Agent / 多模态",
+      "en": "Agent / multimodal"
+    },
+    {
+      "id": "method",
+      "zh": "测试方法",
+      "en": "Method"
+    }
+  ],
+  "stats": [
+    {
+      "zhLabel": "饱和矩阵输出",
+      "enLabel": "Saturated matrix output",
+      "value": "3,120.8",
+      "zhNote": "tok/s · 512/256 请求",
+      "enNote": "tok/s · 512/256 profile"
+    },
+    {
+      "zhLabel": "BFCL Agent",
+      "enLabel": "BFCL Agent",
+      "value": "245.7",
+      "zhNote": "输出 tok/s · C8",
+      "enNote": "output tok/s · C8"
+    },
+    {
+      "zhLabel": "原始路径长度门槛",
+      "enLabel": "Original-path length limit",
+      "value": "~2K",
+      "zhNote": "2,100-token probe crashes",
+      "enNote": "2,100-token probe crashes"
+    }
+  ],
+  "overview": {
+    "heading": {
+      "zh": "通过点与故障边界同时披露",
+      "en": "Passing points and failure boundaries are both reported"
+    },
+    "intro": {
+      "zh": "短输入服务矩阵可完成；输入扩展超过约 2,040 tokens 后，原始 vLLM ROCm 引擎会在特定 FP8 sparse-indexer 路径崩溃。故障后长上下文与多模态并发档不计作零吞吐。",
+      "en": "The short-input matrix completes. Beyond roughly 2,040 input tokens, the original vLLM ROCm engine crashes in a specific FP8 sparse-indexer path. Long-context and multimodal concurrency points after the crash are not treated as zero throughput."
+    },
+    "note": {
+      "zh": "开放环每档为单次 600 请求；短输入容量点也是单次测量。某些分位数样本量低于 128，只作为观测值。主报告仅对应原始 FP8 vLLM ROCm 路径。",
+      "en": "Each open-loop rate is one 600-request run; short-input points are also single runs. Some quantiles have fewer than 128 samples and are observations only. This report covers the original FP8 vLLM ROCm path."
+    }
+  },
+  "blocks": [
+    {
+      "id": "short-input",
+      "label": {
+        "zh": "短输入服务矩阵",
+        "en": "SHORT-INPUT MATRIX"
+      },
+      "heading": {
+        "zh": "短输入场景可运行，固定长度与自然请求吞吐各不相同",
+        "en": "Short-input profiles run successfully, with distinct rates for fixed and natural requests"
+      },
+      "intro": {
+        "zh": "8×MI308X、TP8、vLLM ROCm nightly；FP8 checkpoint。主矩阵单次测量；Agent 为 BFCL v3 工具调用轨迹。",
+        "en": "Eight MI308X accelerators, TP8, vLLM ROCm nightly; FP8 checkpoint. Primary matrix is single-run; Agent uses BFCL v3 tool-call traces."
+      },
+      "notes": [
+        {
+          "zh": "BFCL Agent 128 请求并发 8，输出吞吐 245.7 tok/s；不表示 BFCL pass rate。",
+          "en": "BFCL Agent used 128 requests at concurrency 8 and reached 245.7 output tok/s; this is not a BFCL pass rate."
+        }
+      ],
+      "table": {
+        "headers": {
+          "zh": [
+            "场景",
+            "请求数",
+            "并发",
+            "成功率",
+            "TTFT P50 (ms)",
+            "TTFT P95 (ms)",
+            "TPOT P50 (ms)",
+            "输出 tok/s"
+          ],
+          "en": [
+            "Profile",
+            "Requests",
+            "Concurrency",
+            "Success rate",
+            "TTFT P50 (ms)",
+            "TTFT P95 (ms)",
+            "TPOT P50 (ms)",
+            "Output tok/s"
+          ]
+        },
+        "rows": [
+          [
+            "lat_c1",
+            "32",
+            "1",
+            "100.0%",
+            "170.6",
+            "171.9",
+            "12.95",
+            "70.5"
+          ],
+          [
+            "gen_long_out",
+            "128",
+            "16",
+            "100.0%",
+            "367.3",
+            "728.5",
+            "21.66",
+            "732.1"
+          ],
+          [
+            "mid_512_256",
+            "256",
+            "32",
+            "100.0%",
+            "1448.0",
+            "1604.7",
+            "23.72",
+            "1090.0"
+          ],
+          [
+            "sharegpt",
+            "256",
+            "32",
+            "100.0%",
+            "212.1",
+            "986.0",
+            "48.07",
+            "618.9"
+          ],
+          [
+            "saturate",
+            "512",
+            "inf",
+            "100.0%",
+            "11695.1",
+            "22390.6",
+            "117.46",
+            "3120.8"
+          ],
+          [
+            "agent_bfcl",
+            "128",
+            "8",
+            "100.0%",
+            "193.4",
+            "403.2",
+            "28.08",
+            "245.7"
+          ]
+        ]
+      }
+    },
+    {
+      "id": "open-loop",
+      "label": {
+        "zh": "开放环到达",
+        "en": "OPEN-LOOP ARRIVALS"
+      },
+      "heading": {
+        "zh": "长输入 512/256 到达压测的吞吐随到达率上升",
+        "en": "Throughput rises with arrival rate for 512/256 open-loop traffic"
+      },
+      "intro": {
+        "zh": "每档 600 次请求，单轮测试；在同一模型、TP8、vLLM 配置下递增到达率。",
+        "en": "600 requests per rate, single run; arrival rate is increased with the same model, TP8, and vLLM setup."
+      },
+      "notes": [
+        {
+          "zh": "12.2 req/s 档成功率 100%，但 TTFT P95 已达 5.51 s；不能只根据输出 tok/s 判断可服务负载。",
+          "en": "The 12.2 req/s point has 100% success but TTFT P95 reaches 5.51 s; output tok/s alone does not define a serviceable load."
+        }
+      ],
+      "chart": {
+        "title": {
+          "zh": "到达率与实际输出吞吐",
+          "en": "Arrival rate and output throughput"
+        },
+        "hint": {
+          "zh": "悬停查看实测点。",
+          "en": "Hover a point to inspect the measurement."
+        },
+        "labels": {
+          "zh": [
+            "3.0",
+            "4.6",
+            "6.1",
+            "7.6",
+            "9.1",
+            "10.7",
+            "12.2"
+          ],
+          "en": [
+            "3.0",
+            "4.6",
+            "6.1",
+            "7.6",
+            "9.1",
+            "10.7",
+            "12.2"
+          ]
+        },
+        "series": [
+          {
+            "zh": "输出 tok/s",
+            "en": "Output tok/s",
+            "color": "orange",
+            "values": [
+              746.7,
+              1128.2,
+              1440.5,
+              1765.4,
+              2004.4,
+              2166.1,
+              2225.4
+            ]
+          }
+        ],
+        "yTitle": {
+          "zh": "整体输出 tok/s",
+          "en": "Aggregate output tok/s"
+        },
+        "type": "line"
+      },
+      "table": {
+        "headers": {
+          "zh": [
+            "目标到达 req/s",
+            "实际完成 req/s",
+            "成功率",
+            "TTFT P95 (ms)",
+            "TTFT P99 (ms)",
+            "输出 tok/s"
+          ],
+          "en": [
+            "Target arrival req/s",
+            "Completed req/s",
+            "Success rate",
+            "TTFT P95 (ms)",
+            "TTFT P99 (ms)",
+            "Output tok/s"
+          ]
+        },
+        "rows": [
+          [
+            "3.0",
+            "2.917",
+            "100.0%",
+            "343.1",
+            "460.2",
+            "746.7"
+          ],
+          [
+            "4.6",
+            "4.407",
+            "100.0%",
+            "396.8",
+            "449.8",
+            "1128.2"
+          ],
+          [
+            "6.1",
+            "5.627",
+            "100.0%",
+            "482.5",
+            "511.2",
+            "1440.5"
+          ],
+          [
+            "7.6",
+            "6.896",
+            "100.0%",
+            "515.8",
+            "651.8",
+            "1765.4"
+          ],
+          [
+            "9.1",
+            "7.83",
+            "100.0%",
+            "618.4",
+            "680.2",
+            "2004.4"
+          ],
+          [
+            "10.7",
+            "8.461",
+            "100.0%",
+            "893.5",
+            "1029.6",
+            "2166.1"
+          ],
+          [
+            "12.2",
+            "8.693",
+            "100.0%",
+            "5512.2",
+            "6692.2",
+            "2225.4"
+          ]
+        ]
+      }
+    },
+    {
+      "id": "compatibility",
+      "label": {
+        "zh": "上下文兼容性",
+        "en": "CONTEXT COMPATIBILITY"
+      },
+      "heading": {
+        "zh": "原始 vLLM ROCm 路径在约 2K 输入处触发引擎崩溃",
+        "en": "The original vLLM ROCm path crashes beyond roughly 2K input tokens"
+      },
+      "intro": {
+        "zh": "长度探测每档启动独立引擎；4K 档 16/16 请求失败并触发引擎崩溃，16K、64K、256K 和 1M 档均未执行。原始源记录定位到 gfx942 FlyDSL FP8 sparse-indexer JIT 路径。",
+        "en": "Length probes used a fresh engine per point. The 4K point failed all 16 requests and crashed the engine; 16K, 64K, 256K, and 1M points were not executed. Source notes locate the failure in the gfx942 FlyDSL FP8 sparse-indexer JIT path."
+      },
+      "notes": [
+        {
+          "zh": "aiter 补丁实验属于偏离原配方的独立分支，不在此图中混合为原始路径的成功结果。该修复分支长上下文精度门未通过。",
+          "en": "The aiter-patched experiment is a separate, recipe-divergent branch and is not merged into this chart as a successful result for the original path. Its long-context quality gate did not pass."
+        }
+      ],
+      "table": {
+        "headers": {
+          "zh": [
+            "输入长度",
+            "结果",
+            "请求数",
+            "说明"
+          ],
+          "en": [
+            "Input length",
+            "Outcome",
+            "Requests",
+            "Details"
+          ]
+        },
+        "rows": [
+          [
+            "1,900 tokens",
+            "通过 / Passed",
+            "probe",
+            "长度探测"
+          ],
+          [
+            "2,040 tokens",
+            "通过 / Passed",
+            "probe",
+            "长度探测"
+          ],
+          [
+            "2,100 tokens",
+            "崩溃 / Crash",
+            "probe",
+            "触发算子路径"
+          ],
+          [
+            "4K",
+            "失败 / Failed",
+            "0 / 16",
+            "触发引擎崩溃"
+          ],
+          [
+            "16K / 64K / 256K / 1M",
+            "未执行 / Not run",
+            "—",
+            "前序崩溃后引擎已退出"
+          ]
+        ]
+      }
+    },
+    {
+      "id": "agent",
+      "label": {
+        "zh": "Agent 与多模态探测",
+        "en": "AGENT & MULTIMODAL"
+      },
+      "heading": {
+        "zh": "短上下文工具调用可测，多模态与长上下文受引擎故障限制",
+        "en": "Short-context tool calls are measurable; multimodal and long-context tests are limited by the engine failure"
+      },
+      "intro": {
+        "zh": "Agent 使用 BFCL v3，128 请求、并发 8。多模态 c1 通过；c8 在 25 条成功后引擎崩溃，后续点未完成。",
+        "en": "Agent uses BFCL v3, 128 requests, concurrency 8. Multimodal C1 passed; C8 crashed after 25 successful requests, and later points did not complete."
+      },
+      "notes": [
+        {
+          "zh": "Agent 吞吐为 245.7 tok/s，报告不推断工具任务通过率。多模态部分结果不作为完整并发容量数据。",
+          "en": "Agent throughput is 245.7 tok/s; no tool-task pass rate is inferred. Partial multimodal results are not treated as a complete concurrency-capacity result."
+        }
+      ],
+      "table": {
+        "headers": {
+          "zh": [
+            "工作负载",
+            "完成情况",
+            "成功率 / 结果",
+            "可用性说明"
+          ],
+          "en": [
+            "Workload",
+            "Completion",
+            "Success / outcome",
+            "Interpretation"
+          ]
+        },
+        "rows": [
+          [
+            "BFCL Agent · C8",
+            "128 / 128",
+            "100% requests returned",
+            "throughput only; task score not inferred"
+          ],
+          [
+            "视觉语言 C1",
+            "32 / 32",
+            "100%",
+            "single point"
+          ],
+          [
+            "视觉语言 C8",
+            "25 succeeded, then crash",
+            "incomplete",
+            "excluded from capacity claims"
+          ],
+          [
+            "视觉语言 C32",
+            "未执行",
+            "引擎已崩溃",
+            "not run"
+          ],
+          [
+            "1M needle",
+            "未执行",
+            "HTTP 500 / engine crash",
+            "not run"
+          ]
+        ]
+      }
+    }
+  ],
+  "methodIntro": {
+    "zh": "8×MI308X、TP8；原始 vLLM ROCm nightly 配方路径。长上下文错误发生于 gfx942 专属算子构建路径。",
+    "en": "Eight MI308X accelerators, TP8; original vLLM ROCm nightly recipe path. The long-context failure occurs in a gfx942-specific operator build path."
+  },
+  "meta": [
+    {
+      "zh": "模型权重",
+      "en": "Checkpoint",
+      "value": "GLM-5.3-Flash FP8"
+    },
+    {
+      "zh": "加速器",
+      "en": "Accelerator",
+      "value": "8 × MI308X · 192 GB total"
+    },
+    {
+      "zh": "并行配置",
+      "en": "Parallelism",
+      "value": "TP8"
+    },
+    {
+      "zh": "服务框架",
+      "en": "Serving engine",
+      "value": "vLLM ROCm nightly"
+    },
+    {
+      "zh": "短输入矩阵",
+      "en": "Short-input matrix",
+      "value": "128/128 · 128/2048 · 512/256"
+    },
+    {
+      "zh": "Agent 工作负载",
+      "en": "Agent workload",
+      "value": "BFCL v3 tool-call trace"
+    }
+  ],
+  "methodNotes": [
+    {
+      "zh": "修复分支使用独立的 aiter 补丁构建，且长上下文 needle 精度门未通过；不作为原始配置性能数据。",
+      "en": "A patched aiter build was tested separately and did not pass the long-context needle quality gate; it is excluded from original-configuration performance data."
+    },
+    {
+      "zh": "上游兼容性状态会随软件修复变化；本报告只说明 2026 年 9 月记录的这一环境。",
+      "en": "Upstream compatibility may change with software fixes; this report describes the environment measured in September 2026."
+    },
+    {
+      "zh": "机器地址、日志路径、原始请求和内部构建标识均未公开。",
+      "en": "Machine addresses, log paths, raw requests, and internal build identifiers are omitted."
+    }
+  ]
+}

@@ -31,6 +31,9 @@ public/*/
 public/reports/**
 !public/reports/**/
 !public/reports/**/*.html
+!public/reports/assets/**
+!public/reports/data/**
+!public/reports/vendor/**
 
 # Superpowers SDD scratch
 .superpowers/

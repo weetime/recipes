@@ -1,0 +1,495 @@
+{
+  "title": "DeepSeek-V4.1-Flash · MI308X",
+  "breadcrumb": "DeepSeek-V4.1-Flash",
+  "kicker": "SERVING BENCHMARK · ROCm",
+  "lede": {
+    "zh": "本报告汇总 DeepSeek-V4.1-Flash 在 MI308X 上的固定负载、长上下文、开放环和工具调用轨迹测试。",
+    "en": "This report summarizes fixed-load, long-context, open-loop, and tool-call trace tests for DeepSeek-V4.1-Flash on MI308X."
+  },
+  "chips": [
+    "8 × AMD MI308X · 192 GB",
+    "vLLM ROCm nightly",
+    "TP4",
+    "Spec decode off in primary matrix",
+    "Measured 2026-09"
+  ],
+  "snapshot": {
+    "zh": "固定负载 · 4K–256K 输入 · 开放环容量 · BFCL Agent",
+    "en": "Fixed profiles · 4K–256K inputs · open-loop capacity · BFCL Agent"
+  },
+  "sections": [
+    {
+      "id": "capacity",
+      "zh": "固定负载",
+      "en": "Fixed load"
+    },
+    {
+      "id": "long-context",
+      "zh": "长上下文",
+      "en": "Long context"
+    },
+    {
+      "id": "open-loop",
+      "zh": "开放环",
+      "en": "Open loop"
+    },
+    {
+      "id": "method",
+      "zh": "方法边界",
+      "en": "Method"
+    }
+  ],
+  "stats": [
+    {
+      "zhLabel": "长输出 128/2048",
+      "enLabel": "Long output 128/2048",
+      "value": "428.4",
+      "zhNote": "整体输出 tok/s · C16",
+      "enNote": "aggregate output tok/s · C16"
+    },
+    {
+      "zhLabel": "256K 输入首 token",
+      "enLabel": "TTFT at 256K input",
+      "value": "156.6",
+      "zhNote": "秒 · C4 · 16 请求",
+      "enNote": "seconds · C4 · 16 requests"
+    },
+    {
+      "zhLabel": "BFCL Agent 轨迹",
+      "enLabel": "BFCL Agent trace",
+      "value": "173.9",
+      "zhNote": "输出 tok/s · 128 请求",
+      "enNote": "output tok/s · 128 requests"
+    }
+  ],
+  "overview": {
+    "heading": {
+      "zh": "结果按实际负载拆分",
+      "en": "Results are separated by workload"
+    },
+    "intro": {
+      "zh": "固定长度、ShareGPT、BFCL 工具调用和长上下文具有不同请求长度与调度行为。页面分别展示，避免合并成通用性能分数。",
+      "en": "Fixed-length, ShareGPT, BFCL tool calls, and long-context workloads differ in request lengths and scheduling behavior. They are shown separately rather than combined into a general score."
+    },
+    "note": {
+      "zh": "主表是单轮测量；长上下文每点 16 请求。P99 受样本量限制。公开报告省略集群地址、主机名、镜像 digest 和实验路径。",
+      "en": "Primary profiles are single runs; long-context points contain 16 requests. P99 is sample-limited. Cluster addresses, hostnames, image digests, and experiment paths are omitted."
+    }
+  },
+  "blocks": [
+    {
+      "id": "capacity",
+      "label": {
+        "zh": "固定负载与请求混合",
+        "en": "FIXED LOAD & REQUEST MIX"
+      },
+      "heading": {
+        "zh": "短输入容量、长输出与自然请求呈现不同服务曲线",
+        "en": "Short-input capacity, long output, and natural requests produce different serving curves"
+      },
+      "intro": {
+        "zh": "8×MI308X、TP4、vLLM ROCm nightly；主表关闭投机解码。固定长度矩阵分别为 128/128 C1、128/2048 C16、512/256 C32；ShareGPT 与 BFCL Agent 是独立工作负载。",
+        "en": "Eight MI308X accelerators, TP4, vLLM ROCm nightly; speculative decoding is off for the primary matrix. Fixed profiles are 128/128 C1, 128/2048 C16, and 512/256 C32. ShareGPT and BFCL Agent are separate workloads."
+      },
+      "notes": [
+        {
+          "zh": "Agent 数据来自 BFCL v3 工具调用轨迹，128 请求、并发 8；吞吐不是 Agent 任务成功率。",
+          "en": "Agent results use BFCL v3 tool-call traces, 128 requests at concurrency 8; throughput is not task success rate."
+        },
+        {
+          "zh": "ShareGPT 与 BFCL Agent 吞吐列在表格中，属于不同请求分布，不与定长点直接比较。",
+          "en": "ShareGPT and BFCL Agent rates appear in the table and represent distinct request mixes; do not compare them directly with fixed-length points."
+        }
+      ],
+      "chart": {
+        "title": {
+          "zh": "主要场景：整体输出吞吐",
+          "en": "Primary profiles: aggregate output throughput"
+        },
+        "hint": {
+          "zh": "悬停查看实测点。",
+          "en": "Hover a point to inspect the measurement."
+        },
+        "labels": {
+          "zh": [
+            "单流 128/128",
+            "长输出 128/2048",
+            "中载 512/256"
+          ],
+          "en": [
+            "Single 128/128",
+            "Long output 128/2048",
+            "Medium 512/256"
+          ]
+        },
+        "series": [
+          {
+            "zh": "输出吞吐",
+            "en": "Output throughput",
+            "color": "orange",
+            "values": [
+              52.3,
+              428.4,
+              458.5
+            ]
+          }
+        ],
+        "yTitle": {
+          "zh": "整体输出 tok/s",
+          "en": "Aggregate output tok/s"
+        },
+        "type": "line"
+      },
+      "table": {
+        "headers": {
+          "zh": [
+            "场景",
+            "请求数",
+            "并发",
+            "成功率",
+            "TTFT P50 (ms)",
+            "TTFT P99 (ms)",
+            "TPOT P50 (ms)",
+            "输出 tok/s"
+          ],
+          "en": [
+            "Profile",
+            "Requests",
+            "Concurrency",
+            "Success rate",
+            "TTFT P50 (ms)",
+            "TTFT P99 (ms)",
+            "TPOT P50 (ms)",
+            "Output tok/s"
+          ]
+        },
+        "rows": [
+          [
+            "lat_c1",
+            "32",
+            "1",
+            "100.0%",
+            "217.7",
+            "220.5",
+            "17.54",
+            "52.3"
+          ],
+          [
+            "gen_long_out",
+            "128",
+            "16",
+            "100.0%",
+            "1137.9",
+            "1161.5",
+            "36.94",
+            "428.4"
+          ],
+          [
+            "mid_512_256",
+            "256",
+            "32",
+            "100.0%",
+            "5383.3",
+            "5409.5",
+            "49.64",
+            "458.5"
+          ],
+          [
+            "sharegpt",
+            "256",
+            "32",
+            "100.0%",
+            "401.6",
+            "3478.0",
+            "87.45",
+            "322.3"
+          ],
+          [
+            "agent_bfcl",
+            "128",
+            "8",
+            "100.0%",
+            "296.5",
+            "2044.7",
+            "42.1",
+            "173.9"
+          ]
+        ]
+      }
+    },
+    {
+      "id": "long-context",
+      "label": {
+        "zh": "长上下文",
+        "en": "LONG CONTEXT"
+      },
+      "heading": {
+        "zh": "输入长度扩展到 256K 后，预填充成本成为主要限制",
+        "en": "At 256K input, prefill cost becomes the dominant constraint"
+      },
+      "intro": {
+        "zh": "并发 4、输出 128 tokens、每档 16 请求；TP4。",
+        "en": "Concurrency 4, 128 output tokens, 16 requests per point; TP4."
+      },
+      "notes": [
+        {
+          "zh": "样本量 16，不报告稳健尾延迟结论；TTFT P99 仅列为本轮观测。",
+          "en": "With 16 samples, no robust tail-latency claim is made; TTFT P99 is reported as an observation from this run."
+        }
+      ],
+      "chart": {
+        "title": {
+          "zh": "输入长度与首 token 延迟",
+          "en": "Input length and time to first token"
+        },
+        "hint": {
+          "zh": "悬停查看实测点。",
+          "en": "Hover a point to inspect the measurement."
+        },
+        "labels": {
+          "zh": [
+            "4K",
+            "16K",
+            "64K",
+            "256K"
+          ],
+          "en": [
+            "4K",
+            "16K",
+            "64K",
+            "256K"
+          ]
+        },
+        "series": [
+          {
+            "zh": "TTFT P50 (秒)",
+            "en": "TTFT P50 (s)",
+            "color": "orange",
+            "values": [
+              4.0501,
+              15.7659,
+              44.0442,
+              156.5635
+            ]
+          },
+          {
+            "zh": "TTFT P99 (秒)",
+            "en": "TTFT P99 (s)",
+            "color": "blue",
+            "values": [
+              5.5295,
+              21.078200000000002,
+              85.75760000000001,
+              420.029
+            ]
+          }
+        ],
+        "yTitle": {
+          "zh": "TTFT (秒)",
+          "en": "TTFT (s)"
+        },
+        "type": "line"
+      },
+      "table": {
+        "headers": {
+          "zh": [
+            "输入长度",
+            "请求数",
+            "输出 tok/s",
+            "TTFT P50 (s)",
+            "TTFT P99 (s)",
+            "TPOT P50 (ms)"
+          ],
+          "en": [
+            "Input length",
+            "Requests",
+            "Output tok/s",
+            "TTFT P50 (s)",
+            "TTFT P99 (s)",
+            "TPOT P50 (ms)"
+          ]
+        },
+        "rows": [
+          [
+            "4K",
+            "16",
+            "62.0",
+            "4.05",
+            "5.53",
+            "32.98"
+          ],
+          [
+            "16K",
+            "16",
+            "21.5",
+            "15.77",
+            "21.08",
+            "63.6"
+          ],
+          [
+            "64K",
+            "16",
+            "5.6",
+            "44.04",
+            "85.76",
+            "370.07"
+          ],
+          [
+            "256K",
+            "16",
+            "1.2",
+            "156.56",
+            "420.03",
+            "2214.71"
+          ]
+        ]
+      }
+    },
+    {
+      "id": "open-loop",
+      "label": {
+        "zh": "开放环到达率",
+        "en": "OPEN-LOOP ARRIVALS"
+      },
+      "heading": {
+        "zh": "到达率升高时吞吐增加，尾延迟同步拉长",
+        "en": "Throughput rises with arrival rate while tail latency also grows"
+      },
+      "intro": {
+        "zh": "512 输入 / 256 输出的开放环到达测试，每档约 600 请求；各档为独立单次运行。",
+        "en": "Open-loop arrivals at 512 input / 256 output, about 600 requests per rate; each point is a separate single run."
+      },
+      "notes": [
+        {
+          "zh": "原始源数据将 safe_rps 定义为 TTFT P95 不超过 2,000 ms；此页面保留原实验选定的 2.6 req/s 档作为边界示例。",
+          "en": "The source experiment defines safe_rps as TTFT P95 ≤ 2,000 ms; this page includes the selected 2.6 req/s point as a boundary example."
+        }
+      ],
+      "table": {
+        "headers": {
+          "zh": [
+            "到达率 (req/s)",
+            "请求数",
+            "实际完成 req/s",
+            "成功率",
+            "TTFT P50 (ms)",
+            "TTFT P99 (ms)",
+            "输出 tok/s"
+          ],
+          "en": [
+            "Arrival rate (req/s)",
+            "Requests",
+            "Completed req/s",
+            "Success rate",
+            "TTFT P50 (ms)",
+            "TTFT P99 (ms)",
+            "Output tok/s"
+          ]
+        },
+        "rows": [
+          [
+            "2.0",
+            "599",
+            "1.904",
+            "99.83%",
+            "564.3",
+            "1295.6",
+            "487.3"
+          ],
+          [
+            "2.5",
+            "600",
+            "2.295",
+            "100.00%",
+            "722.6",
+            "2258.8",
+            "587.5"
+          ],
+          [
+            "2.6",
+            "600",
+            "2.357",
+            "100.00%",
+            "773.9",
+            "1719.9",
+            "603.3"
+          ],
+          [
+            "2.75",
+            "600",
+            "2.43",
+            "100.00%",
+            "904.4",
+            "5402.3",
+            "622.1"
+          ],
+          [
+            "3.0",
+            "600",
+            "2.536",
+            "100.00%",
+            "978.0",
+            "2870.4",
+            "649.3"
+          ]
+        ]
+      },
+      "side": {
+        "title": {
+          "zh": "负载边界",
+          "en": "Load boundary"
+        },
+        "body": {
+          "zh": "例如 2.6 req/s 点 600 请求全部成功，TTFT P99 为 1.72 s；2.75 req/s 点全部成功但 TTFT P99 升至 5.40 s。定义阈值需与尾延迟一起看。",
+          "en": "At 2.6 req/s, all 600 requests succeeded with TTFT P99 of 1.72 s; at 2.75 req/s, all succeeded but TTFT P99 rose to 5.40 s. Interpret the rate with the latency threshold."
+        }
+      }
+    }
+  ],
+  "methodIntro": {
+    "zh": "单机 8×MI308X，TP4；使用 ROCm nightly 构建与 vLLM serving benchmark 工具。",
+    "en": "One system with eight MI308X accelerators, TP4; ROCm nightly build and vLLM serving benchmark tooling."
+  },
+  "meta": [
+    {
+      "zh": "模型权重",
+      "en": "Checkpoint",
+      "value": "DeepSeek-V4.1-Flash"
+    },
+    {
+      "zh": "加速器",
+      "en": "Accelerator",
+      "value": "8 × MI308X · 192 GB total"
+    },
+    {
+      "zh": "并行配置",
+      "en": "Parallelism",
+      "value": "TP4"
+    },
+    {
+      "zh": "服务框架",
+      "en": "Serving engine",
+      "value": "vLLM ROCm nightly"
+    },
+    {
+      "zh": "主要矩阵",
+      "en": "Primary matrix",
+      "value": "Speculative decoding disabled"
+    },
+    {
+      "zh": "长上下文点",
+      "en": "Long-context profile",
+      "value": "16 requests · concurrency 4 · 128 output tokens"
+    }
+  ],
+  "methodNotes": [
+    {
+      "zh": "投机解码 A/B 和 1M needle 属于单独测试批次，服务参数与主表不同，不能直接叠加解读。",
+      "en": "Speculative decoding A/B and 1M needle belong to separate batches with different serving parameters and are not combined with the primary matrix."
+    },
+    {
+      "zh": "公开数据仅保留汇总指标；未包含请求文本或内部主机信息。",
+      "en": "Only aggregate metrics are published; request text and internal host details are excluded."
+    }
+  ]
+}

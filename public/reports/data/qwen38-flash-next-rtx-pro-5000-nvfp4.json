@@ -1,0 +1,579 @@
+{
+  "title": "Qwen3.8-Flash-Next · NVFP4",
+  "breadcrumb": "Qwen3.8-Flash-Next　/　NVFP4",
+  "kicker": "SERVING BENCHMARK　·　NVFP4",
+  "lede": {
+    "zh": "在 4 张 RTX PRO 5000 上测试 Qwen3.8-Flash-Next NVFP4 服务表现。报告覆盖固定长度容量、开放环到达率、长上下文承载与真实 Agent 轨迹回放；每组结果均保留自己的负载口径。",
+    "en": "This report measures Qwen3.8-Flash-Next NVFP4 serving on four RTX PRO 5000 GPUs. It covers fixed-length capacity, open-loop arrivals, long-context capacity, and natural Agent trace replay, with each workload kept in its own measurement context."
+  },
+  "chips": [
+    "4 × RTX PRO 5000 · 72 GB",
+    "vLLM 0.31.1rc1",
+    "AIPerf 0.13.0",
+    "NVFP4",
+    "Measured 14 Oct 2026"
+  ],
+  "snapshot": {
+    "zh": "冻结矩阵完成　/　固定长度、Agent 回放与开放环负载",
+    "en": "Frozen matrix complete　/　fixed length, Agent replay and open-loop load"
+  },
+  "sections": [
+    {
+      "id": "fixed",
+      "zh": "固定长度",
+      "en": "Fixed length"
+    },
+    {
+      "id": "capacity",
+      "zh": "长上下文",
+      "en": "Long context"
+    },
+    {
+      "id": "agent",
+      "zh": "Agent 回放",
+      "en": "Agent replay"
+    },
+    {
+      "id": "openloop",
+      "zh": "开放环",
+      "en": "Open loop"
+    },
+    {
+      "id": "method",
+      "zh": "测试方法",
+      "en": "Method"
+    }
+  ],
+  "stats": [
+    {
+      "zhLabel": "8K / 512 固定负载",
+      "enLabel": "8K / 512 fixed workload",
+      "value": "576.6",
+      "zhNote": "C16 整体输出 tok/s",
+      "enNote": "aggregate output tok/s at C16"
+    },
+    {
+      "zhLabel": "长上下文测试",
+      "enLabel": "Long-context test",
+      "value": "128K",
+      "zhNote": "提示长度，C1/C2 各 32 请求",
+      "enNote": "prompt length, 32 requests at C1/C2"
+    },
+    {
+      "zhLabel": "Agent Coding 回放",
+      "enLabel": "Agent Coding replay",
+      "value": "408 / 408",
+      "zhNote": "请求完成，错误率 0%",
+      "enNote": "requests completed, 0% errors"
+    }
+  ],
+  "overview": {
+    "heading": {
+      "zh": "吞吐数字附带负载上下文",
+      "en": "Read capacity with its workload attached"
+    },
+    "intro": {
+      "zh": "本页仅报告 Qwen3.8-Flash-Next NVFP4 测试臂。固定长度、开放环和自然 Agent 回放分别测量不同服务行为，数值不能混作同一种负载下的排名。",
+      "en": "This page covers the Qwen3.8-Flash-Next NVFP4 test arm only. Fixed-length, open-loop, and natural Agent replay measure different serving behaviors and should not be treated as interchangeable scores."
+    },
+    "note": {
+      "zh": "除 8K/512、C1 的三轮锚点外，大多数扩展点为单轮测量。128K 容量点每点 32 个请求，仅作该设置下的观测，不推断稳健尾延迟或普遍容量上限。",
+      "en": "Except for the three-round 8K/512 C1 anchor, most extension points are single runs. Each 128K point has 32 requests and is descriptive for that setting, not a robust tail-latency estimate or general capacity limit."
+    }
+  },
+  "blocks": [
+    {
+      "id": "fixed",
+      "label": {
+        "zh": "固定长度容量",
+        "en": "FIXED-LENGTH CAPACITY"
+      },
+      "heading": {
+        "zh": "并发提升吞吐，长提示限制单路速度",
+        "en": "Concurrency raises throughput; long prompts constrain per-request speed"
+      },
+      "intro": {
+        "zh": "输入与输出长度固定，测量并发变化时整体输出速率。悬停图表可查看实测点；C1 为三轮均值，其他并发点来自扩展轮。",
+        "en": "Input and output lengths are controlled. The chart shows aggregate output rate as concurrency changes. Hover for measured values; C1 is the mean of three rounds and the other points come from the expanded round."
+      },
+      "chart": {
+        "title": {
+          "zh": "8K 输入 / 512 输出：整体输出吞吐",
+          "en": "8K input / 512 output: aggregate output throughput"
+        },
+        "hint": {
+          "zh": "单位 tok/s · C1 为 3 轮均值，其余点为单轮扩展测量",
+          "en": "tok/s · C1 is a 3-round mean; other points are single expanded measurements"
+        },
+        "labels": {
+          "zh": [
+            "C1",
+            "C4",
+            "C8",
+            "C16"
+          ],
+          "en": [
+            "C1",
+            "C4",
+            "C8",
+            "C16"
+          ]
+        },
+        "yTitle": {
+          "zh": "输出吞吐（tok/s）",
+          "en": "Output throughput (tok/s)"
+        },
+        "series": [
+          {
+            "zh": "NVFP4",
+            "en": "NVFP4",
+            "color": "orange",
+            "values": [
+              176.03,
+              379.3,
+              486.8,
+              576.6
+            ]
+          }
+        ]
+      },
+      "table": {
+        "headers": {
+          "zh": [
+            "负载",
+            "并发",
+            "请求数",
+            "请求吞吐 req/s",
+            "输出吞吐 tok/s",
+            "请求延迟 P50",
+            "TTFT P50",
+            "ITL P50"
+          ],
+          "en": [
+            "Workload",
+            "Concurrency",
+            "Requests",
+            "Request throughput",
+            "Output throughput",
+            "Request latency P50",
+            "TTFT P50",
+            "ITL P50"
+          ]
+        },
+        "rows": [
+          [
+            "8K / 512",
+            "C1",
+            "128 × 3",
+            "0.344",
+            "176.03",
+            "2.91 s",
+            "628 ms",
+            "4.48 ms"
+          ],
+          [
+            "8K / 512",
+            "C4",
+            "128",
+            "—",
+            "379.3",
+            "—",
+            "—",
+            "—"
+          ],
+          [
+            "8K / 512",
+            "C8",
+            "128",
+            "—",
+            "486.8",
+            "—",
+            "—",
+            "—"
+          ],
+          [
+            "8K / 512",
+            "C16",
+            "128",
+            "—",
+            "576.6",
+            "—",
+            "—",
+            "—"
+          ],
+          [
+            "32K / 512",
+            "C1",
+            "128",
+            "—",
+            "107.6",
+            "—",
+            "—",
+            "—"
+          ],
+          [
+            "8K / 512",
+            "C2",
+            "256",
+            "0.52",
+            "267.49",
+            "3.83 s",
+            "651 ms",
+            "6.22 ms"
+          ]
+        ]
+      },
+      "notes": [
+        {
+          "zh": "8K/512 C2 的平均实际输出约为 144 tokens，而非目标 512；该点按实测输出长度解读。C4/C8/C16 与重复锚点不属于同轮，不能把曲线当成重复统计区间。",
+          "en": "At 8K/512 C2, mean generated output was about 144 tokens rather than the target 512; interpret the point at its observed output length. C4/C8/C16 are from a different round than the repeated anchor and do not form a repeated confidence interval."
+        }
+      ]
+    },
+    {
+      "id": "capacity",
+      "label": {
+        "zh": "长上下文容量",
+        "en": "LONG-CONTEXT CAPACITY"
+      },
+      "heading": {
+        "zh": "128K 提示词下并发增加，排队延迟随之上升",
+        "en": "At 128K prompt length, more concurrency raises queueing latency"
+      },
+      "intro": {
+        "zh": "长上下文容量点每档 32 个请求。表中展示整体吞吐、请求延迟与首 token 延迟；样本较小，不报告 P95/P99。",
+        "en": "Long-context capacity points use 32 requests each. The table reports aggregate throughput, request latency, and TTFT; the sample is too small for P95/P99 claims."
+      },
+      "chart": {
+        "title": {
+          "zh": "长上下文整体输出吞吐",
+          "en": "Long-context aggregate output throughput"
+        },
+        "hint": {
+          "zh": "实际测量点：64K/512 C1、128K/256 C1 与 C2",
+          "en": "Measured points: 64K/512 C1 and 128K/256 C1 and C2"
+        },
+        "labels": {
+          "zh": [
+            "64K/512 C1",
+            "128K/256 C1",
+            "128K/256 C2"
+          ],
+          "en": [
+            "64K/512 C1",
+            "128K/256 C1",
+            "128K/256 C2"
+          ]
+        },
+        "yTitle": {
+          "zh": "输出吞吐（tok/s）",
+          "en": "Output throughput (tok/s)"
+        },
+        "series": [
+          {
+            "zh": "NVFP4",
+            "en": "NVFP4",
+            "color": "blue",
+            "values": [
+              70.37,
+              22.48,
+              23.4
+            ]
+          }
+        ]
+      },
+      "table": {
+        "headers": {
+          "zh": [
+            "输入 / 输出",
+            "并发",
+            "请求数",
+            "请求吞吐 req/s",
+            "输出吞吐 tok/s",
+            "请求延迟 P50",
+            "TTFT P50",
+            "ITL P50"
+          ],
+          "en": [
+            "Input / output",
+            "Concurrency",
+            "Requests",
+            "Request throughput",
+            "Output throughput",
+            "Request latency P50",
+            "TTFT P50",
+            "ITL P50"
+          ]
+        },
+        "rows": [
+          [
+            "64K / 512",
+            "C1",
+            "32",
+            "0.137",
+            "70.37",
+            "7.31 s",
+            "5.02 s",
+            "—"
+          ],
+          [
+            "128K / 256",
+            "C1",
+            "32",
+            "0.088",
+            "22.48",
+            "11.39 s",
+            "10.21 s",
+            "—"
+          ],
+          [
+            "128K / 256",
+            "C2",
+            "32",
+            "0.091",
+            "23.40",
+            "21.87 s",
+            "10.42 s",
+            "—"
+          ]
+        ]
+      },
+      "notes": [
+        {
+          "zh": "128K/C2 的请求延迟 P50 约 22 秒，说明该负载下排队明显。报告不将其描述为该硬件的绝对上下文上限。",
+          "en": "Request latency P50 at 128K/C2 is about 22 seconds, showing substantial queueing for this workload. This is not presented as an absolute context limit for the hardware."
+        }
+      ]
+    },
+    {
+      "id": "agent",
+      "label": {
+        "zh": "Agent 轨迹回放",
+        "en": "AGENT TRACE REPLAY"
+      },
+      "heading": {
+        "zh": "自然回复长度下的多轮服务表现",
+        "en": "Multi-turn serving with natural response lengths"
+      },
+      "intro": {
+        "zh": "每组回放 16 个会话；Coding 408 个请求，Long-context 437 个请求。外部工具不执行，记录中的工具观察作为上下文回放。",
+        "en": "Each replay uses 16 sessions: 408 Coding requests and 437 Long-context requests. External tools are not executed; recorded tool observations are replayed as context."
+      },
+      "table": {
+        "headers": {
+          "zh": [
+            "数据集",
+            "会话 / 请求",
+            "请求吞吐 req/s",
+            "输出吞吐 tok/s",
+            "请求延迟 P50 / P95",
+            "TTFT P50",
+            "ITL P50",
+            "平均输出 tokens"
+          ],
+          "en": [
+            "Dataset",
+            "Sessions / requests",
+            "Request throughput",
+            "Output throughput",
+            "Request latency P50 / P95",
+            "TTFT P50",
+            "ITL P50",
+            "Mean output tokens"
+          ]
+        },
+        "rows": [
+          [
+            "Coding",
+            "16 / 408",
+            "1.48",
+            "437.36",
+            "2.25 / 4.83 s",
+            "267 ms",
+            "7.19 ms",
+            "86.76"
+          ],
+          [
+            "Long-context",
+            "16 / 437",
+            "1.14",
+            "432.94",
+            "3.52 / 5.85 s",
+            "318 ms",
+            "7.27 ms",
+            "100.00"
+          ]
+        ]
+      },
+      "notes": [
+        {
+          "zh": "两个回放集均为请求 100% 完成、错误率 0%。回复长度自然变化，AIPerf 有输出长度不匹配提示；Agent 吞吐不可与固定 512 输出的合成负载直接比较，也不代表任务完成率。",
+          "en": "Both replays completed all requests with a 0% error rate. Response lengths vary naturally and AIPerf reported output-length mismatches. Agent throughput is not directly comparable to synthetic fixed 512-token output and does not measure task completion."
+        }
+      ]
+    },
+    {
+      "id": "openloop",
+      "label": {
+        "zh": "开放环负载",
+        "en": "OPEN-LOOP LOAD"
+      },
+      "heading": {
+        "zh": "到达率超过饱和点后，尾延迟明显抬升",
+        "en": "Tail latency rises sharply beyond the saturation region"
+      },
+      "intro": {
+        "zh": "请求按到达率独立发起，测量客户端发压与服务端完成情况。只呈现 1.0× 和 1.1× 两个高负载点，避免用摘要中未提供的中间值补图。",
+        "en": "Requests arrive independently of prior completion. This section shows client arrivals and server completion. Only the 1.0× and 1.1× high-load points are shown; no unreported intermediate values are inferred."
+      },
+      "chart": {
+        "title": {
+          "zh": "目标饱和速率附近的输出吞吐",
+          "en": "Output throughput near the measured saturation rate"
+        },
+        "hint": {
+          "zh": "按各自实测 C16 饱和率归一化；不表示固定 req/s",
+          "en": "Normalized to each arm’s measured C16 saturation rate; not a fixed req/s rate"
+        },
+        "labels": {
+          "zh": [
+            "8K/512 · 1.0×",
+            "8K/512 · 1.1×",
+            "32K/512 · 1.0×",
+            "32K/512 · 1.1×"
+          ],
+          "en": [
+            "8K/512 · 1.0×",
+            "8K/512 · 1.1×",
+            "32K/512 · 1.0×",
+            "32K/512 · 1.1×"
+          ]
+        },
+        "yTitle": {
+          "zh": "输出吞吐（tok/s）",
+          "en": "Output throughput (tok/s)"
+        },
+        "series": [
+          {
+            "zh": "NVFP4",
+            "en": "NVFP4",
+            "color": "orange",
+            "values": [
+              566,
+              573,
+              179,
+              182
+            ]
+          }
+        ]
+      },
+      "table": {
+        "headers": {
+          "zh": [
+            "负载",
+            "归一化到达率",
+            "输出吞吐 tok/s",
+            "请求延迟 P95"
+          ],
+          "en": [
+            "Workload",
+            "Normalized arrival rate",
+            "Output throughput",
+            "Request latency P95"
+          ]
+        },
+        "rows": [
+          [
+            "8K / 512",
+            "1.0×",
+            "566",
+            "31.9 s"
+          ],
+          [
+            "8K / 512",
+            "1.1×",
+            "573",
+            "62.6 s"
+          ],
+          [
+            "32K / 512",
+            "1.0×",
+            "179",
+            "97.0 s"
+          ],
+          [
+            "32K / 512",
+            "1.1×",
+            "182",
+            "121.8 s"
+          ]
+        ]
+      },
+      "notes": [
+        {
+          "zh": "所有开放环测点请求错误率均为 0%。到达率从 1.0× 增至 1.1× 时，吞吐增加有限而 P95 延迟上升；P95 是描述性统计，不代表业务 SLO。",
+          "en": "All open-loop points had a 0% request error rate. Raising arrival rate from 1.0× to 1.1× added little throughput while increasing P95 latency. P95 is descriptive and is not a business SLO."
+        }
+      ]
+    }
+  ],
+  "methodIntro": {
+    "zh": "测试覆盖 4 卡服务配置；报告展示聚合结果与必要的口径限制。未把精度间差异作为结论，也未声称任务质量等价。",
+    "en": "The benchmark used a four-GPU serving configuration. This report presents aggregate measurements and their workload limits. It makes no cross-format performance claim and does not claim task-quality equivalence."
+  },
+  "meta": [
+    {
+      "zh": "模型权重",
+      "en": "Checkpoint",
+      "value": "Inferact/Qwen3.8-Flash-Next-NVFP4"
+    },
+    {
+      "zh": "权重 revision",
+      "en": "Checkpoint revision",
+      "value": "22776d3f6fbdebe1dc73b4b88b8e3ab2e6d1302b"
+    },
+    {
+      "zh": "加速卡",
+      "en": "Accelerators",
+      "value": "4 × RTX PRO 5000 · 72 GB"
+    },
+    {
+      "zh": "并行方式",
+      "en": "Parallelism",
+      "value": "Single node · TP4 + EP4"
+    },
+    {
+      "zh": "推理框架",
+      "en": "Serving stack",
+      "value": "vLLM 0.31.1rc1.dev253"
+    },
+    {
+      "zh": "压测工具",
+      "en": "Load generator",
+      "value": "AIPerf 0.13.0"
+    },
+    {
+      "zh": "测试日期",
+      "en": "Measurement date",
+      "value": "14 Oct 2026"
+    },
+    {
+      "zh": "数据处理",
+      "en": "Data handling",
+      "value": {
+        "zh": "仅发布汇总指标；机器地址、主机名、凭据和原始轨迹均未收录",
+        "en": "Aggregated metrics only; host addresses, hostnames, credentials and raw traces excluded"
+      }
+    }
+  ],
+  "methodNotes": [
+    {
+      "zh": "FP8 与 NVFP4 使用不同权重仓库，且 MoE 后端配置不同（FP8 使用运行时默认后端，NVFP4 使用 Marlin）。本页面仅呈现当前权重测试臂，结果只适用于上述硬件、软件版本和负载。",
+      "en": "FP8 and NVFP4 use different checkpoint repositories and MoE backend configurations (runtime default for FP8, Marlin for NVFP4). This page presents only the selected checkpoint arm; results apply to the listed hardware, software and workloads."
+    },
+    {
+      "zh": "固定长度点使用 cache-busting system prefix；Agent 回放保留自然共享前缀。没有开展质量评测，因此吞吐结果不代表质量等价。",
+      "en": "Fixed-length runs use cache-busting system prefixes; Agent replay retains natural shared prefixes. No quality evaluation was run, so throughput results do not establish quality parity."
+    }
+  ]
+}

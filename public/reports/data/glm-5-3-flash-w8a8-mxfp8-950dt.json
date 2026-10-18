@@ -1,0 +1,553 @@
+{
+  "title": "GLM-5.3-Flash W8A8-MXFP8 · Ascend 950DT",
+  "breadcrumb": "GLM-5.3-Flash",
+  "kicker": "SERVING BENCHMARK · W8A8-MXFP8",
+  "lede": {
+    "zh": "本报告覆盖 GLM-5.3-Flash W8A8-MXFP8 在 8×Ascend 950DT 上的 Agent 轨迹回放、热前缀长上下文检索与固定输出并发阶梯。",
+    "en": "This report covers Agent trace replay, hot-prefix long-context retrieval, and fixed-output concurrency for GLM-5.3-Flash W8A8-MXFP8 on eight Ascend 950DT accelerators."
+  },
+  "chips": [
+    "8 × Ascend 950DT · 64 GB",
+    "W8A8-MXFP8",
+    "vLLM-Ascend 0.30.0rc2",
+    "TP8 + EP · MTP3",
+    "Measured 2026-10-14"
+  ],
+  "snapshot": {
+    "zh": "Agent 437 轮 · 热前缀检索至 1M · 解码阶梯至 256K C8",
+    "en": "437 Agent turns · hot-prefix retrieval to 1M · decode sweep to 256K C8"
+  },
+  "sections": [
+    {
+      "id": "agent",
+      "zh": "Agent 回放",
+      "en": "Agent replay"
+    },
+    {
+      "id": "long-context",
+      "zh": "长上下文",
+      "en": "Long context"
+    },
+    {
+      "id": "concurrency",
+      "zh": "并发阶梯",
+      "en": "Concurrency"
+    },
+    {
+      "id": "method",
+      "zh": "测试方法",
+      "en": "Method"
+    }
+  ],
+  "stats": [
+    {
+      "zhLabel": "Agent C8 完成",
+      "enLabel": "Agent C8 completed",
+      "value": "437 / 437",
+      "zhNote": "16 个会话 · 聚合输出 173.85 tok/s",
+      "enNote": "16 sessions · 173.85 aggregate output tok/s"
+    },
+    {
+      "zhLabel": "1M 热前缀检索",
+      "enLabel": "1M hot-prefix retrieval",
+      "value": "8 / 8",
+      "zhNote": "C1 与 C2 探针均通过",
+      "enNote": "C1 and C2 retrieval checks passed"
+    },
+    {
+      "zhLabel": "最高解码压力档",
+      "enLabel": "Highest decode-stress point",
+      "value": "256K · C8",
+      "zhNote": "TTFT P95 4.97 s · TPOT P95 32.23 ms",
+      "enNote": "TTFT P95 4.97 s · TPOT P95 32.23 ms"
+    }
+  ],
+  "overview": {
+    "heading": {
+      "zh": "把负载、缓存和测试边界放在指标旁",
+      "en": "Read metrics alongside workload, cache, and test limits"
+    },
+    "intro": {
+      "zh": "所有结果只对应本页所列 GLM-5.3-Flash W8A8-MXFP8 权重与 950DT 服务配置。Agent 回放、热前缀检索、固定输出解码阶梯分开呈现。",
+      "en": "All measurements apply only to the GLM-5.3-Flash W8A8-MXFP8 checkpoint and 950DT setup listed here. Agent replay, hot-prefix retrieval, and fixed-output decode sweeps are shown separately."
+    },
+    "note": {
+      "zh": "长上下文每档 8 个性能请求；P95 主要供本轮同口径对照。缓存命中率超过 99.8%，因此这些延迟代表高前缀复用场景，不代表冷启动预填充。",
+      "en": "Each long-context point has eight performance requests; P95 is mainly for same-run comparison. Prefix hit rate exceeds 99.8%, so these latencies represent high prefix reuse, not cold prefill."
+    }
+  },
+  "blocks": [
+    {
+      "id": "agent",
+      "label": {
+        "zh": "Agent 回放",
+        "en": "AGENT REPLAY"
+      },
+      "heading": {
+        "zh": "多轮轨迹的完成率保持完整，并发提高输出吞吐",
+        "en": "Replay completion stays complete as concurrency increases aggregate output"
+      },
+      "intro": {
+        "zh": "冻结的公开 coding 轨迹子集：16 个会话、437 轮；后续请求包含服务当轮生成的回答，工具结果按轨迹回放，不调用真实外部工具。C1 与 C8 使用独立 132K 服务配置臂。",
+        "en": "Frozen public coding-trace subset: 16 sessions and 437 turns. Later prompts include the service-generated replies; tool results are replayed from the trace without invoking live tools. C1 and C8 use a separate 132K serving configuration."
+      },
+      "notes": [
+        {
+          "zh": "两档均 437/437 请求完成，无取消。输出吞吐是整段回放窗口聚合值；它不代表 Agent 任务成功率或单请求 decode speed。",
+          "en": "All 437/437 requests completed in both runs with no cancellations. Output throughput is aggregated across the replay window; it is not Agent task success or per-request decode speed."
+        }
+      ],
+      "chart": {
+        "title": {
+          "zh": "Agent 回放：并发与输出吞吐",
+          "en": "Agent replay: concurrency and output throughput"
+        },
+        "hint": {
+          "zh": "悬停查看实测点。",
+          "en": "Hover a point to inspect the measurement."
+        },
+        "labels": {
+          "zh": [
+            "C1",
+            "C8"
+          ],
+          "en": [
+            "C1",
+            "C8"
+          ]
+        },
+        "series": [
+          {
+            "zh": "聚合输出吞吐",
+            "en": "Aggregate output throughput",
+            "color": "orange",
+            "values": [
+              72.73,
+              173.85
+            ]
+          }
+        ],
+        "yTitle": {
+          "zh": "聚合输出 tok/s",
+          "en": "Aggregate output tok/s"
+        }
+      },
+      "table": {
+        "headers": {
+          "zh": [
+            "并发",
+            "请求 / 会话",
+            "平均输入 tokens",
+            "输入 P50 / P95 / 最大",
+            "TTFT P50 / P95 (ms)",
+            "TPOT-like P50 (ms)",
+            "聚合输出 tok/s",
+            "前缀 token 命中率"
+          ],
+          "en": [
+            "Concurrency",
+            "Requests / sessions",
+            "Mean input tokens",
+            "Input P50 / P95 / max",
+            "TTFT P50 / P95 (ms)",
+            "TPOT-like P50 (ms)",
+            "Aggregate output tok/s",
+            "Prefix-token hit rate"
+          ]
+        },
+        "rows": [
+          [
+            "C1",
+            "437/437 · 16/16",
+            "26,937",
+            "28,664 / 48,495 / 52,950",
+            "608 / 1,631",
+            "8.27",
+            "72.73",
+            "93.12%"
+          ],
+          [
+            "C8",
+            "437/437 · 16/16",
+            "26,925",
+            "29,504 / 47,574 / 55,052",
+            "940 / 2,604",
+            "27.11",
+            "173.85",
+            "93.08%"
+          ]
+        ]
+      },
+      "side": {
+        "title": {
+          "zh": "回放口径",
+          "en": "Replay scope"
+        },
+        "body": {
+          "zh": "轨迹内容包含历史工具输出，但测试过程中没有执行外部工具调用。性能结果不能解读成工具调用准确率或端到端任务成功率。",
+          "en": "Trace entries include recorded tool outputs, but no external tools are called during the test. Performance must not be interpreted as tool-call accuracy or end-to-end task success."
+        }
+      }
+    },
+    {
+      "id": "long-context",
+      "label": {
+        "zh": "长上下文检索",
+        "en": "LONG-CONTEXT RETRIEVAL"
+      },
+      "heading": {
+        "zh": "热前缀检索覆盖 256K 至 1M 输入，检索问题均命中答案键",
+        "en": "Hot-prefix retrieval spans 256K to 1M input, with all retrieval probes matching their answer keys"
+      },
+      "intro": {
+        "zh": "语料来自 116 段不重复公开 RAG 文本，约 5.07M tokens；每档植入 8 个合成两跳问题。首个请求用于前缀填充，性能阶段复用前缀并更换问题后缀。",
+        "en": "Corpus contains 116 distinct public RAG passages, about 5.07M tokens, with eight synthetic two-hop questions per length. The initial request fills the prefix; performance requests reuse it with a changed question suffix."
+      },
+      "notes": [
+        {
+          "zh": "1M C1 与 C2 的检索探针均为 8/8；这是实验室构造的检索校验，不是官方 RULER 或 LongBench 分数。C2 的 3.39 秒填充值来自前缀已驻留后的 warm 请求，不是冷启动时间。",
+          "en": "Retrieval probes pass 8/8 at 1M for C1 and C2. This is a lab retrieval check, not an official RULER or LongBench score. The 3.39-second C2 fill is a warm request with the prefix already resident, not a cold-prefill time."
+        },
+        {
+          "zh": "每个性能点只有 8 个请求，P95 主要用于当前同口径运行观察。1M 长度属于实验性验证，超出该硬件/软件组合文档列出的 200K 支持长度，不构成官方保证。",
+          "en": "Each performance point has eight requests; P95 is mainly an observation for this consistent run. 1M is experimental validation beyond the 200K length listed in the hardware/software support documentation and is not an official guarantee."
+        }
+      ],
+      "chart": {
+        "title": {
+          "zh": "热前缀长度与 P95 响应延迟",
+          "en": "Hot-prefix length and P95 response latency"
+        },
+        "hint": {
+          "zh": "悬停查看实测点。",
+          "en": "Hover a point to inspect the measurement."
+        },
+        "labels": {
+          "zh": [
+            "256K C1",
+            "512K C1",
+            "1M C1",
+            "1M C2"
+          ],
+          "en": [
+            "256K C1",
+            "512K C1",
+            "1M C1",
+            "1M C2"
+          ]
+        },
+        "series": [
+          {
+            "zh": "响应延迟 P95 (秒)",
+            "en": "Response latency P95 (s)",
+            "color": "orange",
+            "values": [
+              0.835,
+              1.433,
+              6.988,
+              11.912
+            ]
+          }
+        ],
+        "yTitle": {
+          "zh": "响应延迟 P95 (秒)",
+          "en": "Response latency P95 (s)"
+        }
+      },
+      "table": {
+        "headers": {
+          "zh": [
+            "上下文档位",
+            "服务端输入 tokens",
+            "首轮前缀填充",
+            "请求完成",
+            "缓存 token 命中率",
+            "TTFT P50 / P95",
+            "可见答案首 token P50 / P95",
+            "响应延迟 P50 / P95",
+            "检索准确率"
+          ],
+          "en": [
+            "Context profile",
+            "Server input tokens",
+            "Initial prefix fill",
+            "Requests completed",
+            "Cached-token hit rate",
+            "TTFT P50 / P95",
+            "Visible-answer first token P50 / P95",
+            "Response latency P50 / P95",
+            "Retrieval check"
+          ]
+        },
+        "rows": [
+          [
+            "256K C1",
+            "260,966",
+            "27.90 s",
+            "8/8",
+            "99.814%",
+            "777 / 798 ms",
+            "777 / 798 ms",
+            "782 / 835 ms",
+            "8/8"
+          ],
+          [
+            "512K C1",
+            "523,113",
+            "71.75 s",
+            "8/8",
+            "99.955%",
+            "1,396 / 1,433 ms",
+            "1,396 / 1,433 ms",
+            "1,396 / 1,433 ms",
+            "8/8"
+          ],
+          [
+            "1M C1 · cap512",
+            "998,826",
+            "197.76 s",
+            "8/8",
+            "99.957%",
+            "2,764 / 2,797 ms",
+            "6,456 / 6,855 ms",
+            "6,579 / 6,988 ms",
+            "8/8"
+          ],
+          [
+            "1M C2 · cap512",
+            "998,826",
+            "3.39 s · warm",
+            "8/8",
+            "99.957%",
+            "2,926 / 4,673 ms",
+            "7,372 / 11,767 ms",
+            "7,513 / 11,912 ms",
+            "8/8"
+          ]
+        ]
+      }
+    },
+    {
+      "id": "concurrency",
+      "label": {
+        "zh": "解码并发阶梯",
+        "en": "DECODE CONCURRENCY"
+      },
+      "heading": {
+        "zh": "固定 128-token 输出下，高并发先推高首 token 和解码延迟",
+        "en": "With fixed 128-token output, higher concurrency raises both first-token and decode latency"
+      },
+      "intro": {
+        "zh": "同一热前缀检索提示固定输出 128 tokens，并忽略 EOS，以测量解码压力；每档 8 个请求。升档门槛为 TTFT P95 或 TPOT P95 相对前档增加超过 50%。",
+        "en": "The same hot-prefix retrieval prompt generates exactly 128 output tokens with EOS ignored to measure decode pressure; eight requests per point. The step-up gate pauses when TTFT P95 or TPOT P95 rises more than 50% from the prior point."
+      },
+      "notes": [
+        {
+          "zh": "256K C4 相对 C2 的 TTFT P95 / TPOT P95 分别增加 218% / 177%，超过暂停线；C8 是用户指定的边界补测。512K C4 也已触发暂停，因此没有继续升档。",
+          "en": "At 256K C4, TTFT P95 / TPOT P95 rise 218% / 177% from C2, exceeding the pause threshold; C8 is an explicitly requested boundary probe. 512K C4 also reaches the pause condition, so no higher step was run."
+        }
+      ],
+      "chart": {
+        "title": {
+          "zh": "256K 热前缀：并发与 TTFT P95",
+          "en": "256K hot prefix: concurrency and TTFT P95"
+        },
+        "hint": {
+          "zh": "悬停查看实测点。",
+          "en": "Hover a point to inspect the measurement."
+        },
+        "labels": {
+          "zh": [
+            "256K C1",
+            "256K C2",
+            "256K C4",
+            "256K C8"
+          ],
+          "en": [
+            "256K C1",
+            "256K C2",
+            "256K C4",
+            "256K C8"
+          ]
+        },
+        "series": [
+          {
+            "zh": "TTFT P95 (ms)",
+            "en": "TTFT P95 (ms)",
+            "color": "orange",
+            "values": [
+              802,
+              1196,
+              3806,
+              4973
+            ]
+          }
+        ],
+        "yTitle": {
+          "zh": "TTFT P95 (毫秒)",
+          "en": "TTFT P95 (ms)"
+        }
+      },
+      "table": {
+        "headers": {
+          "zh": [
+            "上下文",
+            "并发",
+            "完成",
+            "TTFT P95",
+            "较前档",
+            "TPOT P95",
+            "较前档",
+            "前缀命中",
+            "抢占",
+            "测试判定"
+          ],
+          "en": [
+            "Context",
+            "Concurrency",
+            "Completed",
+            "TTFT P95",
+            "Change",
+            "TPOT P95",
+            "Change",
+            "Prefix hit",
+            "Preemptions",
+            "Decision"
+          ]
+        },
+        "rows": [
+          [
+            "256K",
+            "C1",
+            "8/8",
+            "802 ms",
+            "基线",
+            "8.93 ms",
+            "基线",
+            "99.81%",
+            "0",
+            "基线"
+          ],
+          [
+            "256K",
+            "C2",
+            "8/8",
+            "1,196 ms",
+            "+49.0%",
+            "9.94 ms",
+            "+11.4%",
+            "99.81%",
+            "0",
+            "继续至 C4"
+          ],
+          [
+            "256K",
+            "C4",
+            "8/8",
+            "3,806 ms",
+            "+218%",
+            "27.54 ms",
+            "+177%",
+            "99.81%",
+            "0",
+            "超过暂停线"
+          ],
+          [
+            "256K",
+            "C8",
+            "8/8",
+            "4,973 ms",
+            "+30.7%",
+            "32.23 ms",
+            "+17.0%",
+            "99.81%",
+            "0",
+            "边界补测后停止"
+          ],
+          [
+            "512K",
+            "C1",
+            "8/8",
+            "1,437 ms",
+            "基线",
+            "10.04 ms",
+            "基线",
+            "99.96%",
+            "0",
+            "基线"
+          ],
+          [
+            "512K",
+            "C2",
+            "8/8",
+            "2,223 ms",
+            "+54.7%",
+            "11.86 ms",
+            "+18.1%",
+            "99.96%",
+            "0",
+            "超过暂停线"
+          ],
+          [
+            "512K",
+            "C4",
+            "8/8",
+            "4,047 ms",
+            "+82.0%",
+            "15.08 ms",
+            "+27.2%",
+            "99.96%",
+            "0",
+            "边界补测后停止"
+          ]
+        ]
+      }
+    }
+  ],
+  "methodIntro": {
+    "zh": "8×Ascend 950DT，TP8 + EP，MTP3；AIPerf 0.13.0。长上下文服务最大序列设置为 1,048,576 tokens。",
+    "en": "Eight Ascend 950DT accelerators, TP8 + EP, MTP3; AIPerf 0.13.0. Maximum sequence length was set to 1,048,576 tokens for long-context serving."
+  },
+  "meta": [
+    {
+      "zh": "权重格式",
+      "en": "Checkpoint format",
+      "value": "W8A8-MXFP8"
+    },
+    {
+      "zh": "服务框架",
+      "en": "Serving engine",
+      "value": "vLLM-Ascend 0.30.0rc2"
+    },
+    {
+      "zh": "硬件",
+      "en": "Hardware",
+      "value": "8 × Ascend 950DT · 64 GB"
+    },
+    {
+      "zh": "并行 / 解码",
+      "en": "Parallelism / decoding",
+      "value": "TP8 + EP · MTP3"
+    },
+    {
+      "zh": "负载工具",
+      "en": "Load generator",
+      "value": "AIPerf 0.13.0"
+    },
+    {
+      "zh": "上下文设置",
+      "en": "Context setting",
+      "value": "1,048,576 tokens"
+    }
+  ],
+  "methodNotes": [
+    {
+      "zh": "自然答案平均约 11–13 tokens，不能稳定估计 TPOT；并发阶梯另用固定 128-token 输出，仅用于解码压力观察。",
+      "en": "Natural answers average about 11–13 tokens and do not support stable TPOT estimates; the concurrency sweep uses fixed 128-token output for decode-stress observation only."
+    },
+    {
+      "zh": "检索语料与问题为独立实验设计，检索命中率不等于官方基准成绩。没有公开机器地址、主机名、权重路径、日志路径或凭据。",
+      "en": "Corpus and retrieval questions were designed for this experiment; retrieval checks are not official benchmark scores. Machine addresses, hostnames, checkpoint paths, log paths, and credentials are omitted."
+    }
+  ]
+}

@@ -1,0 +1,608 @@
+{
+  "title": "MiniMax-M2.7 W8A8 QuaRot · Ascend 910B4",
+  "breadcrumb": "MiniMax-M2.7",
+  "kicker": "SERVING BENCHMARK · W8A8 QUAROT",
+  "lede": {
+    "zh": "本报告记录 MiniMax-M2.7 W8A8 QuaRot 在昇腾 910B4 上的闭环场景、Agent 轨迹、开环容量 SLO 与批次预算敏感性。",
+    "en": "This report covers closed-loop workloads, Agent replay, open-loop capacity SLO, and batch-budget sensitivity for MiniMax-M2.7 W8A8 QuaRot on Ascend 910B4."
+  },
+  "chips": [
+    "8 × Ascend 910B4 · 64 GB",
+    "W8A8 QuaRot",
+    "vLLM-Ascend 0.23.0rc1",
+    "TP8 + EP · EAGLE3 k=3",
+    "Measured 2026-08"
+  ],
+  "snapshot": {
+    "zh": "6 个闭环场景 · 9 档开放环速率 · 预登记 safe_rps 2.25",
+    "en": "6 closed-loop profiles · 9 open-loop rates · preregistered safe_rps 2.25"
+  },
+  "sections": [
+    {
+      "id": "serving",
+      "zh": "闭环场景",
+      "en": "Closed-loop"
+    },
+    {
+      "id": "open-loop",
+      "zh": "开环容量",
+      "en": "Open-loop capacity"
+    },
+    {
+      "id": "configuration",
+      "zh": "批次预算",
+      "en": "Batch budget"
+    },
+    {
+      "id": "agent",
+      "zh": "Agent 与投机",
+      "en": "Agent & speculation"
+    },
+    {
+      "id": "method",
+      "zh": "测试方法",
+      "en": "Method"
+    }
+  ],
+  "stats": [
+    {
+      "zhLabel": "预登记 safe_rps",
+      "enLabel": "Preregistered safe_rps",
+      "value": "2.25",
+      "zhNote": "req/s · 512 输入 / 256 输出",
+      "enNote": "req/s · 512 input / 256 output"
+    },
+    {
+      "zhLabel": "Agent 回放",
+      "enLabel": "Agent replay",
+      "value": "235 / 235",
+      "zhNote": "16 会话 · 前缀命中 91.51%",
+      "enNote": "16 sessions · 91.51% prefix hit"
+    },
+    {
+      "zhLabel": "投机接受长度",
+      "enLabel": "Speculative acceptance length",
+      "value": "2.39–2.64",
+      "zhNote": "EAGLE3 k=3 · 可审计窗口",
+      "enNote": "EAGLE3 k=3 · auditable windows"
+    }
+  ],
+  "overview": {
+    "heading": {
+      "zh": "明确区分闭环峰值与开环容量",
+      "en": "Separate closed-loop peaks from open-loop capacity"
+    },
+    "intro": {
+      "zh": "所有数据对应 MiniMax-M2.7 W8A8 QuaRot 与列出的 910B4 服务配置。闭环场景、开环到达率和 Agent 轨迹反映不同负载，不能合成一个吞吐分数。",
+      "en": "All results apply to MiniMax-M2.7 W8A8 QuaRot with the listed 910B4 setup. Closed-loop profiles, open-loop arrival rates, and Agent traces are different workloads and should not be combined into one throughput score."
+    },
+    "note": {
+      "zh": "安全速率采用开跑前冻结的 TTFT P95 ≤ 2,000 ms 判据；TTFT 尾延迟复测波动较高，因此结论保留明确的复测规则与误差边界。",
+      "en": "Safe rate follows the preregistered TTFT P95 ≤ 2,000 ms criterion; TTFT tail latency varied across reruns, so the conclusion retains its repeat rule and uncertainty boundary."
+    }
+  },
+  "blocks": [
+    {
+      "id": "serving",
+      "label": {
+        "zh": "闭环场景矩阵",
+        "en": "CLOSED-LOOP MATRIX"
+      },
+      "heading": {
+        "zh": "短请求、长上下文与 Agent 轨迹体现不同服务画像",
+        "en": "Short requests, long context, and Agent replay produce distinct serving profiles"
+      },
+      "intro": {
+        "zh": "vLLM-Ascend 0.23.0rc1，TP8 + EP，EAGLE3 k=3；闭环测试覆盖延迟、高生成量、长上下文、ShareGPT、吞吐与 Agent。",
+        "en": "vLLM-Ascend 0.23.0rc1, TP8 + EP, EAGLE3 k=3; closed-loop profiles include latency, high generation, long context, ShareGPT, throughput, and Agent."
+      },
+      "notes": [
+        {
+          "zh": "Agent 为 16 个会话、235 个请求，前缀命中率 91.51%；轨迹回放没有执行真实工具，不能解读为 Agent 任务成功率。",
+          "en": "Agent uses 16 sessions and 235 requests with 91.51% prefix-hit rate; trace replay does not call live tools and is not Agent task success."
+        },
+        {
+          "zh": "图中场景请求形状不同，只用于定位本次各负载观测值，不作为单一并发等级横向排名。",
+          "en": "The profiles use different request shapes; the chart locates observations from this campaign and is not a ranking at one common concurrency."
+        }
+      ],
+      "chart": {
+        "title": {
+          "zh": "闭环场景：输出与输入吞吐",
+          "en": "Closed-loop profiles: output and input throughput"
+        },
+        "hint": {
+          "zh": "悬停查看实测值。",
+          "en": "Hover to inspect measured values."
+        },
+        "labels": {
+          "zh": [
+            "延迟",
+            "高生成量",
+            "长上下文",
+            "ShareGPT",
+            "吞吐",
+            "Agent"
+          ],
+          "en": [
+            "延迟",
+            "高生成量",
+            "长上下文",
+            "ShareGPT",
+            "吞吐",
+            "Agent"
+          ]
+        },
+        "series": [
+          {
+            "zh": "输出 tok/s",
+            "en": "Output tok/s",
+            "color": "orange",
+            "values": [
+              72.9,
+              1217.3,
+              56.0,
+              494.0,
+              825.3,
+              220.0
+            ]
+          }
+        ],
+        "yTitle": {
+          "zh": "吞吐 (tok/s)",
+          "en": "Throughput (tok/s)"
+        }
+      },
+      "table": {
+        "headers": {
+          "zh": [
+            "场景",
+            "请求数",
+            "并发",
+            "TTFT 均值 / P95",
+            "TPOT 中位",
+            "输出 tok/s",
+            "输入 tok/s",
+            "前缀命中"
+          ],
+          "en": [
+            "Profile",
+            "Requests",
+            "Concurrency",
+            "TTFT mean / P95",
+            "TPOT median",
+            "Output tok/s",
+            "Input tok/s",
+            "Prefix hit"
+          ]
+        },
+        "rows": [
+          [
+            "延迟",
+            "100",
+            "C1",
+            "356 / 377 ms",
+            "10.92 ms",
+            "72.9",
+            "609.4",
+            "0%"
+          ],
+          [
+            "高生成量",
+            "200",
+            "C32",
+            "724 / 2,099 ms",
+            "25.07 ms",
+            "1,217.3",
+            "632.1",
+            "0.66%"
+          ],
+          [
+            "长上下文",
+            "100",
+            "C16",
+            "7,550 / 23,279 ms",
+            "241.62 ms",
+            "56.0",
+            "14,458.6",
+            "0%"
+          ],
+          [
+            "ShareGPT",
+            "1,000",
+            "open loop",
+            "184,429 / 357,427 ms",
+            "60.06 ms",
+            "494.0",
+            "849.3",
+            "0.81%"
+          ],
+          [
+            "吞吐",
+            "1,000",
+            "open loop",
+            "300,926 / 579,147 ms",
+            "38.44 ms",
+            "825.3",
+            "1,708.6",
+            "0.98%"
+          ],
+          [
+            "Agent trace",
+            "235 · 16 sessions",
+            "C8",
+            "552 / 855 ms",
+            "23.70 ms",
+            "220.0",
+            "10,503.7",
+            "91.51%"
+          ]
+        ]
+      }
+    },
+    {
+      "id": "open-loop",
+      "label": {
+        "zh": "开环容量与 SLO",
+        "en": "OPEN-LOOP CAPACITY"
+      },
+      "heading": {
+        "zh": "512/256 负载的可复测速率边界为每副本 2.25 req/s",
+        "en": "The repeatable rate boundary for 512/256 traffic is 2.25 req/s per replica"
+      },
+      "intro": {
+        "zh": "泊松到达，512 输入 / 256 输出，每档约 300 秒。TTFT P95 ≤ 2,000 ms 为预登记主 SLO；2.4 与 2.6 req/s 边界各做两次复测。",
+        "en": "Poisson arrivals, 512 input / 256 output, about 300 seconds per point. The preregistered primary SLO is TTFT P95 ≤ 2,000 ms; boundary rates 2.4 and 2.6 req/s were each repeated twice."
+      },
+      "notes": [
+        {
+          "zh": "2.25 req/s 实测档两次 TTFT P95 均达标；2.42 req/s 实测档两次均超阈。预登记结论 safe_rps=2.25，但 TTFT P95 复测波动较大，阈值是本环境的容量判据，不是普适 SLA。",
+          "en": "Both runs at 2.25 achieved the TTFT P95 threshold; both at 2.42 exceeded it. The preregistered safe_rps conclusion is 2.25, but TTFT P95 has notable run-to-run variation; this is an environment-specific capacity criterion, not a universal SLA."
+        }
+      ],
+      "chart": {
+        "title": {
+          "zh": "开放环：到达率与输出吞吐",
+          "en": "Open loop: arrival rate and output throughput"
+        },
+        "hint": {
+          "zh": "悬停查看实测值。",
+          "en": "Hover to inspect measured values."
+        },
+        "labels": {
+          "zh": [
+            "0.5",
+            "0.9",
+            "1.3",
+            "1.7",
+            "2.0",
+            "2.2",
+            "2.4",
+            "2.6",
+            "3.0"
+          ],
+          "en": [
+            "0.5",
+            "0.9",
+            "1.3",
+            "1.7",
+            "2.0",
+            "2.2",
+            "2.4",
+            "2.6",
+            "3.0"
+          ]
+        },
+        "series": [
+          {
+            "zh": "输出 tok/s",
+            "en": "Output tok/s",
+            "color": "orange",
+            "values": [
+              107.4,
+              209.6,
+              299.3,
+              404.5,
+              487.8,
+              533.1,
+              575.5,
+              619.2,
+              707.5
+            ]
+          }
+        ],
+        "yTitle": {
+          "zh": "输出 tok/s",
+          "en": "Output tok/s"
+        }
+      },
+      "table": {
+        "headers": {
+          "zh": [
+            "目标 req/s",
+            "实测 req/s",
+            "请求数",
+            "TTFT P95 (ms)",
+            "TPOT P95 (ms)",
+            "输出 tok/s",
+            "SLO 判定"
+          ],
+          "en": [
+            "Target req/s",
+            "Measured req/s",
+            "Requests",
+            "TTFT P95 (ms)",
+            "TPOT P95 (ms)",
+            "Output tok/s",
+            "SLO result"
+          ]
+        },
+        "rows": [
+          [
+            "0.5",
+            "0.42",
+            "150",
+            "411",
+            "17.89",
+            "107.4",
+            "通过"
+          ],
+          [
+            "0.9",
+            "0.82",
+            "270",
+            "590",
+            "26.74",
+            "209.6",
+            "通过"
+          ],
+          [
+            "1.3",
+            "1.17",
+            "390",
+            "740",
+            "36.62",
+            "299.3",
+            "通过"
+          ],
+          [
+            "1.7",
+            "1.58",
+            "510",
+            "766",
+            "51.46",
+            "404.5",
+            "通过"
+          ],
+          [
+            "2.0",
+            "1.91",
+            "600",
+            "958",
+            "51.26",
+            "487.8",
+            "通过"
+          ],
+          [
+            "2.2",
+            "2.08",
+            "660",
+            "972",
+            "50.96",
+            "533.1",
+            "通过"
+          ],
+          [
+            "2.4",
+            "2.25",
+            "720",
+            "1,624",
+            "50.86",
+            "575.5",
+            "复测均通过"
+          ],
+          [
+            "2.6",
+            "2.42",
+            "780",
+            "2,299",
+            "49.18",
+            "619.2",
+            "复测均未通过"
+          ],
+          [
+            "3.0",
+            "2.76",
+            "900",
+            "8,177",
+            "53.83",
+            "707.5",
+            "不通过"
+          ]
+        ]
+      },
+      "side": {
+        "title": {
+          "zh": "噪声与解释",
+          "en": "Noise and interpretation"
+        },
+        "body": {
+          "zh": "复测的 TTFT P95 相对极差为 8.6%–22.9%，明显高于吞吐速率本身的波动。因此边界结论按两次复测是否一致制定，不能将单次 2.4 点读成稳定容量保证。",
+          "en": "TTFT P95 relative range across repeats is 8.6%–22.9%, much higher than rate variation. The boundary conclusion uses agreement across both repeated runs; a single 2.4 point is not a stable capacity guarantee."
+        }
+      }
+    },
+    {
+      "id": "configuration",
+      "label": {
+        "zh": "批次预算敏感性",
+        "en": "BATCH-BUDGET SENSITIVITY"
+      },
+      "heading": {
+        "zh": "调整批次预算会重排 ITL 延迟分布，未显著提高总吞吐",
+        "en": "Changing batch-token budget reshapes ITL distribution without materially raising aggregate throughput"
+      },
+      "intro": {
+        "zh": "同一权重与服务硬件，固定 32K 输入 / 128 输出、并发 16；对照 max-num-batched-tokens 8K / 16K / 32K。",
+        "en": "Same checkpoint and serving hardware, fixed 32K input / 128 output at concurrency 16; max-num-batched-tokens compared at 8K / 16K / 32K."
+      },
+      "notes": [
+        {
+          "zh": "该实验支持“延迟方差与中位数之间的分配旋钮”这一观察，不支持其作为提速选项；总吞吐与 ITL 均值在约 ±3.6% 内。",
+          "en": "The experiment supports viewing this as a trade-off between latency variance and median, not as a speed-up option; aggregate throughput and mean ITL stayed within about ±3.6%."
+        }
+      ],
+      "table": {
+        "headers": {
+          "zh": [
+            "max-num-batched-tokens",
+            "总吞吐差异",
+            "ITL 分布",
+            "观察"
+          ],
+          "en": [
+            "max-num-batched-tokens",
+            "Throughput delta",
+            "ITL distribution",
+            "Observation"
+          ]
+        },
+        "rows": [
+          [
+            "8,192",
+            "基准 / baseline",
+            "双峰，尾比约 30.7×",
+            "较长 ITL 尾部"
+          ],
+          [
+            "16,384",
+            "约 ±3.6%",
+            "中间状态",
+            "总量近似守恒"
+          ],
+          [
+            "32,768",
+            "约 ±3.6%",
+            "单峰，尾比约 1.3×",
+            "尾部分布收敛"
+          ]
+        ]
+      }
+    },
+    {
+      "id": "agent",
+      "label": {
+        "zh": "Agent 与投机解码",
+        "en": "AGENT & SPECULATIVE DECODING"
+      },
+      "heading": {
+        "zh": "轨迹前缀复用较高，EAGLE3 接受长度约 2.4–2.6",
+        "en": "Trace replay shows high prefix reuse and EAGLE3 acceptance length around 2.4–2.6"
+      },
+      "intro": {
+        "zh": "Agent C8 使用 16 会话 235 请求；EAGLE3 k=3。投机计数器按可审计窗口汇总。",
+        "en": "Agent C8 uses 16 sessions and 235 requests; EAGLE3 k=3. Speculation counters are reported only for auditable windows."
+      },
+      "notes": [
+        {
+          "zh": "仅公布可自洽的计数器窗口；启动到延迟档窗口混有已作废试跑，不作为正式接受率结果。",
+          "en": "Only internally consistent counter windows are reported; the startup-to-latency window contains retracted trials and is not presented as a formal acceptance result."
+        }
+      ],
+      "table": {
+        "headers": {
+          "zh": [
+            "窗口",
+            "草稿 token",
+            "接受 token",
+            "接受率",
+            "平均接受长度"
+          ],
+          "en": [
+            "Window",
+            "Draft tokens",
+            "Accepted tokens",
+            "Acceptance rate",
+            "Mean accepted length"
+          ]
+        },
+        "rows": [
+          [
+            "高生成量 + 长上下文（合并窗口）",
+            "498,159",
+            "256,359",
+            "51.5%",
+            "2.544"
+          ],
+          [
+            "ShareGPT",
+            "242,478",
+            "112,026",
+            "46.2%",
+            "2.386"
+          ],
+          [
+            "吞吐",
+            "621,498",
+            "304,936",
+            "49.1%",
+            "2.472"
+          ],
+          [
+            "Agent",
+            "58,725",
+            "32,167",
+            "54.8%",
+            "2.643"
+          ]
+        ]
+      }
+    }
+  ],
+  "methodIntro": {
+    "zh": "单机 8×Ascend 910B4，TP8 + EP；闭环测试与容量测试来自同一权重的两轮完成实验。",
+    "en": "One system with eight Ascend 910B4 accelerators, TP8 + EP; closed-loop and capacity tests come from two completed campaigns for the same checkpoint."
+  },
+  "meta": [
+    {
+      "zh": "模型权重",
+      "en": "Checkpoint",
+      "value": "Eco-Tech MiniMax-M2.7 W8A8 QuaRot"
+    },
+    {
+      "zh": "硬件",
+      "en": "Hardware",
+      "value": "8 × Ascend 910B4 · 64 GB per accelerator"
+    },
+    {
+      "zh": "推理框架",
+      "en": "Serving engine",
+      "value": "vLLM-Ascend 0.23.0rc1"
+    },
+    {
+      "zh": "并行与解码",
+      "en": "Parallelism / decoding",
+      "value": "TP8 + EP · EAGLE3 k=3"
+    },
+    {
+      "zh": "容量负载",
+      "en": "Capacity workload",
+      "value": "512 input / 256 output · Poisson arrivals"
+    },
+    {
+      "zh": "容量判据",
+      "en": "Capacity criterion",
+      "value": "TTFT P95 ≤ 2,000 ms"
+    }
+  ],
+  "methodNotes": [
+    {
+      "zh": "大批量 ShareGPT / 吞吐档的 TTFT 受排队影响，是队列等待时间，不应与 C1 延迟档直接比较。长上下文档的重点是输入预填充吞吐。",
+      "en": "TTFT in large-batch ShareGPT/throughput profiles includes queueing and should not be compared directly with C1 latency. The long-context profile emphasizes input prefill throughput."
+    },
+    {
+      "zh": "重复测试发现 TTFT P95 波动明显；safe_rps 按两次边界复测一致性确定。原始主机地址、内部节点名、权重目录、日志和凭据已省略。",
+      "en": "Reruns showed notable TTFT P95 variation; safe_rps uses agreement across two boundary repeats. Source addresses, internal node names, checkpoint directories, logs, and credentials are omitted."
+    }
+  ]
+}
