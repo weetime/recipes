@@ -72,10 +72,19 @@
     .side[data-expanded="true"] .side-links a[aria-current="location"]::before{color:var(--orange)}
     @media(max-width:850px){.wrap{width:min(calc(100% - 48px),780px)}.layout{display:block;width:min(calc(100% - 48px),780px)}.side{top:auto;right:14px;bottom:18px;width:52px;height:52px;padding:0;border-radius:50%;box-shadow:0 8px 24px #0007}.nav-toggle{min-height:50px;padding:0;flex-direction:column;gap:1px}.nav-toggle-icon{font-size:17px}.nav-toggle-label{writing-mode:horizontal-tb;font:9px var(--sans);letter-spacing:0}.side[data-expanded="true"]{top:auto;right:14px;bottom:18px;width:min(248px,calc(100vw - 28px));height:auto;max-height:calc(100vh - 36px);padding:13px 15px;border-radius:2px}.side[data-expanded="true"] .nav-toggle{flex-direction:row;min-height:38px}.side[data-expanded="true"] .nav-toggle-label{font:11px var(--mono);letter-spacing:.08em}.side[data-expanded="true"] .nav-toggle-icon{font-size:16px}.side[data-expanded="true"] .side-links{max-height:calc(100vh - 130px);overflow:auto}}
     @media(prefers-reduced-motion:reduce){.side{transition:none}}
+
+    :root[data-theme="light"]{color-scheme:light;--bg:#f6f7f9;--paper:#fff;--line:#d6dbe3;--text:#171b22;--muted:#586273;--soft:#465160;--orange:#477fc9;--orange2:#477fc9;--blue:#6b8ebd;--blue2:#6b8ebd;--green:#39845b}
+    :root[data-theme="light"] body,:root[data-theme="light"] .hero{background:#f6f7f9;color:#171b22}
+    :root[data-theme="light"] .top{background:#fff}
+    :root[data-theme="light"] .side,:root[data-theme="light"] .specs,:root[data-theme="light"] .data-table,:root[data-theme="light"] .controls button,:root[data-theme="light"] .badge{background:#fff;color:#171b22}
+    :root[data-theme="light"] .model-mark{background:#edf2f8}
+    :root[data-theme="light"] .intro-note{background:#edf2f8;color:#3e4a59}
+    .theme-toggle{width:30px;height:30px;display:grid;place-items:center;padding:0;border:1px solid var(--line);background:transparent;color:var(--muted);cursor:pointer;font:17px/1 var(--sans)}
+    .theme-toggle:hover{color:var(--text)}
   </style>
 </head>
 <body>
-  <div class="top"><div class="wrap topin"><a class="brand" href="/"><i></i>MODEL INDEX</a><div class="navright"><a href="/" data-en="Recipes" data-zh="配方目录">配方目录</a><a href="/reports" data-en="Performance reports" data-zh="性能报告">性能报告</a><div class="lang" aria-label="Language"><button type="button" data-lang="zh" aria-pressed="true">中文</button><button type="button" data-lang="en" aria-pressed="false">EN</button></div></div></div></div>
+  <div class="top"><div class="wrap topin"><a class="brand" href="/"><i></i>MODEL INDEX</a><div class="navright"><a href="/" data-en="Recipes" data-zh="配方目录">配方目录</a><a href="/reports" data-en="Performance reports" data-zh="性能报告">性能报告</a><div class="lang" aria-label="Language"><button type="button" data-lang="zh" aria-pressed="true">中文</button><button type="button" data-lang="en" aria-pressed="false">EN</button></div><button type="button" class="theme-toggle" data-theme-toggle aria-label="切换主题" title="切换主题">☼</button></div></div></div>
   <header class="hero"><div class="wrap">
     <div class="crumb"><a href="/" data-en="Model catalog" data-zh="模型目录">模型目录</a>　/　<a href="/reports" data-en="Performance" data-zh="性能报告">性能报告</a>　/　GLM-5.3-Flash</div>
     <div class="titleline"><div><div class="eyebrow" data-en="MODEL PERFORMANCE REPORT" data-zh="模型性能报告">模型性能报告</div><h1>GLM-5.3-Flash</h1><p class="desc" data-en="NVFP4 serving benchmark across fixed-length capacity, agent trace replay, open-loop traffic and a two-hour soak." data-zh="NVFP4 推理性能实测，覆盖固定长度吞吐、多轮 Agent 轨迹回放、开放式请求与两小时稳定性测试。">NVFP4 推理性能实测，覆盖固定长度吞吐、多轮 Agent 轨迹回放、开放式请求与两小时稳定性测试。</p></div><div class="model-mark" aria-hidden="true">GLM</div></div>
@@ -150,10 +159,12 @@
       <footer class="foot"><span>MODEL INDEX　/　PERFORMANCE REPORT</span><span><a href="/reports" data-en="All reports" data-zh="所有报告">所有报告</a>　·　<a href="/zai-org/GLM-5.3-Flash">GLM-5.3-Flash ↗</a></span></footer>
     </div>
   </main>
-  <script src="/reports/vendor/chart.umd.min.js" crossorigin="anonymous"></script>
+  <script src="/reports/assets/theme.js?v=1"></script><script src="/reports/vendor/chart.umd.min.js" crossorigin="anonymous"></script>
   <script>
     (() => {
       const colors={orange:"#8cb8fa",blue:"#7198cf",grid:"#454c59",text:"#b8bfcb"};
+      function applyChartTheme(){const light=document.documentElement.dataset.theme==="light";colors.orange=light?"#477fc9":"#8cb8fa";colors.blue=light?"#6b8ebd":"#7198cf";colors.grid=light?"#d6dbe3":"#454c59";colors.text=light?"#586273":"#b8bfcb";if(window.Chart){drawFixed();drawOther()}}
+      window.addEventListener("report-theme-change",applyChartTheme);
       const charts={};
       let language="zh";
       const words={en:{eight:"8K input",thirty:"32K input",concurrency:"Concurrency",throughput:"Output throughput (tok/s)",agent:"Agent replay (tok/s)",rate:"Target request rate (req/s)",latency:"TTFT (seconds)",},zh:{eight:"8K 输入",thirty:"32K 输入",concurrency:"并发数",throughput:"输出吞吐（tok/s）",agent:"Agent 回放（tok/s）",rate:"目标请求速率（req/s）",latency:"首 token 延迟（秒）"}};
@@ -177,7 +188,7 @@
         mount("open-throughput","bar",{labels:points.open.labels,datasets:[{label:w.throughput,data:points.open.throughput,backgroundColor:colors.orange,borderRadius:2,maxBarThickness:55}]},options(w.rate,250,"tok/s"));
         mount("open-latency","line",{labels:points.open.labels,datasets:[{label:"TTFT p50",data:points.open.p50,borderColor:colors.blue,backgroundColor:colors.blue,pointRadius:4,borderWidth:2,tension:.12},{label:"TTFT p95",data:points.open.p95,borderColor:colors.orange,backgroundColor:colors.orange,pointRadius:4,borderWidth:2,tension:.12}]},{...options(w.rate,40,"s"),plugins:{...options(w.rate,40,"s").plugins,legend:{display:true,position:"bottom",labels:{color:colors.text,usePointStyle:true,boxWidth:7}}}});
       }
-      function setLanguage(lang){language=lang;document.documentElement.lang=lang==="zh"?"zh-CN":"en";document.title=lang==="zh"?"GLM-5.3-Flash 性能报告 · Model Index":"GLM-5.3-Flash Performance Report · Model Index";document.querySelectorAll("[data-en][data-zh]").forEach(el=>el.textContent=el.dataset[lang]);document.querySelectorAll("[data-lang]").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.lang===lang)));if(window.Chart){drawFixed();drawOther()}else{document.querySelectorAll(".plot").forEach(el=>el.innerHTML='<p style="color:#8cb8fa;padding:20px">'+(lang==="zh"?"图表组件加载失败，请检查网络后刷新页面。":"Chart library failed to load. Check your connection and reload.")+'</p>')}}
+      function setLanguage(lang){language=lang;try{localStorage.setItem("recipes-report-language",lang)}catch{};document.documentElement.lang=lang==="zh"?"zh-CN":"en";document.title=lang==="zh"?"GLM-5.3-Flash 性能报告 · Model Index":"GLM-5.3-Flash Performance Report · Model Index";window.dispatchEvent(new Event("report-language-change"));document.querySelectorAll("[data-en][data-zh]").forEach(el=>el.textContent=el.dataset[lang]);document.querySelectorAll("[data-lang]").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.lang===lang)));if(window.Chart){drawFixed();drawOther()}else{document.querySelectorAll(".plot").forEach(el=>el.innerHTML='<p style="color:#8cb8fa;padding:20px">'+(lang==="zh"?"图表组件加载失败，请检查网络后刷新页面。":"Chart library failed to load. Check your connection and reload.")+'</p>')}}
       document.querySelectorAll("[data-lang]").forEach(b=>b.addEventListener("click",()=>setLanguage(b.dataset.lang)));
       document.querySelectorAll("[data-output]").forEach(b=>b.addEventListener("click",()=>{document.querySelectorAll("[data-output]").forEach(x=>x.setAttribute("aria-pressed",String(x===b)));drawFixed()}));
       const sectionLinks=[...document.querySelectorAll(".side a[href^='#']")];
@@ -190,7 +201,8 @@
       document.addEventListener("keydown",event=>{if(event.key==="Escape")setNavExpanded(false)});
       document.addEventListener("pointerdown",event=>{if(sectionNav.dataset.expanded==="true"&&!sectionNav.contains(event.target))setNavExpanded(false)});
       if("IntersectionObserver" in window){const sectionObserver=new IntersectionObserver(entries=>{const active=entries.filter(entry=>entry.isIntersecting).sort((a,b)=>a.boundingClientRect.top-b.boundingClientRect.top)[0];if(!active)return;sectionLinks.forEach(link=>{if(link.hash==="#"+active.target.id)link.setAttribute("aria-current","location");else link.removeAttribute("aria-current")})},{rootMargin:"-18% 0px -68% 0px",threshold:0});linkedSections.forEach(section=>sectionObserver.observe(section))}
-      setLanguage("zh");
+      setLanguage(localStorage.getItem("recipes-report-language")||"zh");
+      applyChartTheme();
     })();
   </script>
 
