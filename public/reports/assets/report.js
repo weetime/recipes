@@ -56,17 +56,18 @@
     return `<section class="section" id="${b.id}"><div class="section-heading"><div><div class="section-index">${n} / ${L(b.label?.zh,b.label?.en)}</div><h2>${L(b.heading?.zh,b.heading?.en)}</h2></div><p>${L(b.intro?.zh,b.intro?.en)}</p></div>${chart&&side?`<div class="grid2">${chart}${side}</div>`:chart}${table}${b.notes.map(x=>`<p class="note">${L(x?.zh,x?.en)}</p>`).join("")}</section>`;
   }
   function setupCharts(r) {
-    const palette={orange:"#8cb8fa",blue:"#7198cf",green:"#64c58a",grid:"#454c59",text:"#b8bfcb"};
     const charts=[];
     const build=()=>{
+      const css=getComputedStyle(document.documentElement);
+      const palette={orange:css.getPropertyValue("--orange").trim(),blue:css.getPropertyValue("--blue").trim(),green:css.getPropertyValue("--green").trim(),grid:css.getPropertyValue("--line").trim(),text:css.getPropertyValue("--muted").trim()};
       charts.forEach(c=>c.destroy());charts.length=0;
       r.blocks.filter(b=>b.chart).forEach(b=>{
         const ctx=document.getElementById(`chart-${b.id}`); if(!ctx)return;
         const datasets=b.chart.series.map((s,i)=>({label:lang==="zh"?s.zh:s.en,data:s.values,borderColor:palette[s.color]||palette.orange,backgroundColor:palette[s.color]||palette.orange,borderWidth:3,pointRadius:4,pointHoverRadius:7,tension:.16,spanGaps:false}));
-        charts.push(new Chart(ctx,{type:b.chart.type||"line",data:{labels:lang==="zh"?b.chart.labels.zh:b.chart.labels.en,datasets},options:{indexAxis:b.chart.indexAxis||"x",responsive:true,maintainAspectRatio:false,interaction:{mode:"nearest",intersect:true},animation:{duration:260},plugins:{legend:{labels:{color:palette.text,usePointStyle:true,boxWidth:8}},tooltip:{backgroundColor:"#252932",titleColor:"#f1f3f5",bodyColor:"#b8bfcb",borderColor:"#454c59",borderWidth:1,padding:11}},scales:{x:{ticks:{color:palette.text},grid:{color:palette.grid},title:{display:!!b.chart.xTitle,text:lang==="zh"?b.chart.xTitle?.zh:b.chart.xTitle?.en,color:palette.text}},y:{beginAtZero:true,ticks:{color:palette.text},grid:{color:palette.grid},title:{display:!!b.chart.yTitle,text:lang==="zh"?b.chart.yTitle?.zh:b.chart.yTitle?.en,color:palette.text}}}}}));
+        charts.push(new Chart(ctx,{type:b.chart.type||"line",data:{labels:lang==="zh"?b.chart.labels.zh:b.chart.labels.en,datasets},options:{indexAxis:b.chart.indexAxis||"x",responsive:true,maintainAspectRatio:false,interaction:{mode:"nearest",intersect:true},animation:{duration:260},plugins:{legend:{labels:{color:palette.text,usePointStyle:true,boxWidth:8}},tooltip:{backgroundColor:css.getPropertyValue("--panel").trim(),titleColor:css.getPropertyValue("--text").trim(),bodyColor:palette.text,borderColor:palette.grid,borderWidth:1,padding:11}},scales:{x:{ticks:{color:palette.text},grid:{color:palette.grid},title:{display:!!b.chart.xTitle,text:lang==="zh"?b.chart.xTitle?.zh:b.chart.xTitle?.en,color:palette.text}},y:{beginAtZero:true,ticks:{color:palette.text},grid:{color:palette.grid},title:{display:!!b.chart.yTitle,text:lang==="zh"?b.chart.yTitle?.zh:b.chart.yTitle?.en,color:palette.text}}}}}));
       });
     };
-    build();window.addEventListener("report-language-change",build,{once:false});
+    build();window.addEventListener("report-language-change",build);window.addEventListener("report-theme-change",build);
   }
   function setupNav(){
     const links=[...document.querySelectorAll(".side-links a")];
