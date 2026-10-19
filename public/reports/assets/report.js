@@ -5,6 +5,7 @@
   const applyLanguage = () => {
     document.documentElement.lang = lang === "zh" ? "zh-CN" : "en";
     document.querySelectorAll("[data-en][data-zh]").forEach((el) => { el.textContent = el.dataset[lang]; });
+    document.querySelectorAll("[data-en-placeholder][data-zh-placeholder]").forEach((el) => { el.placeholder = el.dataset[`${lang}Placeholder`]; });
     document.querySelectorAll("[data-lang-toggle]").forEach((el) => { el.textContent = lang === "zh" ? "EN" : "中文"; });
     window.dispatchEvent(new Event("report-language-change"));
     if (currentReport) render(currentReport);
