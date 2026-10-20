@@ -1,20 +1,18 @@
 import { Inter, JetBrains_Mono } from "next/font/google";
 import { Link } from "@/i18n/navigation";
 import { Analytics } from "@vercel/analytics/next";
+import { ArrowUpRight } from "lucide-react";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { LanguageSwitcher } from "@/components/i18n/LanguageSwitcher";
 import { SearchBox } from "@/components/recipes/SearchBox";
+import CommunityModal from "@/components/CommunityModal";
 import { getAllRecipes } from "@/lib/recipes";
 import { siteUrl } from "@/lib/site-url";
-import {
-  buildOrganizationLd,
-  buildWebSiteLd,
-  jsonLdScript,
-} from "@/lib/jsonld";
-import { notFound } from "next/navigation";
+import { buildOrganizationLd, buildWebSiteLd, jsonLdScript } from "@/lib/jsonld";
 import { defaultLocale, isLocale, locales } from "@/i18n/config";
 import { getMessages, getTranslations, setRequestLocale } from "next-intl/server";
 import { NextIntlClientProvider } from "next-intl";
+import { notFound } from "next/navigation";
 import "../globals.css";
 
 const inter = Inter({
@@ -29,28 +27,29 @@ const jetbrainsMono = JetBrains_Mono({
   display: "swap",
 });
 
-const defaultOgUrl = `/og?title=${encodeURIComponent("Model Recipes")}&subtitle=${encodeURIComponent("Deploy any model on any hardware")}`;
+const defaultOgUrl = "/og?title=" + encodeURIComponent("Model Index")
+  + "&subtitle=" + encodeURIComponent("Find a model. Fit your hardware. Run it.");
 
 const siteMetadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: "Model Recipes",
-    template: "%s | Model Recipes",
+    default: "Model Index",
+    template: "%s | Model Index",
   },
-  description: "Deploy any model on any hardware with vLLM or SGLang. Interactive command builder for model serving.",
+  description: "Find deployment recipes for your hardware and workload, then configure a vLLM or SGLang serve command.",
   openGraph: {
     type: "website",
     locale: "en_US",
     url: siteUrl,
-    siteName: "Model Recipes",
-    title: "Model Recipes",
-    description: "Deploy any model on any hardware with vLLM or SGLang. Interactive command builder for model serving.",
-    images: [{ url: defaultOgUrl, width: 1200, height: 630, alt: "Model Recipes" }],
+    siteName: "Model Index",
+    title: "Model Index",
+    description: "A model deployment workbench for vLLM and SGLang.",
+    images: [{ url: defaultOgUrl, width: 1200, height: 630, alt: "Model Index" }],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Model Recipes",
-    description: "Deploy any model on any hardware with vLLM or SGLang.",
+    title: "Model Index",
+    description: "Find a model. Fit your hardware. Run it.",
     images: [defaultOgUrl],
   },
   alternates: { canonical: siteUrl },
@@ -63,20 +62,12 @@ export function generateStaticParams() {
 export async function generateMetadata({ params }) {
   const { locale } = await params;
   const chinese = locale === "zh";
+  const url = chinese ? `${siteUrl}/zh` : siteUrl;
   return {
     ...siteMetadata,
-    description: chinese
-      ? "为模型和目标硬件查找推理配方，并生成 vLLM 或 SGLang 服务命令。"
-      : siteMetadata.description,
-    openGraph: {
-      ...siteMetadata.openGraph,
-      locale: chinese ? "zh_CN" : "en_US",
-      url: chinese ? `${siteUrl}/zh` : siteUrl,
-    },
-    alternates: {
-      canonical: chinese ? `${siteUrl}/zh` : siteUrl,
-      languages: { en: siteUrl, zh: `${siteUrl}/zh` },
-    },
+    description: chinese ? "查找适配硬件和工作负载的模型部署配方，并配置 vLLM 或 SGLang 服务命令。" : siteMetadata.description,
+    openGraph: { ...siteMetadata.openGraph, locale: chinese ? "zh_CN" : "en_US", url },
+    alternates: { canonical: url, languages: { en: siteUrl, zh: `${siteUrl}/zh` } },
   };
 }
 
@@ -84,14 +75,8 @@ export default async function RootLayout({ children, params }) {
   const { locale } = await params;
   if (!isLocale(locale)) notFound();
   setRequestLocale(locale);
-  const [t, messages] = await Promise.all([
-    getTranslations({ locale }),
-    getMessages({ locale }),
-  ]);
-  // Recipes are small (~50 KB) — fine to load into every page for the
-  // global search box. Server-rendered, cached across requests.
+  const [t, messages] = await Promise.all([getTranslations({ locale }), getMessages({ locale })]);
   const recipes = getAllRecipes();
-  // Drop the heavy `guide` field before sending to the client
   const searchRecipes = recipes.map((r) => ({
     hf_org: r.hf_org,
     hf_repo: r.hf_repo,
@@ -115,17 +100,19 @@ export default async function RootLayout({ children, params }) {
     )],
   }));
 
-  // Sitewide JSON-LD graph. Per-page schemas reference these by @id so search
-  // engines and AI assistants can stitch the three vLLM properties (vllm.ai,
-  // docs.vllm.ai, recipes.vllm.ai) into one Organization-rooted graph.
   const siteGraph = {
     "@context": "https://schema.org",
     "@graph": [buildOrganizationLd(), buildWebSiteLd()],
   };
 
   return (
-    <html lang={locale === "zh" ? "zh-CN" : defaultLocale} className={`${inter.variable} ${jetbrainsMono.variable}`}>
+    <html lang={locale === "zh" ? "zh-CN" : "en"} className={inter.variable + " " + jetbrainsMono.variable + " dark"} suppressHydrationWarning>
       <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: "try{document.documentElement.classList.toggle('dark',localStorage.getItem('theme')!=='light')}catch{}",
+          }}
+        />
         <script
           type="application/ld+json"
           // eslint-disable-next-line react/no-danger
@@ -134,83 +121,58 @@ export default async function RootLayout({ children, params }) {
       </head>
       <body className="antialiased bg-background text-foreground min-h-screen flex flex-col">
         <NextIntlClientProvider locale={locale} messages={messages}>
-        {/* Global header */}
-        <header className="border-b border-border bg-background/95 backdrop-blur-sm sticky top-0 z-30">
-          <div className="max-w-[1480px] mx-auto px-4 sm:px-6 h-16 flex items-center gap-4">
-            <Link href="/" className="flex items-center gap-2.5 hover:opacity-80 transition-opacity group shrink-0" aria-label={t("nav.home")}>
-              {/* Engine-neutral mark: a hexagon "hub" with a center node. The
-                  sky→indigo gradient is theme-independent (reads on light and
-                  dark); the wordmark below uses text tokens so it adapts. We
-                  dropped the vLLM wordmark here because the site is now
-                  multi-engine (vLLM + SGLang, extensible). */}
-              <svg width="32" height="32" viewBox="0 0 32 32" fill="none" className="shrink-0" aria-hidden="true">
-                <defs>
-                  <linearGradient id="mr-mark" x1="3" y1="3" x2="29" y2="29" gradientUnits="userSpaceOnUse">
-                    <stop stopColor="#38bdf8" />
-                    <stop offset="1" stopColor="#6366f1" />
-                  </linearGradient>
-                </defs>
-                <polygon
-                  points="16,1.5 28.4,8.75 28.4,23.25 16,30.5 3.6,23.25 3.6,8.75"
-                  stroke="url(#mr-mark)" strokeWidth="2.5" strokeLinejoin="round"
-                />
-                <polygon
-                  points="16,10.5 20.76,13.25 20.76,18.75 16,21.5 11.24,18.75 11.24,13.25"
-                  fill="url(#mr-mark)"
-                />
-              </svg>
-              <span className="text-base leading-none">
-                <span className="text-muted-foreground font-normal">Model </span>
-                <span className="font-semibold group-hover:text-vllm-blue transition-colors">Recipes</span>
-              </span>
+        <header className="sticky top-0 z-40 border-b border-border bg-background">
+          <div className="page-frame flex items-center gap-6 py-4">
+            <Link href="/" className="flex shrink-0 items-center gap-2 text-lg font-bold uppercase tracking-[-.06em]" aria-label={t("nav.home")}>
+              <span className="inline-block h-5 w-2 bg-vllm-blue" /> MODEL INDEX<span className="text-vllm-blue">.</span>
             </Link>
+            <nav aria-label="Primary navigation" className="hidden items-center gap-8 border-l border-border pl-7 text-sm font-medium lg:flex">
+              <Link href="/browse" className="hover:text-vllm-blue">{t("nav.browse")}</Link>
+              <Link href="/image-selector" className="hover:text-vllm-blue">{t("nav.imageSelector")}</Link>
+              <Link href="/reports" className="hover:text-vllm-blue">{t("nav.performance")}</Link>
+            </nav>
 
-            {/* Search — flex-1 so it expands to fill available space */}
-            <div className="flex-1 flex justify-center max-w-xl mx-auto">
+            <div className="ml-auto hidden w-full max-w-md md:block">
               <SearchBox recipes={searchRecipes} />
             </div>
 
-            <nav className="flex items-center gap-4 text-sm text-muted-foreground shrink-0">
-              <Link href="/image-selector" className="hover:text-foreground transition-colors hidden sm:inline">{t("nav.imageSelector")}</Link>
-              <Link href="/browse" className="hover:text-foreground transition-colors hidden sm:inline">{t("nav.browse")}</Link>
-              <Link href="/reports" className="hover:text-foreground transition-colors hidden sm:inline">{t("nav.performance")}</Link>
-              <a href="https://docs.vllm.ai" className="hover:text-foreground transition-colors hidden sm:inline">{t("nav.docs")}</a>
-              <a href="https://github.com/weetime/recipes" className="hover:text-foreground transition-colors hidden sm:inline">{t("nav.github")}</a>
+            <div className="ml-auto flex items-center gap-2 md:ml-0">
+              <a href="https://github.com/weetime/recipes" target="_blank" rel="noopener noreferrer" className="hidden items-center gap-1.5 text-xs font-semibold text-muted-foreground hover:text-foreground xl:inline-flex">
+                GitHub <ArrowUpRight size={13} />
+              </a>
               <LanguageSwitcher locale={locale} label={t("nav.switchLanguage")} />
               <ThemeToggle />
+            </div>
+          </div>
+          <div className="mx-auto flex max-w-[1480px] items-center gap-3 border-t border-border/70 px-4 py-2 sm:px-6 md:hidden">
+            <nav aria-label="Mobile navigation" className="flex shrink-0 gap-3 text-xs font-semibold">
+              <Link href="/browse" className="text-vllm-blue">{t("nav.browse")}</Link>
+              <Link href="/image-selector" className="text-muted-foreground">{t("nav.imageSelector")}</Link>
+              <Link href="/reports" className="text-muted-foreground">{t("nav.performance")}</Link>
             </nav>
+            <div className="min-w-0 flex-1"><SearchBox recipes={searchRecipes} /></div>
           </div>
         </header>
 
-        {/* Content */}
-        <div className="flex-1">
-          {children}
-        </div>
+        <div className="flex-1">{children}</div>
 
-        {/* Global footer */}
-        <footer className="border-t border-border mt-auto">
-          <div className="max-w-[1480px] mx-auto px-4 sm:px-6 py-5 text-xs text-muted-foreground">
-            <div className="flex flex-wrap gap-x-5 gap-y-2">
-              <a href="https://github.com/weetime/recipes" className="hover:text-foreground transition-colors">GitHub</a>
-              <a href="https://github.com/weetime/recipes/issues" className="hover:text-foreground transition-colors">{t("footer.request")}</a>
-              <a href="https://docs.vllm.ai" className="hover:text-foreground transition-colors">{t("footer.documentation")}</a>
-              <a href="https://vllm.ai/#compatibility" className="hover:text-foreground transition-colors">{t("footer.hardware")}</a>
-              <a href="https://vllm.ai/#quick-start" className="hover:text-foreground transition-colors">{t("footer.install")}</a>
-              <a href="/models.json" className="hover:text-foreground transition-colors">JSON API</a>
+        <footer className="mt-20 border-t border-border">
+          <div className="mx-auto grid max-w-[1480px] gap-8 px-4 py-10 sm:px-6 lg:grid-cols-[1fr_auto]">
+            <div>
+              <div className="text-lg font-bold uppercase tracking-[-.06em]">MODEL INDEX<span className="text-vllm-blue">.</span></div>
+              <p className="mt-3 max-w-md text-sm leading-6 text-muted-foreground">
+                {t("footer.description")}
+              </p>
+              <p className="mt-3 text-xs text-muted-foreground">{t("footer.builtFrom")}</p>
             </div>
-            {/* Community QR — WeChat group. Black-on-white QR needs a white plate to stay scannable in dark mode. */}
-            <div className="mt-4 flex items-center gap-3">
-              <img
-                src="/community-qr.png"
-                alt="微信交流群二维码"
-                width={60}
-                height={60}
-                className="rounded-md border border-border bg-white p-1 shrink-0"
-              />
-              <div className="leading-tight">
-                <div className="text-foreground font-medium">{t("footer.community")}</div>
-                <div>{t("footer.communityHint")}</div>
-              </div>
+            <div className="flex flex-wrap content-start gap-x-6 gap-y-3 text-sm text-muted-foreground lg:max-w-[420px]">
+              <Link href="/browse" className="hover:text-foreground">{t("footer.browse")}</Link>
+              <Link href="/image-selector" className="hover:text-foreground">{t("footer.imageSelector")}</Link>
+              <Link href="/reports" className="hover:text-foreground">{t("footer.performance")}</Link>
+              <a href="/models.json" className="hover:text-foreground">JSON API</a>
+              <a href="https://docs.vllm.ai" className="hover:text-foreground">{t("footer.documentation")}</a>
+              <a href="https://github.com/weetime/recipes/issues" className="hover:text-foreground">{t("footer.request")}</a>
+              <CommunityModal />
             </div>
           </div>
         </footer>

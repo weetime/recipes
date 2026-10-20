@@ -1,0 +1,601 @@
+{
+  "title": "Qwen3.8-27B · W8A8-MXFP8",
+  "breadcrumb": "Qwen3.8-27B　/　W8A8-MXFP8",
+  "kicker": "SERVING BENCHMARK　·　W8A8-MXFP8",
+  "lede": {
+    "zh": "在 8 张昇腾 950DT 卡上，以 8 个独立 TP1 服务实例测试 Qwen3.8-27B W8A8-MXFP8。覆盖文本、业务轨迹、长上下文、视觉、开放环请求和多轮 Agent 回放。",
+    "en": "Qwen3.8-27B W8A8-MXFP8 was tested on eight Ascend 950DT accelerators as eight independent TP1 serving instances. Workloads include text, business traces, long context, vision, open-loop arrivals, and multi-turn Agent replay."
+  },
+  "chips": [
+    "8 × Ascend 950DT",
+    "8 independent TP1 instances",
+    "W8A8-MXFP8",
+    "Measured 15–16 Oct 2026"
+  ],
+  "snapshot": {
+    "zh": "正式性能计划 51/51　/　Agent 回放 437/437　/　0 请求错误",
+    "en": "Formal performance plan 51/51　/　Agent replay 437/437　/　0 request errors"
+  },
+  "sections": [
+    {
+      "id": "fixed",
+      "zh": "标准负载",
+      "en": "Standard workloads"
+    },
+    {
+      "id": "agent",
+      "zh": "Agent 回放",
+      "en": "Agent replay"
+    },
+    {
+      "id": "quality",
+      "zh": "任务质量",
+      "en": "Task quality"
+    },
+    {
+      "id": "method",
+      "zh": "测试方法",
+      "en": "Method"
+    }
+  ],
+  "stats": [
+    {
+      "zhLabel": "最高观测吞吐",
+      "enLabel": "Highest observed throughput",
+      "value": "245.4",
+      "zhNote": "8K / 512 · C32 · tok/s",
+      "enNote": "8K / 512 · C32 · tok/s"
+    },
+    {
+      "zhLabel": "Agent 轨迹回放",
+      "enLabel": "Agent trace replay",
+      "value": "437 / 437",
+      "zhNote": "请求完成 · 错误 0",
+      "enNote": "requests completed · zero errors"
+    },
+    {
+      "zhLabel": "长上下文探测",
+      "enLabel": "Long-context probe",
+      "value": "255K",
+      "zhNote": "提示长度 · C1 · 32 请求",
+      "enNote": "prompt length · C1 · 32 requests"
+    }
+  ],
+  "overview": {
+    "heading": {
+      "zh": "每个指标都保留它的场景",
+      "en": "Keep every metric attached to its workload"
+    },
+    "intro": {
+      "zh": "这些结果来自八个独立单卡服务。服务在测量过程中逐步停止，不同测点的同机共跑条件并不完全相同；这里不把它们描述为固定八路干扰下的统一容量曲线。",
+      "en": "Results come from eight independent single-card services. Services were stopped as measurements completed, so co-run conditions differed between points; these are not a single capacity curve under a fixed eight-way interference pattern."
+    },
+    "note": {
+      "zh": "三轮测试点展示各轮统计值的中位数，而不是合并请求后重新计算的分位数。未定义业务 SLO，不标记“达标”或“最佳并发”。",
+      "en": "For three-round points, the report shows the median of the per-round statistics, not percentiles recalculated from pooled requests. No business SLO was defined, so no point is labeled as passing or optimal."
+    }
+  },
+  "blocks": [
+    {
+      "id": "fixed",
+      "label": {
+        "zh": "文本、业务与长上下文负载",
+        "en": "TEXT, BUSINESS AND LONG-CONTEXT LOADS"
+      },
+      "heading": {
+        "zh": "固定请求规格下的多场景测量",
+        "en": "Multi-scenario measurements under controlled request sizes"
+      },
+      "intro": {
+        "zh": "下表保留场景、请求数、实际 token 长度与延迟分位数。开放环到达率单独标注；闭环吞吐不代表开放环服务率。",
+        "en": "The table keeps scenario, request counts, observed token lengths, and latency percentiles together. Open-loop arrival rates are labeled separately; closed-loop throughput does not imply open-loop service rate."
+      },
+      "chart": {
+        "type": "bar",
+        "indexAxis": "y",
+        "title": {
+          "zh": "8K / 512：独立服务实例中的观测吞吐",
+          "en": "8K / 512: observed throughput across independent services"
+        },
+        "hint": {
+          "zh": "各并发点来自不同 TP1 实例；不构成单实例并发曲线",
+          "en": "Concurrency points came from separate TP1 instances; they are not a single-instance scaling curve"
+        },
+        "labels": {
+          "zh": [
+            "C4",
+            "C8",
+            "C16",
+            "C32"
+          ],
+          "en": [
+            "C4",
+            "C8",
+            "C16",
+            "C32"
+          ]
+        },
+        "xTitle": {
+          "zh": "并发",
+          "en": "Concurrency"
+        },
+        "yTitle": {
+          "zh": "输出吞吐 tok/s",
+          "en": "Output throughput tok/s"
+        },
+        "series": [
+          {
+            "zh": "8K / 512 输出",
+            "en": "8K / 512 output",
+            "color": "orange",
+            "values": [
+              49.7,
+              88.8,
+              158.2,
+              245.4
+            ]
+          }
+        ]
+      },
+      "table": {
+        "headers": {
+          "zh": [
+            "场景 / 输入输出 tokens",
+            "并发",
+            "每轮请求 × 轮数",
+            "实际输入 / 输出均值",
+            "TTFT P50 / P95 ms",
+            "TPOT-like P50 ms",
+            "E2E P50 / P95 s",
+            "输出 tok/s"
+          ],
+          "en": [
+            "Scenario / input-output tokens",
+            "Concurrency",
+            "Requests per round × rounds",
+            "Mean input / output tokens",
+            "TTFT P50 / P95 ms",
+            "TPOT-like P50 ms",
+            "E2E P50 / P95 s",
+            "Output tok/s"
+          ]
+        },
+        "rows": [
+          [
+            "1K / 256",
+            "C8",
+            "128 × 3",
+            "1,024 / 256",
+            "876 / 891",
+            "76.0",
+            "20.2 / 21.3",
+            "100.1"
+          ],
+          [
+            "8K / 512",
+            "C8",
+            "128 × 3",
+            "8,192 / 512",
+            "1,808 / 4,044",
+            "85.9",
+            "46.0 / 47.0",
+            "88.8"
+          ],
+          [
+            "32K / 512",
+            "C8",
+            "128 × 3",
+            "32,768 / 512",
+            "5,787 / 9,613",
+            "128.7",
+            "71.6 / 74.0",
+            "57.0"
+          ],
+          [
+            "RAG 8K–32K",
+            "C8",
+            "128 × 3",
+            "11,566 / 295",
+            "1,416 / 3,903",
+            "102.2",
+            "27.7 / 56.5",
+            "71.8"
+          ],
+          [
+            "RAG 32K–64K",
+            "C4",
+            "127 × 3",
+            "40,120 / 450",
+            "4,530 / —",
+            "92.8",
+            "49.0 / —",
+            "39.1"
+          ],
+          [
+            "ShareGPT 2K–8K",
+            "C16",
+            "128 × 3",
+            "2,266 / 485",
+            "1,484 / 5,077",
+            "80.1",
+            "42.2 / 45.9",
+            "181.9"
+          ],
+          [
+            "ShareGPT 8K–32K",
+            "C8",
+            "43 × 3",
+            "12,330 / 479",
+            "2,940 / —",
+            "89.2",
+            "47.3 / —",
+            "78.0"
+          ],
+          [
+            "Retrieval 64K",
+            "C1",
+            "32 × 1",
+            "65,513 / 156",
+            "10,583 / —",
+            "63.7",
+            "19.0 / —",
+            "7.6"
+          ],
+          [
+            "Retrieval 128K",
+            "C1",
+            "32 × 1",
+            "131,049 / 149",
+            "29,994 / —",
+            "63.6",
+            "38.8 / —",
+            "3.8"
+          ],
+          [
+            "Retrieval 255K",
+            "C1",
+            "32 × 1",
+            "254,977 / 197",
+            "92,968 / —",
+            "64.1",
+            "104.7 / —",
+            "1.9"
+          ],
+          [
+            "Single-image vision",
+            "C1",
+            "128 × 3",
+            "590 / 492",
+            "234 / 381",
+            "66.1",
+            "33.9 / 35.1",
+            "15.0"
+          ],
+          [
+            "1K / 256",
+            "C1",
+            "128 × 3",
+            "1,024 / 256",
+            "226 / 245",
+            "62.8",
+            "16.2 / 16.9",
+            "15.7"
+          ],
+          [
+            "8K / 512",
+            "C4",
+            "128 × 3",
+            "8,192 / 512",
+            "1,802 / 1,971",
+            "77.0",
+            "41.0 / 42.4",
+            "49.7"
+          ],
+          [
+            "8K / 512",
+            "C16",
+            "128 × 3",
+            "8,192 / 512",
+            "3,699 / 9,739",
+            "93.8",
+            "51.6 / 57.5",
+            "158.2"
+          ],
+          [
+            "8K / 512",
+            "C32",
+            "128 × 3",
+            "8,192 / 512",
+            "4,205 / 24,607",
+            "121.3",
+            "66.3 / 86.9",
+            "245.4"
+          ],
+          [
+            "1K / 2,048",
+            "C1",
+            "32 × 3",
+            "1,024 / 2,048",
+            "231 / —",
+            "64.6",
+            "132.4 / —",
+            "15.4"
+          ],
+          [
+            "8K / 2,048",
+            "C8",
+            "128 × 3",
+            "8,192 / 2,048",
+            "1,770 / 4,003",
+            "75.6",
+            "156.6 / 157.9",
+            "104.6"
+          ],
+          [
+            "8K / 512 open-loop λ=0.1",
+            "—",
+            "128 × 3",
+            "8,192 / 512",
+            "1,041 / 1,374",
+            "80.6",
+            "42.2 / 44.9",
+            "48.6"
+          ],
+          [
+            "32K / 512 open-loop λ=0.05",
+            "—",
+            "128 × 3",
+            "32,768 / 512",
+            "4,606 / 8,305",
+            "91.3",
+            "52.1 / 72.5",
+            "26.9"
+          ]
+        ]
+      },
+      "notes": [
+        {
+          "zh": "TTOT-like 为每请求平均 token 间隔的统计值，不是逐 token 延迟分位数。样本少于 128 的场景按计划仅报告 P50；长上下文 32 请求点只测一轮。",
+          "en": "TPOT-like is a statistic over per-request average token intervals, not a per-token latency percentile. Scenarios with fewer than 128 requests report P50 only as planned; 32-request long-context points were run once."
+        },
+        {
+          "zh": "开放环只覆盖 λ=0.1 和 λ=0.05 req/s 两档，每轮 128 个请求，低于原计划的 512 请求容量扫描样本数。因此这里只报告这两个固定到达率的测量结果，不推断最大容量。",
+          "en": "The open-loop measurements cover only λ=0.1 and λ=0.05 req/s, with 128 requests per round, below the planned 512-request capacity scan. They are reported as measurements at these arrival rates, not as maximum capacity."
+        },
+        {
+          "zh": "图中的 C4、C8、C16、C32 来自不同独立服务实例，且各点的同机共跑负载不同。图表用于列出观测值，不应解读为单实例随并发扩展的曲线。",
+          "en": "C4, C8, C16, and C32 were measured on separate independent service instances, with different co-run loads. The chart lists observations and should not be read as a single-instance concurrency scaling curve."
+        }
+      ]
+    },
+    {
+      "id": "agent",
+      "label": {
+        "zh": "Agent 轨迹回放",
+        "en": "AGENT TRACE REPLAY"
+      },
+      "heading": {
+        "zh": "437 轮请求完成，测量的是服务回放",
+        "en": "437 turns completed in a serving replay"
+      },
+      "intro": {
+        "zh": "修复后的正式批次使用 16 个会话，回放冻结轨迹中的工具观察，不实际执行外部工具。该结果描述推理服务，不代表 Agent 任务成功率。",
+        "en": "The corrected formal run used 16 sessions and replayed tool observations from frozen traces without executing external tools. It describes inference serving and is not an Agent task-success rate."
+      },
+      "chart": {
+        "type": "bar",
+        "title": {
+          "zh": "Agent 回放观测指标",
+          "en": "Observed Agent replay metrics"
+        },
+        "hint": {
+          "zh": "單一测量点，不用于比较其他模型或权重",
+          "en": "Single measured point; not a comparison against other models or weights"
+        },
+        "labels": {
+          "zh": [
+            "整体输出 tok/s"
+          ],
+          "en": [
+            "Aggregate output tok/s"
+          ]
+        },
+        "yTitle": {
+          "zh": "输出吞吐 tok/s",
+          "en": "Output throughput tok/s"
+        },
+        "series": [
+          {
+            "zh": "Agent 回放",
+            "en": "Agent replay",
+            "color": "blue",
+            "values": [
+              13.9
+            ]
+          }
+        ]
+      },
+      "table": {
+        "headers": {
+          "zh": [
+            "会话数",
+            "请求轮数",
+            "成功请求",
+            "错误",
+            "平均输入 / 输出 tokens",
+            "TTFT P50",
+            "TPOT-like P50",
+            "E2E P50",
+            "输出 tok/s"
+          ],
+          "en": [
+            "Sessions",
+            "Request turns",
+            "Completed",
+            "Errors",
+            "Mean input / output tokens",
+            "TTFT P50",
+            "TPOT-like P50",
+            "E2E P50",
+            "Output tok/s"
+          ]
+        },
+        "rows": [
+          [
+            "16",
+            "437",
+            "437",
+            "0",
+            "31,044 / 220",
+            "349 ms",
+            "69.0 ms",
+            "9.1 s",
+            "13.9"
+          ]
+        ]
+      },
+      "notes": [
+        {
+          "zh": "16 个会话是独立会话样本；437 轮请求不是 437 个独立会话，不据此报告会话级 P95/P99。正式批次关闭服务端自动工具调用解析器以修复协议问题；早期 435/437 的失败批次不纳入正式结果。",
+          "en": "The independent sample is 16 sessions; 437 request turns are not 437 independent sessions, so no session-level P95/P99 is reported. The formal run disabled server-side automatic tool-call parsing to resolve a protocol issue; the earlier 435/437 run is excluded."
+        }
+      ]
+    },
+    {
+      "id": "quality",
+      "label": {
+        "zh": "质量与正确性边界",
+        "en": "QUALITY AND CORRECTNESS"
+      },
+      "heading": {
+        "zh": "GPQA-Diamond：60.1%（16K 输出上限协议）",
+        "en": "GPQA-Diamond: 60.1% under a 16K output-cap protocol"
+      },
+      "intro": {
+        "zh": "该测试用于补充报告任务质量边界，与吞吐测试分开解释。每题只测一次，使用固定采样参数并按 A/B/C/D 精确匹配。",
+        "en": "This evaluation supplements the serving results with a task-quality boundary and is interpreted separately from throughput. Each question was run once with fixed sampling parameters and exact A/B/C/D matching."
+      },
+      "table": {
+        "headers": {
+          "zh": [
+            "评测项",
+            "结果",
+            "测试口径"
+          ],
+          "en": [
+            "Evaluation",
+            "Result",
+            "Protocol"
+          ]
+        },
+        "rows": [
+          [
+            "GPQA-Diamond",
+            "119 / 198 · 60.10%",
+            "198 questions · one sample each"
+          ],
+          [
+            "Wilson 95% interval",
+            "53.15% – 66.67%",
+            "Question-level interval"
+          ],
+          [
+            "Output cap reached",
+            "74 / 198 · 37.37%",
+            "No extracted answer; scored incorrect"
+          ],
+          [
+            "Normal completion, incorrect",
+            "5 questions",
+            "Exact-match answer scoring"
+          ],
+          [
+            "Mean generated output",
+            "9,045.5 tokens / question",
+            "Maximum 16,384 tokens"
+          ],
+          [
+            "Total evaluation duration",
+            "67,718.2 s",
+            "About 18 h 48 min"
+          ]
+        ]
+      },
+      "notes": [
+        {
+          "zh": "该分数受 16K 输出上限影响：37.37% 的题目达到上限且未抽取到答案并按规则计错。不能将其直接解释为无上限推理能力，也不应只按未截断题计算准确率。",
+          "en": "This score is affected by the 16K output cap: 37.37% of questions reached the cap without an extracted answer and were scored incorrect. It does not directly represent uncapped reasoning ability; accuracy should not be recalculated using only uncapped questions."
+        },
+        {
+          "zh": "三个非权重文件与模型目录的 CRC 记录不符，因此报告不将该分数与模型卡分数直接对照。",
+          "en": "Three non-weight files did not match the model directory CRC record, so this report does not compare the score directly with the model card."
+        }
+      ]
+    }
+  ],
+  "methodIntro": {
+    "zh": "采用多实例 TP1 部署；正式场景按冻结计划执行。对重复波动、样本规模与工具协议变更作明确说明。",
+    "en": "The setup uses multiple TP1 instances and follows the frozen scenario plans. Repeat variability, sample sizes, and the tool-protocol change are documented explicitly."
+  },
+  "meta": [
+    {
+      "zh": "模型权重",
+      "en": "Checkpoint",
+      "value": "vllm-ascend/Qwen3.8-27B-W8A8-MXFP8"
+    },
+    {
+      "zh": "硬件",
+      "en": "Hardware",
+      "value": "8 × Ascend 950DT"
+    },
+    {
+      "zh": "拓扑",
+      "en": "Topology",
+      "value": {
+        "zh": "8 个独立 TP1 服务实例；不是 TP8",
+        "en": "8 independent TP1 instances; not TP8"
+      }
+    },
+    {
+      "zh": "测量日期",
+      "en": "Measurement date",
+      "value": "15–16 Oct 2026"
+    },
+    {
+      "zh": "正式性能计划",
+      "en": "Formal performance plan",
+      "value": "51 / 51 points"
+    },
+    {
+      "zh": "Agent 回放",
+      "en": "Agent replay",
+      "value": "437 requests · 16 sessions"
+    },
+    {
+      "zh": "应用 SLO",
+      "en": "Application SLO",
+      "value": {
+        "zh": "未定义；不判断达标",
+        "en": "Not defined; no pass/fail claim"
+      }
+    },
+    {
+      "zh": "数据脱敏",
+      "en": "Data handling",
+      "value": {
+        "zh": "未收录地址、主机名、凭据、原始请求或本地路径",
+        "en": "Addresses, hostnames, credentials, raw requests and local paths excluded"
+      }
+    }
+  ],
+  "methodNotes": [
+    {
+      "zh": "测点的同机共跑负载随服务逐步停止而变化。三个启动轮次的噪声审查显示：TTFT P50 最大相对极差为 28.93%，20 点中 2 点超过 10%；TPOT-like P50 最大 5.10%，E2E P50 最大 7.97%。因此业务 TTFT 的小幅差异不宜过度解读。",
+      "en": "Co-run load changed as services were stopped. Across three startup rounds, the maximum relative range for TTFT P50 was 28.93%, with 2 of 20 points above 10%; TPOT-like P50 max range was 5.10%, and E2E P50 max range was 7.97%. Small business TTFT differences should not be overinterpreted."
+    },
+    {
+      "zh": "本页发布的是整理后的聚合结果，不包含原始请求轨迹、逐题回答、机器地址、集群名、路径、凭据或运行日志。对外发布前已移除具体设备槽位编号。",
+      "en": "This page publishes curated aggregates only. It excludes raw request traces, per-question responses, host addresses, cluster names, paths, credentials, and run logs. Specific device-slot identifiers are omitted."
+    }
+  ]
+}

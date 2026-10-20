@@ -6,7 +6,7 @@ import { useT } from "@/components/i18n/I18nProvider";
 
 export function ThemeToggle() {
   const t = useT();
-  const [theme, setTheme] = useState("light");
+  const [theme, setTheme] = useState("dark");
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -16,9 +16,8 @@ export function ThemeToggle() {
       setTheme(stored);
       document.documentElement.classList.toggle("dark", stored === "dark");
     } else {
-      const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-      setTheme(prefersDark ? "dark" : "light");
-      document.documentElement.classList.toggle("dark", prefersDark);
+      setTheme("dark");
+      document.documentElement.classList.add("dark");
     }
   }, []);
 

@@ -1,36 +1,22 @@
 import { getAllRecipes } from "@/lib/recipes";
-import { ModelSidebar } from "@/components/recipes/ModelSidebar";
+import { ModelQuickNav } from "@/components/ModelQuickNav";
 
-export default async function OrgLayout({ children }) {
-  const recipes = getAllRecipes();
-
-  // Group by HF org, sort alphabetically (case-insensitive) for predictable navigation
-  const byOrg = {};
-  for (const r of recipes) {
-    const org = r.hf_org || "unknown";
-    if (!byOrg[org]) byOrg[org] = [];
-    byOrg[org].push(r);
-  }
-  const sorted = Object.entries(byOrg).sort((a, b) =>
-    a[0].toLowerCase().localeCompare(b[0].toLowerCase())
-  );
-  // Sort models within each org by HF release date (newest first).
-  // Fallback to repo-name alphabetical when date missing/equal.
-  for (const [, models] of sorted) {
-    models.sort((a, b) => {
-      const da = a.hf_released ? new Date(a.hf_released).getTime() : 0;
-      const db = b.hf_released ? new Date(b.hf_released).getTime() : 0;
-      if (da !== db) return db - da;
-      return (a.hf_repo || "").localeCompare(b.hf_repo || "");
-    });
-  }
+export default function OrgLayout({ children }) {
+  const recipes = getAllRecipes()
+    .map((recipe) => ({
+      id: recipe.hf_id,
+      org: recipe.hf_org,
+      repo: recipe.hf_repo,
+      title: recipe.meta?.title || recipe.hf_repo,
+      provider: recipe.meta?.provider || recipe.hf_org,
+      released: recipe.hf_released || "",
+    }))
+    .sort((a, b) => b.released.localeCompare(a.released) || a.id.localeCompare(b.id));
 
   return (
-    <div className="max-w-[1480px] mx-auto px-4 sm:px-6 flex gap-6">
-      <ModelSidebar recipesByOrg={sorted} />
-      <div className="flex-1 min-w-0">
-        {children}
-      </div>
+    <div className="page-frame model-workspace lg:grid lg:grid-cols-[260px_minmax(0,1fr)] lg:gap-10">
+      <ModelQuickNav recipes={recipes} />
+      <div className="min-w-0">{children}</div>
     </div>
   );
 }

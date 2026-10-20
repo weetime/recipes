@@ -1,198 +1,157 @@
-"use client";
-
-import { useMemo } from "react";
 import { Link } from "@/i18n/navigation";
-import { Type, Eye, Sparkles, Hash, Layers, Cpu } from "lucide-react";
+import { useT } from "@/components/i18n/I18nProvider";
+import { ArrowRight, ArrowUpRight, Cpu, Layers } from "lucide-react";
 import { getProviderLogo, getProviderLogoClass, getProviderDisplayName } from "@/lib/providers";
 import { compareRecipesByDateAdded } from "@/lib/recipe-utils";
-import { useT } from "@/components/i18n/I18nProvider";
 
-const TASK_ICON = { text: Type, multimodal: Eye, omni: Sparkles, embedding: Hash };
-
-const LATEST_COUNT = 8;
-// At most 2 per provider: one org landing several recipes on the same day
-// shouldn't take the whole row, but a cap of 1 hid genuinely new recipes behind
-// a sibling that landed a day later, and back-filled the row with much older
-// ones from other orgs.
+const LATEST_COUNT = 7;
 const LATEST_PER_ORG = 2;
+
+function latestRecipes(recipes) {
+  const perOrg = new Map();
+  const output = [];
+  for (const recipe of [...recipes].sort(compareRecipesByDateAdded)) {
+    const org = recipe.hf_org || "unknown";
+    if ((perOrg.get(org) || 0) >= LATEST_PER_ORG) continue;
+    perOrg.set(org, (perOrg.get(org) || 0) + 1);
+    output.push(recipe);
+    if (output.length === LATEST_COUNT) break;
+  }
+  return output;
+}
+
+function recipeFacts(recipe) {
+  const variant = recipe.variants?.default || {};
+  const params = recipe.model?.parameter_count || "—";
+  const active = recipe.model?.active_parameters;
+  return [
+    active && active !== params ? params + " / " + active + " active" : params,
+    variant.precision?.toUpperCase(),
+    recipe.meta?.tasks?.[0],
+  ].filter(Boolean);
+}
 
 export function RecipeCardGrid({ recipes }) {
   const t = useT();
-  const byOrg = useMemo(() => {
-    const groups = {};
-    for (const r of recipes) {
-      const org = r.hf_org || "unknown";
-      if (!groups[org]) groups[org] = [];
-      groups[org].push(r);
-    }
-    return Object.entries(groups).sort((a, b) =>
-      a[0].toLowerCase().localeCompare(b[0].toLowerCase())
-    );
-  }, [recipes]);
-
-  const latest = useMemo(() => {
-    // "Latest recipes" means newly added to this catalog, not the HF repo's
-    // createdAt (a model repo may exist privately long before launch).
-    const sorted = [...recipes].sort(compareRecipesByDateAdded);
-    const perOrg = new Map();
-    const out = [];
-    for (const r of sorted) {
-      const org = r.hf_org || "unknown";
-      const taken = perOrg.get(org) || 0;
-      if (taken >= LATEST_PER_ORG) continue;
-      perOrg.set(org, taken + 1);
-      out.push(r);
-      if (out.length >= LATEST_COUNT) break;
-    }
-    return out;
-  }, [recipes]);
+  const latest = latestRecipes(recipes);
+  const [featured, ...others] = latest;
+  const counts = new Map();
+  for (const recipe of recipes) {
+    counts.set(recipe.hf_org, (counts.get(recipe.hf_org) || 0) + 1);
+  }
+  const providers = [...counts.entries()]
+    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+    .slice(0, 10);
 
   return (
-    <div className="space-y-10">
-      {/* Latest recipes — primary freshness signal */}
-      <section>
-        <div className="flex items-baseline gap-2 mb-3 pb-2 border-b border-border">
-          <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest">{t("home.latest")}</span>
-          <span className="text-[10px] text-muted-foreground/60">{t("home.newest", { count: latest.length })}</span>
-          <Link
-            href="/browse"
-            className="ml-auto text-[11px] text-muted-foreground hover:text-vllm-blue transition-colors"
-          >
-            {t("home.viewAll", { count: recipes.length })}
+    <div className="mt-16 space-y-16">
+      <section aria-labelledby="latest-heading">
+        <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <div className="atlas-kicker">New in the atlas / 01</div>
+            <h2 id="latest-heading" className="mt-2 text-3xl font-extrabold tracking-[-0.045em] sm:text-4xl">Fresh deployment paths</h2>
+            <p className="mt-2 text-sm text-muted-foreground">Recently added recipes, ready to configure for your stack.</p>
+          </div>
+          <Link href="/browse?sort=updated" className="inline-flex items-center gap-2 text-sm font-bold text-vllm-blue hover:underline">
+            Open the full catalog <ArrowRight size={15} />
           </Link>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-          {latest.map((r) => <RecipeCard key={r.hf_id} recipe={r} />)}
+
+        <div className="grid gap-4 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)]">
+          {featured && <FeaturedRecipe recipe={featured} />}
+          <div className="grid gap-3 sm:grid-cols-2">
+            {others.map((recipe) => <CompactRecipe key={recipe.hf_id} recipe={recipe} />)}
+          </div>
         </div>
       </section>
 
-      {/* Providers — secondary nav */}
-      <section>
-        <div className="flex items-baseline gap-2 mb-3 pb-2 border-b border-border">
-          <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest">{t("home.providersHeading")}</span>
+      <section aria-labelledby="providers-heading">
+        <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <div className="atlas-kicker">Explore the ecosystem / 02</div>
+            <h2 id="providers-heading" className="mt-2 text-3xl font-extrabold tracking-[-0.045em] sm:text-4xl">Where models come from</h2>
+            <p className="mt-2 text-sm text-muted-foreground">Jump into a provider collection or use catalog filters to narrow the field.</p>
+          </div>
+          <Link href="/browse?panel=open" className="inline-flex items-center gap-2 text-sm font-bold text-vllm-blue hover:underline">
+            Filter by provider <ArrowRight size={15} />
+          </Link>
         </div>
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
-          {byOrg.map(([org, models]) => <ProviderTile key={org} org={org} models={models} />)}
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+          {providers.map(([org, count]) => <ProviderTile key={org} org={org} count={count} />)}
         </div>
       </section>
     </div>
   );
 }
 
-function RecipeCard({ recipe }) {
-  const tMsg = useT();
-  const v = recipe.variants?.default || {};
-  const tasks = recipe.meta?.tasks || [];
+function FeaturedRecipe({ recipe }) {
   const logo = getProviderLogo(recipe.hf_org);
+  const facts = recipeFacts(recipe);
   const isMoe = recipe.model?.architecture === "moe";
-  const ctx = recipe.model?.context_length || 0;
-  const ctxLabel = ctx >= 1_000_000 ? `${Math.round(ctx / 1_000_000)}M` : ctx >= 1000 ? `${Math.round(ctx / 1000)}K` : String(ctx);
-  const params = recipe.model?.parameter_count || "";
-  const active = recipe.model?.active_parameters;
-  const paramsLabel = isMoe && active && active !== params ? `${params}/${active}` : params;
   return (
-    <Link
-      href={`/${recipe.hf_id}`}
-      className="group rounded-xl border border-border bg-card hover:border-vllm-blue/40 hover:shadow-sm hover:-translate-y-0.5 transition-all p-3.5 flex flex-col gap-2.5 min-h-[140px]"
-    >
-      {/* Header: logo + title */}
-      <div className="flex items-start gap-2.5">
+    <Link href={"/" + recipe.hf_id} className="group atlas-panel relative flex min-h-[400px] flex-col overflow-hidden p-7 transition-all hover:-translate-y-1 hover:border-vllm-blue/40 hover:shadow-xl sm:p-9">
+      <div className="absolute -right-20 -top-20 h-72 w-72 rounded-full bg-[#dbf4e3] blur-3xl dark:bg-[#1c5b4b]/40" aria-hidden="true" />
+      <div className="relative flex items-center gap-3">
         {logo ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={logo} alt="" width={28} height={28} className={`rounded-md mt-0.5 shrink-0 ${getProviderLogoClass(recipe.hf_org)}`} />
-        ) : (
-          <div className="w-7 h-7 rounded-md bg-muted flex items-center justify-center text-xs font-bold text-muted-foreground shrink-0">
-            {(recipe.meta?.provider || recipe.hf_org).charAt(0)}
-          </div>
-        )}
-        <div className="min-w-0 flex-1">
-          <div className="font-semibold text-sm leading-tight group-hover:text-vllm-blue transition-colors line-clamp-1 break-all">
-            {recipe.hf_repo}
-          </div>
-          <div className="font-mono text-[10px] text-muted-foreground/70 truncate mt-0.5">
-            {recipe.hf_org}
-          </div>
+          <img src={logo} alt="" width={38} height={38} className={"rounded-xl " + getProviderLogoClass(recipe.hf_org)} />
+        ) : <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent text-base font-bold text-accent-foreground">{recipe.hf_org.charAt(0)}</span>}
+        <div>
+          <div className="atlas-kicker">Featured recipe</div>
+          <div className="mt-1 font-mono text-xs text-muted-foreground">{recipe.hf_org}</div>
         </div>
+        <ArrowUpRight size={20} className="ml-auto text-vllm-blue transition-transform group-hover:translate-x-1 group-hover:-translate-y-1" />
       </div>
-
-      {/* Spec row */}
-      <div className="flex flex-wrap gap-1.5 text-[10px]">
-        <Badge>
-          {isMoe ? <Layers size={9} /> : <Cpu size={9} />}
-          <span className="font-mono">{paramsLabel}</span>
-        </Badge>
-        {v.precision && (
-          <Badge>
-            <span className="font-mono uppercase">{v.precision}</span>
-          </Badge>
-        )}
-        {ctx > 0 && (
-          <Badge>
-            <span className="font-mono">{ctxLabel} ctx</span>
-          </Badge>
-        )}
-        {tasks.map((t) => {
-          const Icon = TASK_ICON[t] || Hash;
-          return (
-            <Badge key={t} subtle>
-              <Icon size={9} />
-              <span className="capitalize">{tMsg(`tasks.${t}`)}</span>
-            </Badge>
-          );
-        })}
-      </div>
-
-      {/* Footer: hint or description */}
-      <div className="mt-auto text-[11px] text-muted-foreground line-clamp-2 leading-snug">
-        {recipe.meta?.description || recipe.meta?.performance_headline || ""}
+      <div className="relative mt-auto pt-14">
+        <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-accent px-3 py-1.5 text-xs font-bold text-accent-foreground">
+          {isMoe ? <Layers size={14} /> : <Cpu size={14} />}
+          {isMoe ? "Mixture of experts" : "Dense model"}
+        </div>
+        <h3 className="break-words text-3xl font-extrabold leading-tight tracking-[-0.05em] group-hover:text-vllm-blue transition-colors">{recipe.hf_repo}</h3>
+        <p className="mt-3 line-clamp-3 max-w-lg text-sm leading-6 text-muted-foreground">{recipe.meta?.description}</p>
+        <div className="mt-6 flex flex-wrap gap-2 border-t border-border pt-5">
+          {facts.map((fact) => <span key={fact} className="rounded-full border border-border bg-background px-3 py-1 font-mono text-[11px] font-semibold text-muted-foreground">{fact}</span>)}
+        </div>
       </div>
     </Link>
   );
 }
 
-function Badge({ children, subtle }) {
+function CompactRecipe({ recipe }) {
+  const logo = getProviderLogo(recipe.hf_org);
+  const facts = recipeFacts(recipe);
   return (
-    <span className={`inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 ${
-      subtle
-        ? "border-border/60 text-muted-foreground/70"
-        : "border-border text-muted-foreground"
-    }`}>
-      {children}
-    </span>
-  );
-}
-
-function ProviderTile({ org, models }) {
-  const logo = getProviderLogo(org);
-  const displayName = getProviderDisplayName(org);
-  return (
-    <Link
-      href={`/${org}`}
-      className="group rounded-xl border border-border p-3 flex flex-col gap-2 bg-card hover:border-vllm-blue/40 hover:shadow-sm hover:-translate-y-0.5 transition-all"
-    >
+    <Link href={"/" + recipe.hf_id} className="group atlas-panel flex min-h-[188px] flex-col p-5 transition-all hover:-translate-y-0.5 hover:border-vllm-blue/40 hover:shadow-md">
       <div className="flex items-center gap-2.5">
         {logo ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={logo} alt="" width={28} height={28} className={`rounded-md shrink-0 ${getProviderLogoClass(org)}`} />
-        ) : (
-          <div className="w-7 h-7 rounded-md bg-muted flex items-center justify-center text-xs font-bold text-muted-foreground shrink-0">
-            {displayName.charAt(0)}
-          </div>
-        )}
-        <div className="min-w-0 flex-1">
-          <div className="font-semibold text-sm truncate group-hover:text-vllm-blue transition-colors leading-tight">
-            {displayName}
-          </div>
-          <div className="font-mono text-[10px] text-muted-foreground/70 truncate">{org}</div>
-        </div>
+          <img src={logo} alt="" width={25} height={25} className={"rounded-md " + getProviderLogoClass(recipe.hf_org)} />
+        ) : <span className="flex h-7 w-7 items-center justify-center rounded-md bg-accent text-xs font-bold text-accent-foreground">{recipe.hf_org.charAt(0)}</span>}
+        <span className="truncate font-mono text-[11px] text-muted-foreground">{recipe.hf_org}</span>
+        <ArrowUpRight size={16} className="ml-auto shrink-0 text-muted-foreground transition-colors group-hover:text-vllm-blue" />
       </div>
-      <div className="flex items-baseline justify-between mt-auto">
-        <span className="text-[11px] text-muted-foreground">
-          <span className="font-semibold text-foreground tabular-nums">{models.length}</span>{" "}
-          {models.length === 1 ? "recipe" : "recipes"}
-        </span>
-        <span className="text-muted-foreground/40 group-hover:text-vllm-blue group-hover:translate-x-0.5 transition-all text-xs">→</span>
+      <h3 className="mt-4 line-clamp-2 break-all text-base font-bold leading-tight tracking-[-0.025em] group-hover:text-vllm-blue transition-colors">{recipe.hf_repo}</h3>
+      <p className="mt-2 line-clamp-2 text-xs leading-5 text-muted-foreground">{recipe.meta?.description}</p>
+      <div className="mt-auto flex flex-wrap gap-x-3 gap-y-1 pt-4 font-mono text-[10px] font-semibold uppercase text-vllm-blue">
+        {facts.map((fact) => <span key={fact}>{fact}</span>)}
       </div>
+    </Link>
+  );
+}
+
+function ProviderTile({ org, count }) {
+  const logo = getProviderLogo(org);
+  const name = getProviderDisplayName(org);
+  return (
+    <Link href={"/" + org} className="group atlas-panel flex items-center gap-3 p-4 transition-all hover:-translate-y-0.5 hover:border-vllm-blue/40 hover:shadow-md">
+      {logo ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={logo} alt="" width={34} height={34} className={"rounded-lg shrink-0 " + getProviderLogoClass(org)} />
+      ) : <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-accent font-bold text-accent-foreground">{name.charAt(0)}</span>}
+      <span className="min-w-0">
+        <span className="block truncate text-sm font-bold group-hover:text-vllm-blue">{name}</span>
+        <span className="block text-[11px] text-muted-foreground">{count} {count === 1 ? "recipe" : "recipes"}</span>
+      </span>
     </Link>
   );
 }

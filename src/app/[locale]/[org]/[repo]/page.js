@@ -2,21 +2,20 @@ import { Suspense } from "react";
 import { Link } from "@/i18n/navigation";
 import { notFound, redirect } from "next/navigation";
 import { getAllRecipes, getAllRoutablePairs, findVariantRedirect, getRecipeByHfId } from "@/lib/recipes";
+import { getPerformanceReportsForModel } from "@/lib/performance-reports";
 import { recipeHref } from "@/lib/recipe-utils";
+import { getEngineMeta, recipeEngineIds } from "@/lib/engine-meta";
 import { siteUrl } from "@/lib/site-url";
 import { loadStrategies } from "@/lib/strategies";
 import { loadTaxonomy } from "@/lib/taxonomy";
 import { resolveRecipePlatforms } from "@/lib/platforms";
-import { getProviderLogo, getProviderLogoClass } from "@/lib/providers";
-import { getPerformanceReportsForModel } from "@/lib/performance-reports";
-import { getTranslations } from "next-intl/server";
 import { CommandBuilder } from "@/components/recipes/CommandBuilder";
 import { EngineAwareGuide } from "@/components/recipes/EngineAwareGuide";
 import { GuideLinks } from "@/components/recipes/GuideLinks";
 import { DeployDialog } from "@/components/recipes/DeployDialog";
 import { HuggingFaceIcon, ModelScopeIcon } from "@/components/icons/PlatformLogos";
 import { Badge } from "@/components/ui/badge";
-import { Cpu, Layers, Pencil, Bug, ExternalLink, Link2 } from "lucide-react";
+import { ArrowLeft, Cpu, Layers, Pencil, Bug, ExternalLink, Link2 } from "lucide-react";
 import {
   buildBreadcrumbLd,
   buildSoftwareApplicationLd,
@@ -24,6 +23,7 @@ import {
   hardwareLabel,
   jsonLdScript,
 } from "@/lib/jsonld";
+import { getTranslations } from "next-intl/server";
 
 export async function generateStaticParams() {
   return getAllRoutablePairs();
@@ -61,7 +61,9 @@ export async function generateMetadata({ params }) {
     : title;
   // <meta name="description"> follows the umbrella spec template too. Prefer
   // the recipe's own description, then fall back to the templated form.
-  const templateDescription = `Recommended vllm serve command, hardware matrix, and flag explanations for serving ${recipe.hf_id} with vLLM${hwList ? ` on ${hwList}` : ""}.`;
+  const templateDescription = locale === "zh"
+    ? `查看 ${recipe.hf_id} 的推荐 vLLM 服务命令、硬件配置和参数说明。`
+    : `Recommended vllm serve command, hardware matrix, and flag explanations for serving ${recipe.hf_id} with vLLM${hwList ? ` on ${hwList}` : ""}.`;
   const description = meta.description || templateDescription;
   const ogUrl = `/og?title=${encodeURIComponent(title)}&meta=${encodeURIComponent(
     metaLine
@@ -82,10 +84,7 @@ export async function generateMetadata({ params }) {
       description,
       images: [ogUrl],
     },
-    alternates: {
-      canonical: locale === "zh" ? `/zh/${org}/${repo}` : `/${org}/${repo}`,
-      languages: { en: `/${org}/${repo}`, zh: `/zh/${org}/${repo}` },
-    },
+    alternates: { canonical: locale === "zh" ? `/zh/${org}/${repo}` : `/${org}/${repo}`, languages: { en: `/${org}/${repo}`, zh: `/zh/${org}/${repo}` } },
   };
 }
 
@@ -99,19 +98,17 @@ export default async function RecipePage({ params, searchParams }) {
     // default variant, so a default-variant checkpoint lands on a clean URL.
     if (v) {
       const qs = v.variantKey === "default" ? "" : `?variant=${encodeURIComponent(v.variantKey)}`;
-      redirect(`/${locale}/${v.parent.hf_org}/${v.parent.hf_repo}${qs}`);
+      redirect(`${locale === "zh" ? "/zh" : ""}/${v.parent.hf_org}/${v.parent.hf_repo}${qs}`);
     }
     notFound();
   }
   if (org !== recipe.hf_org || repo !== recipe.hf_repo) {
     const qs = new URLSearchParams(await searchParams).toString();
-    redirect(`/${locale}/${recipe.hf_org}/${recipe.hf_repo}${qs ? `?${qs}` : ""}`);
+    redirect(`${locale === "zh" ? "/zh" : ""}/${recipe.hf_org}/${recipe.hf_repo}${qs ? `?${qs}` : ""}`);
   }
 
   const strategies = loadStrategies();
   const taxonomy = loadTaxonomy();
-  const logo = getProviderLogo(recipe.hf_org);
-  const performanceReports = getPerformanceReportsForModel(recipe.hf_id);
 
   // Per-recipe platform opt-in. Each entry is either a bare id ("modal") or
   // an object with overrides ({ id: "modal", install, url, blurb }) for
@@ -123,6 +120,7 @@ export default async function RecipePage({ params, searchParams }) {
   const related = (recipe.meta.related_recipes || [])
     .map((s) => allRecipes.find((r) => r.hf_id === s || r.meta.slug === s))
     .filter(Boolean);
+  const performanceReports = getPerformanceReportsForModel(recipe.hf_id);
 
   const recipeUrl = `${siteUrl}/${recipe.hf_org}/${recipe.hf_repo}`;
   const jsonLd = [
@@ -145,7 +143,7 @@ export default async function RecipePage({ params, searchParams }) {
       "@context": "https://schema.org",
       "@type": "BreadcrumbList",
       itemListElement: [
-        { "@type": "ListItem", position: 1, name: "Model Recipes", item: siteUrl },
+        { "@type": "ListItem", position: 1, name: "Model Index", item: siteUrl },
         { "@type": "ListItem", position: 2, name: recipe.meta.provider, item: `${siteUrl}/${recipe.hf_org}` },
         { "@type": "ListItem", position: 3, name: recipe.hf_repo, item: recipeUrl },
       ],
@@ -153,27 +151,32 @@ export default async function RecipePage({ params, searchParams }) {
   ];
 
   return (
-    <main className="py-6 w-full min-w-0">
+    <main className="py-10 w-full min-w-0">
       <script
         type="application/ld+json"
         // eslint-disable-next-line react/no-danger
         dangerouslySetInnerHTML={jsonLdScript(jsonLd)}
       />
+      <nav aria-label={t("detail.breadcrumb")} className="mb-5 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+        <Link href="/browse" className="inline-flex items-center gap-1.5 font-semibold hover:text-vllm-blue"><ArrowLeft size={13} /> {t("detail.catalog")}</Link>
+        <span aria-hidden="true">/</span>
+        <Link href={"/" + recipe.hf_org} className="hover:text-vllm-blue">{recipe.meta.provider}</Link>
+        <span aria-hidden="true">/</span>
+        <span className="max-w-[220px] truncate font-mono text-foreground">{recipe.hf_repo}</span>
+      </nav>
       {/* ── Model header ── */}
-      <header className="mb-8">
+      <header className="mb-8 border-b border-border pb-8 pt-6">
+        <div className="atlas-kicker mb-5">{t("detail.modelType")} / {recipe.hf_org}</div>
         <div className="flex items-start gap-4 mb-4">
-          {logo && (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={logo} alt={recipe.meta.provider} width={44} height={44} className={`rounded-xl mt-0.5 shrink-0 ${getProviderLogoClass(recipe.hf_org)}`} />
-          )}
+          <span className="provider-monogram mt-0.5 h-11 w-11 shrink-0 text-lg" aria-hidden="true">{recipe.hf_org.charAt(0)}</span>
           <div className="min-w-0 flex-1">
-            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight font-mono break-all">
+            <h1 className="text-3xl sm:text-6xl font-semibold tracking-[-0.07em] break-all">
               <span className="text-muted-foreground font-normal">{recipe.hf_org}/</span>
               {recipe.hf_repo}
             </h1>
-            <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{recipe.meta.description}</p>
+            <p className="text-sm text-muted-foreground mt-3 max-w-4xl leading-6">{recipe.meta.description}</p>
             {recipe.meta.performance_headline && (
-              <p className="text-xs text-muted-foreground/70 italic mt-1 leading-snug">{recipe.meta.performance_headline}</p>
+              <p className="text-[13px] text-muted-foreground italic mt-1 leading-relaxed">{recipe.meta.performance_headline}</p>
             )}
             <div className="flex items-center gap-4 mt-2">
               <a
@@ -204,9 +207,12 @@ export default async function RecipePage({ params, searchParams }) {
 
         {/* Tags — single row, no duplication */}
         <div className="flex flex-wrap gap-1.5">
+          {recipeEngineIds(recipe).map((id) => (
+            <Badge key={id} variant="secondary" className="text-xs font-semibold">{getEngineMeta(id).label}</Badge>
+          ))}
           <Badge variant="outline" className="gap-1 text-xs capitalize">
             {recipe.model.architecture === "moe" ? <Layers size={11} /> : <Cpu size={11} />}
-            {t(`architecture.${recipe.model.architecture}`)}
+            {t.has(`architecture.${recipe.model.architecture}`) ? t(`architecture.${recipe.model.architecture}`) : recipe.model.architecture}
           </Badge>
           <Badge variant="outline" className="text-xs">
             {recipe.model.parameter_count}
@@ -219,7 +225,7 @@ export default async function RecipePage({ params, searchParams }) {
             href="https://vllm.ai/#quick-start"
             target="_blank"
             rel="noopener noreferrer"
-            title="Install vLLM"
+            title={t("detail.installVllm")}
             className="inline-flex items-center rounded-md border border-border px-2 py-0.5 text-xs font-medium w-fit whitespace-nowrap transition-colors hover:border-vllm-blue/50 hover:text-vllm-blue"
           >
             vLLM {recipe.model.min_vllm_version}+
@@ -239,50 +245,79 @@ export default async function RecipePage({ params, searchParams }) {
             </a>
           )}
           {recipe.meta.tasks?.map((task) => (
-            <Badge key={task} variant="secondary" className="text-xs capitalize">{t(`tasks.${task}`)}</Badge>
+            <Badge key={task} variant="secondary" className="text-xs capitalize">{t.has(`tasks.${task}`) ? t(`tasks.${task}`) : task}</Badge>
           ))}
         </div>
       </header>
 
       {performanceReports.length > 0 && (
-        <section aria-label={t("nav.performance")} className="mb-8 border-y border-border">
-          {performanceReports.map((report) => (
-            <a key={report.slug} href={report.href} className="group flex flex-wrap items-center justify-between gap-x-6 gap-y-3 py-4 hover:bg-muted/20">
-              <div className="min-w-0">
-                <div className="font-mono text-[10px] tracking-[.1em] text-muted-foreground">{t("detail.performanceReport")}　/　{report.date}</div>
-                <div className="mt-1 font-medium tracking-tight group-hover:text-vllm-blue">{report.title}</div>
+        <section aria-label={t("detail.performanceReports")} className="mb-10 border-y border-border py-5">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div>
+              <div className="section-label">{t("detail.measuredConfigurations", { count: performanceReports.length })}</div>
+              <h2 className="mt-2 text-lg font-semibold tracking-[-.025em]">{t("detail.performanceReports")}</h2>
+            </div>
+            <Link href="/reports" className="text-xs text-muted-foreground hover:text-vllm-blue">{t("detail.allReports")}</Link>
+          </div>
+          <div className="mt-4 divide-y divide-border border-t border-border">
+            {performanceReports.map((report) => (
+              <div key={report.slug} className="grid gap-4 py-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
+                <div>
+                  <div className="flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
+                    <span>{report.date}</span><span>{report.hardware}</span><span>{report.precision}</span>
+                  </div>
+                  <p className="mt-1 text-sm font-medium">{report.title}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">{report.highlights[0].value} {report.highlights[0].unit} · {report.highlights[0].label}</p>
+                </div>
+                <a href={report.href} className="text-sm font-semibold text-vllm-blue hover:underline">{t("detail.readReport")}</a>
               </div>
-              <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                <span>{report.hardware}</span><span>{report.precision}</span><ExternalLink size={13} />
-              </div>
-            </a>
-          ))}
+            ))}
+          </div>
         </section>
       )}
 
+      <nav aria-label={t("detail.sections")} className="mb-10 flex flex-wrap items-center gap-8 border-b border-border pb-4 text-sm font-medium">
+        <a href="#configure" className="inline-flex items-center gap-2 text-vllm-blue hover:underline"><span className="font-mono">02</span> {t("detail.configureStep")}</a>
+        {(recipe.guide || Object.values(recipe.engines ?? {}).some((e) => e?.guide)) && (
+          <a href="#recipe-guide" className="inline-flex items-center gap-2 text-muted-foreground hover:text-vllm-blue"><span className="font-mono">03</span> {t("detail.guideStep")}</a>
+        )}
+      </nav>
+
       {/* ── Command Builder ── */}
-      <section className="mb-10">
+      <section id="configure" className="mb-10 scroll-mt-28">
+        <div className="mb-5">
+          <div className="atlas-kicker">{t("detail.configureEyebrow")}</div>
+          <h2 className="mt-1 text-2xl font-extrabold tracking-[-0.04em]">{t("detail.configureServing")}</h2>
+          <p className="mt-1 text-sm text-muted-foreground">{t("detail.configureDescription")}</p>
+        </div>
         <Suspense fallback={<div className="h-40 rounded-2xl bg-muted animate-pulse" />}>
           <CommandBuilder recipe={recipe} strategies={strategies} taxonomy={taxonomy} />
         </Suspense>
       </section>
 
       {/* ── Reference sections ── */}
-      <section className="space-y-2">
+      <section id="recipe-guide" className="space-y-3 scroll-mt-28">
         {(recipe.guide || Object.values(recipe.engines ?? {}).some((e) => e?.guide)) && (
-          <Accordion title={t("detail.modelNotes")} defaultOpen>
+          <>
+            <div>
+              <div className="atlas-kicker">{t("detail.understandEyebrow")}</div>
+              <h2 className="mt-1 text-2xl font-extrabold tracking-[-0.04em]">{t("detail.technicalNotes")}</h2>
+            </div>
+            <Accordion title={t("detail.modelNotes")} defaultOpen>
             <p className="mb-4 text-xs text-muted-foreground">{t("detail.originalContent")}</p>
             <Suspense fallback={null}>
               <EngineAwareGuide recipe={recipe} defaultEngine={recipe.default_engine || "vllm"} locale={locale} />
             </Suspense>
-          </Accordion>
+            </Accordion>
+          </>
         )}
 
       </section>
 
+
       {/* ── Footer ── */}
       <footer className="mt-10 pt-4 border-t border-border text-sm text-muted-foreground flex flex-wrap gap-x-4 gap-y-2">
-        <span>{t("detail.updated")} {recipe.meta.date_updated}</span>
+        <span>{t("detail.updatedLabel")} {recipe.meta.date_updated}</span>
         <a
           href={recipe.source?.edit_url || `https://github.com/vllm-project/recipes/edit/main/models/${recipe.hf_org}/${recipe.hf_repo}.yaml`}
           className="inline-flex items-center gap-1 hover:text-foreground transition-colors"
@@ -315,7 +350,7 @@ export default async function RecipePage({ params, searchParams }) {
         <DeployDialog platforms={enabledPlatforms} hfId={recipe.hf_id} />
         {related.length > 0 && (
           <span className="basis-full mt-1">
-            Related:{" "}
+            {t("detail.related")}{" "}
             {related.map((r, i) => (
               <span key={r.hf_id}>
                 {i > 0 && " · "}

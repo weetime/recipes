@@ -1,0 +1,668 @@
+{
+  "title": "Qwen3.8-27B BF16 · RTX PRO 5000",
+  "breadcrumb": "Qwen3.8-27B",
+  "kicker": "SERVING BENCHMARK · BF16",
+  "lede": {
+    "zh": "在 8 张 RTX PRO 5000 上测试 Qwen3.8-27B BF16 权重。报告呈现固定长度容量、长上下文承载、自然 Agent 轨迹回放与开放环到达测试；所有结果均保留输入输出长度、并发和样本数。",
+    "en": "This report measures the Qwen3.8-27B BF16 checkpoint on eight RTX PRO 5000 GPUs. It covers fixed-length capacity, long-context serving, natural Agent trace replay, and open-loop arrivals with workload lengths, concurrency, and sample counts attached."
+  },
+  "chips": [
+    "8 × RTX PRO 5000 · 72 GB",
+    "BF16",
+    "vLLM 0.31.0",
+    "AIPerf 0.13.0",
+    "8 independent TP1 instances"
+  ],
+  "snapshot": {
+    "zh": "5 个固定长度点 · 3 个长上下文点 · 4 个 Agent 点",
+    "en": "5 fixed-length points · 3 long-context points · 4 Agent points"
+  },
+  "sections": [
+    {
+      "id": "fixed",
+      "zh": "固定长度",
+      "en": "Fixed length"
+    },
+    {
+      "id": "long-context",
+      "zh": "长上下文",
+      "en": "Long context"
+    },
+    {
+      "id": "agent",
+      "zh": "Agent 回放",
+      "en": "Agent replay"
+    },
+    {
+      "id": "open-loop",
+      "zh": "开放环",
+      "en": "Open loop"
+    },
+    {
+      "id": "method",
+      "zh": "测试方法",
+      "en": "Method"
+    }
+  ],
+  "stats": [
+    {
+      "zhLabel": "8K / 256 固定负载",
+      "enLabel": "8K / 256 fixed workload",
+      "value": "81.0",
+      "zhNote": "C8 整体输出 tok/s · 3 轮均值",
+      "enNote": "aggregate output tok/s at C8 · mean of 3 runs"
+    },
+    {
+      "zhLabel": "最长正式长上下文点",
+      "enLabel": "Longest formal context point",
+      "value": "96K",
+      "zhNote": "输出 128 tokens · 32 requests",
+      "enNote": "128 output tokens · 32 requests"
+    },
+    {
+      "zhLabel": "Agent 长上下文回放",
+      "enLabel": "Agent long-context replay",
+      "value": "1,311",
+      "zhNote": "每轮记录请求完成数；不代表工具任务成功率",
+      "enNote": "completed requests per run; not live-tool task success"
+    }
+  ],
+  "overview": {
+    "heading": {
+      "zh": "吞吐数字附带负载上下文",
+      "en": "Interpret throughput with workload context"
+    },
+    "intro": {
+      "zh": "本页只记录 Qwen3.8-27B BF16 权重及本页所列服务配置。固定长度、开放环和自然 Agent 回放是不同负载，不能混成单一吞吐排名。",
+      "en": "This page covers only Qwen3.8-27B BF16 with the serving setup listed here. Fixed-length, open-loop, and natural Agent replay are distinct workloads and should not be combined into one throughput score."
+    },
+    "note": {
+      "zh": "固定长度点来自三轮复测；长上下文每点 32 个请求。报告不将单轮扩展点解释为稳健尾延迟或通用容量承诺。",
+      "en": "Fixed-length anchors use three runs; long-context points use 32 requests each. Expanded points are descriptive and do not establish robust tail-latency bounds or a universal capacity guarantee."
+    }
+  },
+  "blocks": [
+    {
+      "id": "fixed",
+      "label": {
+        "zh": "固定长度容量",
+        "en": "FIXED-LENGTH CAPACITY"
+      },
+      "heading": {
+        "zh": "并发提高整体输出速率，尾延迟也随负载变化",
+        "en": "Concurrency changes aggregate rate and tail latency"
+      },
+      "intro": {
+        "zh": "8K 输入、256-token 输出的闭环并发阶梯。每个点 3 轮，每轮 128 个请求；图表展示轮均值。",
+        "en": "Closed-loop concurrency sweep at 8K input and 256-token output. Each point has three runs of 128 requests; charts show the mean."
+      },
+      "chart": {
+        "title": {
+          "zh": "8K / 256：整体输出吞吐",
+          "en": "8K / 256: aggregate output throughput"
+        },
+        "hint": {
+          "zh": "悬停查看并发点；纵轴为输出 tok/s。",
+          "en": "Hover over a concurrency point; y-axis is output tok/s."
+        },
+        "labels": {
+          "zh": [
+            "C1",
+            "C2",
+            "C4",
+            "C8",
+            "C16"
+          ],
+          "en": [
+            "C1",
+            "C2",
+            "C4",
+            "C8",
+            "C16"
+          ]
+        },
+        "yTitle": {
+          "zh": "输出吞吐 (tok/s)",
+          "en": "Output throughput (tok/s)"
+        },
+        "series": [
+          {
+            "zh": "整体输出吞吐",
+            "en": "Aggregate output throughput",
+            "color": "orange",
+            "values": [
+              34.01,
+              51.83,
+              69.9,
+              80.97,
+              77.32
+            ]
+          }
+        ]
+      },
+      "table": {
+        "headers": {
+          "zh": [
+            "并发",
+            "请求数 / 轮数",
+            "整体输出 tok/s",
+            "TTFT P50 (ms)",
+            "TTFT P95 (ms)",
+            "ITL P50 (ms)",
+            "MTP 接受率 (%)"
+          ],
+          "en": [
+            "Concurrency",
+            "Requests / runs",
+            "Aggregate output tok/s",
+            "TTFT P50 (ms)",
+            "TTFT P95 (ms)",
+            "ITL P50 (ms)",
+            "MTP acceptance (%)"
+          ]
+        },
+        "rows": [
+          [
+            "C1",
+            "3 × 128",
+            "34.0",
+            "2,399.1",
+            "2,401.3",
+            "19.99",
+            "69.1"
+          ],
+          [
+            "C2",
+            "3 × 128",
+            "51.8",
+            "2,484.5",
+            "2,526.7",
+            "28.76",
+            "68.7"
+          ],
+          [
+            "C4",
+            "3 × 128",
+            "69.9",
+            "2,499.9",
+            "4,765.8",
+            "46.84",
+            "67.1"
+          ],
+          [
+            "C8",
+            "3 × 128",
+            "81.0",
+            "5,880.3",
+            "10,883.7",
+            "74.73",
+            "70.5"
+          ],
+          [
+            "C16",
+            "3 × 128",
+            "77.3",
+            "32,674.3",
+            "38,954.9",
+            "75.36",
+            "69.0"
+          ]
+        ]
+      },
+      "notes": [
+        {
+          "zh": "TTFT P95 是每轮 AIPerf 分位数的算术均值，并非合并请求后的全局分位数。",
+          "en": "TTFT P95 is the arithmetic mean of per-run AIPerf percentiles, not a percentile recomputed over pooled requests."
+        }
+      ]
+    },
+    {
+      "id": "long-context",
+      "label": {
+        "zh": "长上下文容量",
+        "en": "LONG-CONTEXT CAPACITY"
+      },
+      "heading": {
+        "zh": "上下文长度增加时，首 token 等待时间显著增长",
+        "en": "Longer prompts increase time to first token"
+      },
+      "intro": {
+        "zh": "长上下文点以并发 1、每点 32 个请求复测；按实际输出长度分开展示。",
+        "en": "Long-context points use concurrency 1 with 32 requests each; output lengths are shown per point."
+      },
+      "chart": {
+        "title": {
+          "zh": "C1 长上下文：整体输出吞吐",
+          "en": "C1 long context: aggregate output throughput"
+        },
+        "hint": {
+          "zh": "不同长度点的输出长度按表中配置变化。",
+          "en": "Output lengths vary by point as shown in the table."
+        },
+        "labels": {
+          "zh": [
+            "32K",
+            "64K",
+            "96K"
+          ],
+          "en": [
+            "32K",
+            "64K",
+            "96K"
+          ]
+        },
+        "yTitle": {
+          "zh": "输出吞吐 (tok/s)",
+          "en": "Output throughput (tok/s)"
+        },
+        "series": [
+          {
+            "zh": "整体输出吞吐",
+            "en": "Aggregate output throughput",
+            "color": "blue",
+            "values": [
+              15.54,
+              8.26,
+              2.96
+            ]
+          }
+        ]
+      },
+      "table": {
+        "headers": {
+          "zh": [
+            "输入长度",
+            "输出长度",
+            "请求数 / 轮数",
+            "输出 tok/s",
+            "TTFT P50 (ms)",
+            "TTFT P95 (ms)",
+            "ITL P50 (ms)"
+          ],
+          "en": [
+            "Input length",
+            "Output length",
+            "Requests / runs",
+            "Output tok/s",
+            "TTFT P50 (ms)",
+            "TTFT P95 (ms)",
+            "ITL P50 (ms)"
+          ]
+        },
+        "rows": [
+          [
+            "32K",
+            "256",
+            "1 × 32",
+            "15.5",
+            "10,346.3",
+            "10,378.1",
+            "23.62"
+          ],
+          [
+            "64K",
+            "256",
+            "1 × 32",
+            "8.3",
+            "23,030.9",
+            "23,046.7",
+            "31.20"
+          ],
+          [
+            "96K",
+            "128",
+            "1 × 32",
+            "3.0",
+            "38,273.9",
+            "38,303.4",
+            "36.39"
+          ]
+        ]
+      },
+      "notes": [
+        {
+          "zh": "这些点用于描述指定输入输出长度下的表现。有限样本不支持对未测试长度、并发或更大规模作外推。",
+          "en": "These points describe the measured input/output lengths only. The sample sizes do not support extrapolation to untested lengths, concurrency, or larger deployments."
+        }
+      ]
+    },
+    {
+      "id": "agent",
+      "label": {
+        "zh": "Agent 轨迹回放",
+        "en": "AGENT TRACE REPLAY"
+      },
+      "heading": {
+        "zh": "自然回复长度下的多轮请求回放",
+        "en": "Multi-turn replay with natural response lengths"
+      },
+      "intro": {
+        "zh": "复用冻结的公开 Agent 轨迹；16 个会话，外部工具不执行，记录中的工具观察作为上下文回放。",
+        "en": "Uses a frozen public Agent trace with 16 sessions. External tools are not executed; recorded tool observations are replayed as context."
+      },
+      "chart": {
+        "type": "bar",
+        "title": {
+          "zh": "Agent 回放：输出吞吐",
+          "en": "Agent replay: output throughput"
+        },
+        "hint": {
+          "zh": "Coding 与 long-context 分组；按并发 1 和 8 展示。",
+          "en": "Coding and long-context subsets, shown at concurrency 1 and 8."
+        },
+        "labels": {
+          "zh": [
+            "Coding C1",
+            "Coding C8",
+            "Long-context C1",
+            "Long-context C8"
+          ],
+          "en": [
+            "Coding C1",
+            "Coding C8",
+            "Long-context C1",
+            "Long-context C8"
+          ]
+        },
+        "yTitle": {
+          "zh": "输出吞吐 (tok/s)",
+          "en": "Output throughput (tok/s)"
+        },
+        "series": [
+          {
+            "zh": "输出吞吐",
+            "en": "Output throughput",
+            "color": "green",
+            "values": [
+              44.37,
+              31.94,
+              36.46,
+              13.54
+            ]
+          }
+        ]
+      },
+      "table": {
+        "headers": {
+          "zh": [
+            "场景",
+            "并发",
+            "测量轮数",
+            "完成请求数",
+            "输出 tok/s",
+            "TTFT P50 (ms)",
+            "TTFT P95 (ms)",
+            "请求错误率"
+          ],
+          "en": [
+            "Scenario",
+            "Concurrency",
+            "Runs",
+            "Completed requests",
+            "Output tok/s",
+            "TTFT P50 (ms)",
+            "TTFT P95 (ms)",
+            "Request error rate"
+          ]
+        },
+        "rows": [
+          [
+            "Coding",
+            "C1",
+            "2 runs",
+            "816",
+            "44.4",
+            "579.1",
+            "1,264.4",
+            "0.0%"
+          ],
+          [
+            "Coding",
+            "C8",
+            "2 runs",
+            "816",
+            "31.9",
+            "16,067.0",
+            "57,780.2",
+            "0.0%"
+          ],
+          [
+            "Longctx",
+            "C1",
+            "3 runs",
+            "1,311",
+            "36.5",
+            "742.5",
+            "2,272.5",
+            "0.0%"
+          ],
+          [
+            "Longctx",
+            "C8",
+            "3 runs",
+            "1,311",
+            "13.5",
+            "77,673.4",
+            "134,942.5",
+            "0.0%"
+          ]
+        ]
+      },
+      "notes": [
+        {
+          "zh": "Agent 测试衡量服务回放性能，不衡量任务完成率、工具执行正确率或模型回答质量。",
+          "en": "Agent replay measures serving performance, not task completion, live tool correctness, or answer quality."
+        }
+      ]
+    },
+    {
+      "id": "open-loop",
+      "label": {
+        "zh": "开放环到达",
+        "en": "OPEN-LOOP ARRIVALS"
+      },
+      "heading": {
+        "zh": "请求独立到达，显示服务端完成吞吐与排队延迟",
+        "en": "Independent arrivals expose completion throughput and queueing latency"
+      },
+      "intro": {
+        "zh": "8K 输入 / 512 输出，按目标到达速率启动请求；仅呈现实验中实际执行的速率点。",
+        "en": "8K input / 512 output with requests launched at configured arrival rates; only measured rates are shown."
+      },
+      "chart": {
+        "title": {
+          "zh": "开放环：完成输出吞吐",
+          "en": "Open loop: completed output throughput"
+        },
+        "hint": {
+          "zh": "X 轴为配置的到达率；不是稳定容量或 SLO 通过线。",
+          "en": "X-axis is the configured arrival rate; it is not a stable capacity or SLO pass threshold."
+        },
+        "labels": {
+          "zh": [
+            "0.25",
+            "0.50",
+            "0.75",
+            "0.90",
+            "1.00",
+            "1.10"
+          ],
+          "en": [
+            "0.25",
+            "0.50",
+            "0.75",
+            "0.90",
+            "1.00",
+            "1.10"
+          ]
+        },
+        "xTitle": {
+          "zh": "目标到达率 (req/s)",
+          "en": "Target arrival rate (req/s)"
+        },
+        "yTitle": {
+          "zh": "输出吞吐 (tok/s)",
+          "en": "Output throughput (tok/s)"
+        },
+        "series": [
+          {
+            "zh": "完成输出吞吐",
+            "en": "Completed output throughput",
+            "color": "orange",
+            "values": [
+              31.51,
+              66.94,
+              115.18,
+              119.54,
+              119.23,
+              121.36
+            ]
+          }
+        ]
+      },
+      "table": {
+        "headers": {
+          "zh": [
+            "目标到达率",
+            "请求预算 / 轮数",
+            "完成请求数",
+            "完成 Req/s",
+            "输出 tok/s",
+            "TTFT P95 (ms)",
+            "错误率"
+          ],
+          "en": [
+            "Target arrival rate",
+            "Request budget / runs",
+            "Completed requests",
+            "Completed Req/s",
+            "Output tok/s",
+            "TTFT P95 (ms)",
+            "Error rate"
+          ]
+        },
+        "rows": [
+          [
+            "0.25 req/s",
+            "3 × 600",
+            "111",
+            "0.062",
+            "31.5",
+            "4,551.7",
+            "0.0%"
+          ],
+          [
+            "0.50 req/s",
+            "3 × 600",
+            "243",
+            "0.131",
+            "66.9",
+            "12,795.9",
+            "0.0%"
+          ],
+          [
+            "0.75 req/s",
+            "3 × 600",
+            "432",
+            "0.225",
+            "115.2",
+            "41,537.2",
+            "0.0%"
+          ],
+          [
+            "0.90 req/s",
+            "3 × 600",
+            "450",
+            "0.234",
+            "119.5",
+            "53,805.1",
+            "0.0%"
+          ],
+          [
+            "1.00 req/s",
+            "3 × 600",
+            "504",
+            "0.233",
+            "119.2",
+            "150,436.1",
+            "0.0%"
+          ],
+          [
+            "1.10 req/s",
+            "3 × 600",
+            "513",
+            "0.237",
+            "121.4",
+            "149,496.6",
+            "0.0%"
+          ]
+        ]
+      },
+      "notes": [
+        {
+          "zh": "该数据未套用 SLO 门限。完成数低于请求预算或延迟升高时，应结合完整负载模型和服务端队列指标解读。",
+          "en": "No SLO threshold is applied to this dataset. Interpret incomplete requests or elevated latency alongside the full load profile and server queue metrics."
+        }
+      ]
+    }
+  ],
+  "methodIntro": {
+    "zh": "测试日期为 2026-10-14 至 2026-10-16。输入文本与采样方式由固定矩阵指定；此处只发布聚合性能指标。",
+    "en": "Measurements were collected from 14–16 October 2026. Fixed matrices define prompts and sampling; only aggregated performance metrics are published."
+  },
+  "meta": [
+    {
+      "zh": "模型权重",
+      "en": "Checkpoint",
+      "value": "Qwen3.8-27B BF16"
+    },
+    {
+      "zh": "硬件",
+      "en": "Hardware",
+      "value": "8 × NVIDIA RTX PRO 5000 · 72 GB"
+    },
+    {
+      "zh": "服务拓扑",
+      "en": "Serving topology",
+      "value": "8 independent TP1 service instances"
+    },
+    {
+      "zh": "推理框架",
+      "en": "Serving stack",
+      "value": "vLLM 0.31.0"
+    },
+    {
+      "zh": "压测工具",
+      "en": "Load generator",
+      "value": "AIPerf 0.13.0"
+    },
+    {
+      "zh": "主要矩阵",
+      "en": "Primary matrix",
+      "value": "8K input / 256 output · C1–C16 · 3 runs × 128 requests"
+    },
+    {
+      "zh": "长上下文采样",
+      "en": "Long-context sampling",
+      "value": "32 requests per point · C1"
+    },
+    {
+      "zh": "数据处理",
+      "en": "Data handling",
+      "value": {
+        "zh": "仅发布聚合指标；机器地址、主机名、凭据、源目录和原始轨迹均未收录。",
+        "en": "Aggregated metrics only; machine addresses, hostnames, credentials, source paths, and raw traces are excluded."
+      }
+    }
+  ],
+  "methodNotes": [
+    {
+      "zh": "每一条延迟分位数均为对应单次 AIPerf 测试输出的分位数；多个轮次的分位数采用算术均值汇总，不等同于原始请求合并后重算的分位数。",
+      "en": "Each latency percentile comes from an individual AIPerf run. Multi-run percentiles are arithmetic means of per-run percentiles, not recomputed from pooled raw requests."
+    },
+    {
+      "zh": "8 张 GPU 分别运行 TP1 服务实例；这些点不是单一 TP8 服务随 GPU 数量扩展的曲线。",
+      "en": "Eight GPUs hosted separate TP1 service instances; these measurements are not a scaling curve for one TP8 server."
+    }
+  ]
+}

@@ -1,7 +1,7 @@
 import { Link } from "@/i18n/navigation";
 import { notFound, redirect } from "next/navigation";
 import { getAllRecipes, getRecipesByOrg } from "@/lib/recipes";
-import { getProviderLogo, getProviderLogoClass, getProviderDisplayName } from "@/lib/providers";
+import { getProviderDisplayName } from "@/lib/providers";
 import { primaryRecipeTask, recipeHref } from "@/lib/recipe-utils";
 import { siteUrl } from "@/lib/site-url";
 import { Badge } from "@/components/ui/badge";
@@ -19,17 +19,14 @@ export async function generateMetadata({ params }) {
   const { org, locale } = await params;
   const displayName = getProviderDisplayName(org);
   const count = getRecipesByOrg(org).length;
-  const description = locale === "zh"
-    ? `${displayName} 模型的 vLLM 服务配方：${count} 个适配硬件的可运行配置。`
-    : `vLLM serve recipes for ${displayName} models — ${count} recipe${count === 1 ? "" : "s"} with hardware-tuned commands.`;
+  const chinese = locale === "zh";
+  const description = chinese ? `查看 ${displayName} 的 ${count} 个模型部署配方。` : `Explore ${count} ${displayName} deployment recipes with hardware-tuned vLLM and SGLang commands.`;
   const ogUrl = `/og?title=${encodeURIComponent(displayName)}&subtitle=${encodeURIComponent(
     `${count} recipe${count === 1 ? "" : "s"}`
   )}&path=${encodeURIComponent(`/${org}`)}`;
   // Page <title> "{displayName} on vLLM" + layout template " | vLLM Recipes"
   // would double the brand. Use absolute and include the count for tab UX.
-  const titleText = locale === "zh"
-    ? `${displayName} 模型部署配方 — ${count} 个`
-    : `${displayName} on vLLM — ${count} recipe${count === 1 ? "" : "s"}`;
+  const titleText = chinese ? `${displayName} 模型部署配方 — ${count} 个模型` : `${displayName} deployment recipes — ${count} model${count === 1 ? "" : "s"}`;
   return {
     title: { absolute: titleText },
     description,
@@ -37,7 +34,7 @@ export async function generateMetadata({ params }) {
       type: "website",
       title: titleText,
       description,
-      url: locale === "zh" ? `/zh/${org}` : `/${org}`,
+      url: chinese ? `/zh/${org}` : `/${org}`,
       images: [{ url: ogUrl, width: 1200, height: 630, alt: displayName }],
     },
     twitter: {
@@ -46,10 +43,7 @@ export async function generateMetadata({ params }) {
       description,
       images: [ogUrl],
     },
-    alternates: {
-      canonical: locale === "zh" ? `/zh/${org}` : `/${org}`,
-      languages: { en: `/${org}`, zh: `/zh/${org}` },
-    },
+    alternates: { canonical: chinese ? `/zh/${org}` : `/${org}`, languages: { en: `/${org}`, zh: `/zh/${org}` } },
   };
 }
 
@@ -61,7 +55,6 @@ const TASK_META = {
   embedding:  { icon: Hash,     label: "Embedding" },
 };
 const TASK_ORDER = ["multimodal", "text", "omni", "embedding"];
-const TASK_LABEL_ZH = { text: "文本", multimodal: "多模态", omni: "全模态", embedding: "向量嵌入" };
 
 export default async function OrgPage({ params }) {
   const { org, locale } = await params;
@@ -70,10 +63,9 @@ export default async function OrgPage({ params }) {
   if (models.length === 0) notFound();
   const canonicalOrg = models[0].hf_org;
   if (org !== canonicalOrg) {
-    redirect(`/${locale}/${canonicalOrg}`);
+    redirect(`${locale === "zh" ? "/zh" : ""}/${canonicalOrg}`);
   }
 
-  const logo = getProviderLogo(org);
   const displayName = getProviderDisplayName(org);
 
   // Group by capability, independently of the order of meta.tasks.
@@ -103,7 +95,7 @@ export default async function OrgPage({ params }) {
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",
     itemListElement: [
-      { "@type": "ListItem", position: 1, name: "Model Recipes", item: siteUrl },
+      { "@type": "ListItem", position: 1, name: "Model Index", item: siteUrl },
       { "@type": "ListItem", position: 2, name: displayName, item: `${siteUrl}/${org}` },
     ],
   };
@@ -115,17 +107,12 @@ export default async function OrgPage({ params }) {
         // eslint-disable-next-line react/no-danger
         dangerouslySetInnerHTML={jsonLdScript(breadcrumbLd)}
       />
-      <header className="mb-8 flex items-center gap-4">
-        {logo ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={logo} alt="" width={56} height={56} className={`rounded-xl shrink-0 ${getProviderLogoClass(org)}`} />
-        ) : (
-          <div className="w-14 h-14 rounded-xl bg-muted flex items-center justify-center text-2xl font-bold text-muted-foreground">
-            {displayName.charAt(0)}
-          </div>
-        )}
+      <Link href="/browse" className="mb-5 inline-flex text-xs font-semibold text-vllm-blue hover:underline">{t("org.back")}</Link>
+      <header className="mb-12 flex flex-wrap items-end gap-6 border-b border-border pb-10 pt-8">
+        <span className="provider-monogram h-14 w-14 shrink-0 text-2xl" aria-hidden="true">{displayName.charAt(0)}</span>
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">{displayName}</h1>
+          <div className="atlas-kicker mb-1">{t("org.collection")}</div>
+          <h1 className="text-4xl font-semibold tracking-[-0.065em] sm:text-7xl">{displayName}</h1>
           <div className="flex items-center gap-3 mt-1 text-sm text-muted-foreground">
             <span className="font-mono text-xs">{org}</span>
             <span>·</span>
@@ -151,16 +138,14 @@ export default async function OrgPage({ params }) {
             <section key={task}>
               <div className="flex items-center gap-2 mb-3">
                 <Icon size={14} className="text-muted-foreground" />
-                <h2 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground">
-                  {t.has(`tasks.${task}`)
-                    ? t(`tasks.${task}`)
-                    : (locale === "zh" ? (TASK_LABEL_ZH[task] || tmeta?.label || task) : (tmeta?.label || task))}
+                <h2 className="text-sm font-bold uppercase tracking-widest text-foreground">
+                  {t.has(`tasks.${task}`) ? t(`tasks.${task}`) : tmeta?.label || task}
                 </h2>
                 <span className="text-xs text-muted-foreground/60 tabular-nums">{list.length}</span>
               </div>
-              <div className="border border-border rounded-xl divide-y divide-border/60 overflow-hidden">
+              <div className="divide-y divide-border border-t-2 border-foreground">
                 {list.map((r) => (
-                  <ModelRow key={r.hf_id} recipe={r} />
+                  <ModelRow key={r.hf_id} recipe={r} t={t} />
                 ))}
               </div>
             </section>
@@ -171,7 +156,7 @@ export default async function OrgPage({ params }) {
   );
 }
 
-function ModelRow({ recipe }) {
+function ModelRow({ recipe, t }) {
   const { meta, model, variants, hf_repo } = recipe;
   // Show capabilities other than the task used for grouping.
   const primaryTask = primaryRecipeTask(recipe);
@@ -180,7 +165,7 @@ function ModelRow({ recipe }) {
   return (
     <Link
       href={recipeHref(recipe)}
-      className="flex flex-wrap items-center gap-x-3 gap-y-1.5 px-4 py-3 hover:bg-muted/40 transition-all group"
+      className="flex flex-wrap items-center gap-x-4 gap-y-2 px-2 py-5 hover:bg-muted/40 transition-all group"
     >
       <div className="min-w-[220px] shrink-0">
         <div className="text-sm font-semibold font-mono group-hover:text-vllm-blue transition-colors">
@@ -194,17 +179,17 @@ function ModelRow({ recipe }) {
         </div>
       </div>
 
-      <Badge variant="outline" className="text-[10px] capitalize">{model.architecture}</Badge>
+      <Badge variant="outline" className="text-[10px] capitalize">{t.has(`architecture.${model.architecture}`) ? t(`architecture.${model.architecture}`) : model.architecture}</Badge>
 
       {secondaryTasks.length > 0 && (
         <div className="flex items-center gap-1 text-muted-foreground/70">
-          {secondaryTasks.map((t) => {
-            const tm = TASK_META[t];
+          {secondaryTasks.map((taskId) => {
+            const tm = TASK_META[taskId];
             const TIcon = tm?.icon || Cpu;
             return (
               <span
-                key={t}
-                title={`Also: ${tm?.label || t}`}
+                key={taskId}
+                title={tm?.label ? (t.has(`tasks.${taskId}`) ? t(`tasks.${taskId}`) : tm.label) : taskId}
                 className="inline-flex items-center"
               >
                 <TIcon size={12} />

@@ -2,12 +2,12 @@
 
 import { useState, useEffect, useRef } from "react";
 import { usePathname, Link } from "@/i18n/navigation";
+import { useT } from "@/components/i18n/I18nProvider";
 import { getProviderLogo, getProviderLogoClass, getProviderDisplayName } from "@/lib/providers";
 import { primaryRecipeTask, recipeHref } from "@/lib/recipe-utils";
 import { getEngineMeta, recipeEngineIds } from "@/lib/engine-meta";
 import { ChevronRight, Type, Eye, Sparkles, Hash, Cpu } from "lucide-react";
 import { TooltipProvider, InfoTip } from "@/components/ui/tooltip";
-import { useT } from "@/components/i18n/I18nProvider";
 
 const TASK_ICON = {
   text:       Type,
@@ -56,10 +56,16 @@ export function ModelSidebar({ recipesByOrg }) {
 
   return (
     <TooltipProvider>
-    <nav className="w-64 shrink-0 hidden lg:block">
-      <div data-sidebar-scroll className="sticky top-16 pt-4 space-y-0.5 max-h-[calc(100vh-5rem)] overflow-y-auto scrollbar-thin">
-        <div className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground px-3 pb-2">
-          {t("nav.providers")}
+    <nav className="w-64 shrink-0 hidden lg:block" aria-label="Provider collections">
+      <div className="sticky top-[76px] pt-4">
+        <div className="atlas-panel overflow-hidden">
+          <div className="border-b border-border bg-accent/50 px-4 py-3">
+            <div className="atlas-kicker">Atlas / collections</div>
+            <Link href="/browse" className="mt-1.5 inline-flex text-xs font-bold text-foreground hover:text-vllm-blue">Browse all recipes →</Link>
+          </div>
+          <div data-sidebar-scroll className="max-h-[calc(100vh-12rem)] space-y-0.5 overflow-y-auto p-2 scrollbar-thin">
+        <div className="px-3 pb-2 pt-1 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+          Providers
         </div>
         {recipesByOrg.map(([org, models]) => {
           const logo = getProviderLogo(org);
@@ -155,6 +161,8 @@ export function ModelSidebar({ recipesByOrg }) {
             </div>
           );
         })}
+          </div>
+        </div>
       </div>
     </nav>
     </TooltipProvider>

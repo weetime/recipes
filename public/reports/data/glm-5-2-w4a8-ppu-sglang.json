@@ -1,0 +1,558 @@
+{
+  "title": "GLM-5.2 W4A8 · PPU",
+  "breadcrumb": "GLM-5.2",
+  "kicker": "SERVING BENCHMARK · W4A8",
+  "lede": {
+    "zh": "本报告记录 GLM-5.2 W4A8 在 PPU-ZW810E 集群上的 SGLang 服务吞吐、延迟与并发配置表现。",
+    "en": "This report documents SGLang throughput, latency, and concurrency behavior for GLM-5.2 W4A8 on PPU-ZW810E accelerators."
+  },
+  "chips": [
+    "8 × PPU ZW810E",
+    "W4A8 · DSA",
+    "SGLang 0.5.12",
+    "ShareGPT · thinking off",
+    "Measured 2026-07"
+  ],
+  "snapshot": {
+    "zh": "3 种服务配置 · 256 / 1,024 输出长度 · 至多 C128",
+    "en": "3 serving configurations · 256 / 1,024 output tokens · up to C128"
+  },
+  "sections": [
+    {
+      "id": "capacity",
+      "zh": "吞吐容量",
+      "en": "Throughput"
+    },
+    {
+      "id": "long-output",
+      "zh": "长输出",
+      "en": "Long output"
+    },
+    {
+      "id": "stability",
+      "zh": "饱和稳定性",
+      "en": "Saturation"
+    },
+    {
+      "id": "method",
+      "zh": "测试方法",
+      "en": "Method"
+    }
+  ],
+  "stats": [
+    {
+      "zhLabel": "256 输出吞吐峰值",
+      "enLabel": "256-output peak throughput",
+      "value": "368.9",
+      "zhNote": "TP8 baseline · C32",
+      "enNote": "TP8 baseline · C32"
+    },
+    {
+      "zhLabel": "1,024 输出吞吐峰值",
+      "enLabel": "1,024-output peak throughput",
+      "value": "418.7",
+      "zhNote": "TP8 baseline · C32",
+      "enNote": "TP8 baseline · C32"
+    },
+    {
+      "zhLabel": "同一权重服务配置",
+      "enLabel": "Serving configurations for one checkpoint",
+      "value": "3",
+      "zhNote": "TP8 baseline 与 DP attention MRR16 / MRR32",
+      "enNote": "TP8 baseline and DP attention MRR16 / MRR32"
+    }
+  ],
+  "overview": {
+    "heading": {
+      "zh": "同一权重的配置行为",
+      "en": "Configuration behavior for one checkpoint"
+    },
+    "intro": {
+      "zh": "页内只讨论 GLM-5.2 W4A8。TP8 baseline、DP attention MRR16 与 MRR32 是同一权重的服务配置实验；不要将不同配置的峰值解释为通用部署结果。",
+      "en": "This page covers only GLM-5.2 W4A8. TP8 baseline, DP attention MRR16, and MRR32 are serving configurations for the same checkpoint; their peaks are not universal deployment results."
+    },
+    "note": {
+      "zh": "矩阵包括三轮中位吞吐数据；高并发点在部分配置上出现 TTFT 长尾。公开表格附带输入输出长度和并发，不将峰值压缩成单一分数。",
+      "en": "The matrix uses three-run median throughput; some configurations show long TTFT tails at high concurrency. Input/output lengths and concurrency accompany results rather than collapsing them into one score."
+    }
+  },
+  "blocks": [
+    {
+      "id": "capacity",
+      "label": {
+        "zh": "固定长度吞吐",
+        "en": "FIXED-LENGTH THROUGHPUT"
+      },
+      "heading": {
+        "zh": "输出长度改变吞吐曲线与饱和位置",
+        "en": "Output length changes the throughput curve and saturation point"
+      },
+      "intro": {
+        "zh": "ShareGPT 英文请求集，thinking off；输入长度分布遵循数据集，输出长度分别为 256 与 1,024 tokens。数据为三轮中位汇总。",
+        "en": "ShareGPT English prompts with thinking disabled; prompt lengths follow the dataset. Output lengths are 256 and 1,024 tokens. Values are three-run medians."
+      },
+      "notes": [
+        {
+          "zh": "TP8 baseline 在输出 256、并发 32 时达到该矩阵最高值；DP attention 的并发拐点随 MRR 配置变化。",
+          "en": "The TP8 baseline reaches the highest point in this matrix at output 256 and C32; the DP-attention concurrency knee varies by MRR setting."
+        },
+        {
+          "zh": "并发 48 以上部分基线 TTFT 显著上升，需同时查看延迟列，不能只按吞吐选档。",
+          "en": "Baseline TTFT rises sharply above C48; inspect latency alongside throughput rather than selecting by throughput alone."
+        }
+      ],
+      "chart": {
+        "title": {
+          "zh": "输出 256 tokens：并发吞吐",
+          "en": "256-token output: throughput by concurrency"
+        },
+        "hint": {
+          "zh": "悬停查看实测点。",
+          "en": "Hover a point to inspect the measurement."
+        },
+        "labels": {
+          "zh": [
+            "C1",
+            "C4",
+            "C8",
+            "C16",
+            "C32",
+            "C48",
+            "C64",
+            "C96",
+            "C128"
+          ],
+          "en": [
+            "C1",
+            "C4",
+            "C8",
+            "C16",
+            "C32",
+            "C48",
+            "C64",
+            "C96",
+            "C128"
+          ]
+        },
+        "series": [
+          {
+            "zh": "TP8 baseline",
+            "en": "TP8 baseline",
+            "color": "orange",
+            "values": [
+              21.36,
+              73.63,
+              135.58,
+              241.88,
+              368.93,
+              269.5,
+              272.87,
+              null,
+              null
+            ]
+          },
+          {
+            "zh": "DP attention · MRR16",
+            "en": "DP attention · MRR16",
+            "color": "blue",
+            "values": [
+              25.38,
+              87.94,
+              145.31,
+              246.32,
+              226.26,
+              235.22,
+              229.93,
+              null,
+              null
+            ]
+          },
+          {
+            "zh": "DP attention · MRR32",
+            "en": "DP attention · MRR32",
+            "color": "green",
+            "values": [
+              24.99,
+              86.81,
+              150.98,
+              235.66,
+              360.6,
+              343.05,
+              338.4,
+              337.34,
+              332.74
+            ]
+          }
+        ],
+        "yTitle": {
+          "zh": "整体输出吞吐 (tok/s)",
+          "en": "Aggregate output throughput (tok/s)"
+        },
+        "type": "line"
+      },
+      "table": {
+        "headers": {
+          "zh": [
+            "配置",
+            "C1",
+            "C4",
+            "C8",
+            "C16",
+            "C32",
+            "C48",
+            "C64",
+            "C96",
+            "C128"
+          ],
+          "en": [
+            "Configuration",
+            "C1",
+            "C4",
+            "C8",
+            "C16",
+            "C32",
+            "C48",
+            "C64",
+            "C96",
+            "C128"
+          ]
+        },
+        "rows": [
+          [
+            "TP8 baseline",
+            "21.4",
+            "73.6",
+            "135.6",
+            "241.9",
+            "368.9",
+            "269.5",
+            "272.9",
+            "—",
+            "—"
+          ],
+          [
+            "DP attention · MRR16",
+            "25.4",
+            "87.9",
+            "145.3",
+            "246.3",
+            "226.3",
+            "235.2",
+            "229.9",
+            "—",
+            "—"
+          ],
+          [
+            "DP attention · MRR32",
+            "25.0",
+            "86.8",
+            "151.0",
+            "235.7",
+            "360.6",
+            "343.1",
+            "338.4",
+            "337.3",
+            "332.7"
+          ]
+        ]
+      }
+    },
+    {
+      "id": "long-output",
+      "label": {
+        "zh": "长输出负载",
+        "en": "LONG OUTPUT"
+      },
+      "heading": {
+        "zh": "1,024-token 输出下高并发更早显现排队压力",
+        "en": "At 1,024-token output, queueing pressure appears earlier at high concurrency"
+      },
+      "intro": {
+        "zh": "固定输出 1,024 tokens；该矩阵仅测 C4、C8、C16、C32。",
+        "en": "Fixed 1,024-token output; this matrix measures only C4, C8, C16, and C32."
+      },
+      "notes": [
+        {
+          "zh": "TP8 baseline C32 的整体输出吞吐为 418.7 tok/s；DP attention MRR16 在 C32 的 TTFT 与 P99压力显著升高。",
+          "en": "TP8 baseline reaches 418.7 aggregate output tok/s at C32; DP attention MRR16 shows a substantial TTFT/P99 increase at C32."
+        }
+      ],
+      "chart": {
+        "title": {
+          "zh": "输出 1,024 tokens：整体吞吐",
+          "en": "1,024-token output: aggregate throughput"
+        },
+        "hint": {
+          "zh": "悬停查看实测点。",
+          "en": "Hover a point to inspect the measurement."
+        },
+        "labels": {
+          "zh": [
+            "C4",
+            "C8",
+            "C16",
+            "C32"
+          ],
+          "en": [
+            "C4",
+            "C8",
+            "C16",
+            "C32"
+          ]
+        },
+        "series": [
+          {
+            "zh": "TP8 baseline",
+            "en": "TP8 baseline",
+            "color": "orange",
+            "values": [
+              75.57,
+              138.8,
+              251.2,
+              418.71
+            ]
+          },
+          {
+            "zh": "DP attention · MRR16",
+            "en": "DP attention · MRR16",
+            "color": "blue",
+            "values": [
+              91.36,
+              157.13,
+              238.03,
+              263.8
+            ]
+          },
+          {
+            "zh": "DP attention · MRR32",
+            "en": "DP attention · MRR32",
+            "color": "green",
+            "values": [
+              89.76,
+              156.34,
+              262.48,
+              387.03
+            ]
+          }
+        ],
+        "yTitle": {
+          "zh": "整体输出吞吐 (tok/s)",
+          "en": "Aggregate output throughput (tok/s)"
+        },
+        "type": "line"
+      },
+      "table": {
+        "headers": {
+          "zh": [
+            "配置",
+            "并发",
+            "整体输出 tok/s",
+            "TTFT (ms)",
+            "TPOT (ms)"
+          ],
+          "en": [
+            "Configuration",
+            "Concurrency",
+            "Aggregate output tok/s",
+            "TTFT (ms)",
+            "TPOT (ms)"
+          ]
+        },
+        "rows": [
+          [
+            "TP8 baseline",
+            "4",
+            "75.6",
+            "661.7",
+            "49.1"
+          ],
+          [
+            "TP8 baseline",
+            "8",
+            "138.8",
+            "493.0",
+            "52.5"
+          ],
+          [
+            "TP8 baseline",
+            "16",
+            "251.2",
+            "393.1",
+            "57.3"
+          ],
+          [
+            "TP8 baseline",
+            "32",
+            "418.7",
+            "515.3",
+            "66.2"
+          ],
+          [
+            "DP attention · MRR16",
+            "4",
+            "91.4",
+            "363.7",
+            "40.7"
+          ],
+          [
+            "DP attention · MRR16",
+            "8",
+            "157.1",
+            "372.0",
+            "46.9"
+          ],
+          [
+            "DP attention · MRR16",
+            "16",
+            "238.0",
+            "1702.5",
+            "51.2"
+          ],
+          [
+            "DP attention · MRR16",
+            "32",
+            "263.8",
+            "36769.6",
+            "52.9"
+          ],
+          [
+            "DP attention · MRR32",
+            "4",
+            "89.8",
+            "426.5",
+            "40.7"
+          ],
+          [
+            "DP attention · MRR32",
+            "8",
+            "156.3",
+            "484.3",
+            "47.3"
+          ],
+          [
+            "DP attention · MRR32",
+            "16",
+            "262.5",
+            "528.0",
+            "56.7"
+          ],
+          [
+            "DP attention · MRR32",
+            "32",
+            "387.0",
+            "2462.3",
+            "65.2"
+          ]
+        ]
+      }
+    },
+    {
+      "id": "stability",
+      "label": {
+        "zh": "饱和与稳定性",
+        "en": "SATURATION"
+      },
+      "heading": {
+        "zh": "请求达到饱和区后，延迟迅速拉高",
+        "en": "Latency rises sharply after requests enter the saturation region"
+      },
+      "intro": {
+        "zh": "以三组配置记录的 256-token 输出容量曲线为准；请求成功率与错误样本以原实验记录为界。",
+        "en": "Based on the 256-token output capacity curves for three configurations; success and error counts follow the source experiment."
+      },
+      "notes": [
+        {
+          "zh": "测试噪声底在低并发约 3.4%，饱和档吞吐波动约 12.1%；极限并发点不适合作为常态部署建议。",
+          "en": "Measured noise floor is about 3.4% at low concurrency and throughput variation about 12.1% near saturation; maximum-load points are not normal deployment recommendations."
+        }
+      ],
+      "table": {
+        "headers": {
+          "zh": [
+            "配置",
+            "256 输出峰值 tok/s",
+            "峰值并发",
+            "1,024 输出峰值 tok/s",
+            "峰值并发"
+          ],
+          "en": [
+            "Configuration",
+            "256 output peak tok/s",
+            "Peak concurrency",
+            "1,024 output peak tok/s",
+            "Peak concurrency"
+          ]
+        },
+        "rows": [
+          [
+            "TP8 baseline",
+            "368.9",
+            "32",
+            "418.7",
+            "32"
+          ],
+          [
+            "DP attention · MRR16",
+            "246.3",
+            "16",
+            "263.8",
+            "16"
+          ],
+          [
+            "DP attention · MRR32",
+            "360.6",
+            "32",
+            "387.0",
+            "32"
+          ]
+        ]
+      }
+    }
+  ],
+  "methodIntro": {
+    "zh": "8 × PPU ZW810E，SGLang 0.5.12；以 ShareGPT 请求集进行三轮测试。",
+    "en": "Eight PPU ZW810E accelerators on SGLang 0.5.12; three-run measurements used the ShareGPT request set."
+  },
+  "meta": [
+    {
+      "zh": "模型权重",
+      "en": "Checkpoint",
+      "value": "GLM-5.2 W4A8"
+    },
+    {
+      "zh": "推理框架",
+      "en": "Serving engine",
+      "value": "SGLang 0.5.12"
+    },
+    {
+      "zh": "加速器",
+      "en": "Accelerator",
+      "value": "8 × PPU ZW810E"
+    },
+    {
+      "zh": "数据集",
+      "en": "Dataset",
+      "value": "ShareGPT English · thinking disabled"
+    },
+    {
+      "zh": "重复次数",
+      "en": "Repeat count",
+      "value": "3 rounds · median summary"
+    },
+    {
+      "zh": "配置变量",
+      "en": "Configuration variables",
+      "value": "TP8 baseline; DP attention MRR16 / MRR32"
+    }
+  ],
+  "methodNotes": [
+    {
+      "zh": "高并发时的 TTFT 增长是重要服务边界；表中不把压测极限推荐为生产并发。",
+      "en": "High-concurrency TTFT growth is a key serving boundary; stress-test limits are not production concurrency recommendations."
+    },
+    {
+      "zh": "原始机器地址、内部标识与本地路径未公开。",
+      "en": "Source machine addresses, internal identifiers, and local paths are omitted."
+    }
+  ]
+}

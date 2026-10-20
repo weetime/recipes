@@ -1,12 +1,12 @@
 "use client";
 
-import { useMemo, useCallback } from "react";
+import { useMemo, useCallback, useEffect, useRef, useState } from "react";
 import { Link, useRouter } from "@/i18n/navigation";
 import { useSearchParams } from "next/navigation";
-import { Layers, Cpu, X, ArrowDownUp, Type, Eye, Sparkles, Hash, SlidersHorizontal, ChevronDown } from "lucide-react";
-import { getProviderLogo, getProviderLogoClass, getProviderDisplayName } from "@/lib/providers";
-import { searchRecipes } from "@/lib/search";
 import { useT } from "@/components/i18n/I18nProvider";
+import { Layers, Cpu, X, ArrowDownUp, Type, Eye, Sparkles, Hash, SlidersHorizontal, ChevronDown, Search } from "lucide-react";
+import { getProviderDisplayName } from "@/lib/providers";
+import { searchRecipes } from "@/lib/search";
 
 // Per-row decorations: icon (tasks/arch) or colored dot (precision/hardware).
 // Color is family-grouped — precision tiers, GPU brands — so the eye can
@@ -191,7 +191,7 @@ export function BrowseList({ recipes, hardwareOptions }) {
 
   // Single useMemo so the Sets keep stable identity across renders. Each row
   // holds at most one choice, including when opening an older multi-select URL.
-  const { tasks, archs, sizes, precisions, hardware, provider, sort, q } = useMemo(() => {
+  const { tasks, archs, sizes, precisions, hardware, engine, provider, sort, q } = useMemo(() => {
     const setOf = (k) => new Set((searchParams.get(k) || "").split(",").filter(Boolean).slice(0, 1));
     return {
       tasks: setOf("task"),
@@ -199,6 +199,7 @@ export function BrowseList({ recipes, hardwareOptions }) {
       sizes: setOf("size"),
       precisions: setOf("precision"),
       hardware: setOf("hw"),
+      engine: setOf("engine"),
       provider: searchParams.get("provider") || "",
       sort: searchParams.get("sort") || "released",
       q: (searchParams.get("q") || "").trim().toLowerCase(),
@@ -218,7 +219,7 @@ export function BrowseList({ recipes, hardwareOptions }) {
   const update = useCallback(
     (patch) => {
       const sp = new URLSearchParams(searchParams.toString());
-      for (const key of ["task", "arch", "size", "precision", "hw"]) {
+      for (const key of ["task", "arch", "size", "precision", "hw", "engine"]) {
         const first = sp.get(key)?.split(",").find(Boolean);
         if (first) sp.set(key, first);
         else sp.delete(key);
@@ -235,6 +236,19 @@ export function BrowseList({ recipes, hardwareOptions }) {
     },
     [router, searchParams]
   );
+  const [queryInput, setQueryInput] = useState(searchParams.get("q") || "");
+  const queryTimer = useRef(null);
+  const updateRef = useRef(update);
+  updateRef.current = update;
+  useEffect(() => {
+    setQueryInput(searchParams.get("q") || "");
+  }, [searchParams]);
+  useEffect(() => () => clearTimeout(queryTimer.current), []);
+  const changeQuery = (value) => {
+    setQueryInput(value);
+    clearTimeout(queryTimer.current);
+    queryTimer.current = setTimeout(() => updateRef.current({ q: value.trim() }), 250);
+  };
 
   const toggle = useCallback(
     (key, value) => {
@@ -266,6 +280,7 @@ export function BrowseList({ recipes, hardwareOptions }) {
   const counts = useMemo(() => {
     const matchExcept = (r, exclude) => {
       if (!matchesQ(r)) return false;
+      if (exclude !== "engine" && engine.size > 0 && !(r.engines || []).some((id) => engine.has(id))) return false;
       if (exclude !== "task" && tasks.size > 0 && !(r.meta.tasks || []).some((t) => tasks.has(t))) return false;
       if (exclude !== "arch" && archs.size > 0 && !archs.has(r.model.architecture)) return false;
       if (exclude !== "size" && sizes.size > 0) {
@@ -291,6 +306,7 @@ export function BrowseList({ recipes, hardwareOptions }) {
       return out;
     };
     return {
+      engine: tally("engine", (r) => r.engines || ["vllm"]),
       task: tally("task", (r) => r.meta.tasks || []),
       arch: tally("arch", (r) => [r.model.architecture]),
       size: tally("size", (r) => {
@@ -305,11 +321,12 @@ export function BrowseList({ recipes, hardwareOptions }) {
         .filter((variant) => !selectedPrecision || variant.precision === selectedPrecision)
         .flatMap((variant) => variant.hardware))]),
     };
-  }, [recipes, tasks, archs, sizes, selectedPrecision, selectedHardware, provider, matchesQ]);
+  }, [recipes, tasks, archs, sizes, selectedPrecision, selectedHardware, engine, provider, matchesQ]);
 
   const filtered = useMemo(() => {
     const out = recipes.filter((r) => {
       if (!matchesQ(r)) return false;
+      if (engine.size > 0 && !(r.engines || []).some((id) => engine.has(id))) return false;
       if (tasks.size > 0 && !(r.meta.tasks || []).some((t) => tasks.has(t))) return false;
       if (archs.size > 0 && !archs.has(r.model.architecture)) return false;
       if (sizes.size > 0) {
@@ -330,10 +347,10 @@ export function BrowseList({ recipes, hardwareOptions }) {
       name: (a, b) => a.hf_id.localeCompare(b.hf_id),
     }[sort] || ((a, b) => 0);
     return [...out].sort(cmp);
-  }, [recipes, tasks, archs, sizes, selectedPrecision, selectedHardware, provider, sort, matchesQ]);
+  }, [recipes, tasks, archs, sizes, selectedPrecision, selectedHardware, engine, provider, sort, matchesQ]);
 
   const activeCount =
-    tasks.size + archs.size + sizes.size + precisions.size + hardware.size +
+    tasks.size + archs.size + sizes.size + precisions.size + hardware.size + engine.size +
     (provider ? 1 : 0) + (q ? 1 : 0);
   const hasFilters = activeCount > 0;
 
@@ -343,8 +360,9 @@ export function BrowseList({ recipes, hardwareOptions }) {
   const activeFilters = useMemo(() => {
     const out = [];
     if (q) out.push({ key: "q", value: q, label: `"${q}"` });
-    for (const taskId of tasks) out.push({ key: "task", value: taskId, label: t(`tasks.${taskId}`) });
-    for (const archId of archs) out.push({ key: "arch", value: archId, label: t(`architecture.${archId}`) });
+    for (const t of tasks) out.push({ key: "task", value: t, label: t });
+    for (const id of engine) out.push({ key: "engine", value: id, label: id === "sglang" ? "SGLang" : "vLLM" });
+    for (const a of archs) out.push({ key: "arch", value: a, label: ARCH_META[a]?.label || a });
     for (const id of sizes) {
       const b = SIZE_BUCKETS.find((x) => x.id === id);
       if (b) out.push({ key: "size", value: id, label: b.label });
@@ -356,7 +374,7 @@ export function BrowseList({ recipes, hardwareOptions }) {
     }
     if (provider) out.push({ key: "provider", value: provider, label: getProviderDisplayName(provider) });
     return out;
-  }, [q, tasks, archs, sizes, precisions, hardware, provider, hardwareById, t]);
+  }, [q, tasks, archs, sizes, precisions, hardware, engine, provider, hardwareById]);
 
   // Panel state persists in the URL (`?panel=open`) so a refresh keeps
   // whatever the user had. Default is closed — applied filters are
@@ -375,88 +393,63 @@ export function BrowseList({ recipes, hardwareOptions }) {
   };
 
   return (
-    <div className="space-y-3">
-      {/* Status bar — always visible. Result count + Filter toggle + Sort.
-          Collapsed by default; the heavy filter panel only renders when the
-          user opts in or arrives via a filtered URL. */}
-      <div className="flex flex-wrap items-center gap-2 sm:gap-3 px-1">
-        <span className="text-sm text-foreground">
-          <span className="font-semibold tabular-nums">{filtered.length}</span>
-          {hasFilters && (
-            <span className="text-muted-foreground"> {t("browseFilters.of")} {recipes.length}</span>
-          )}
-          <span className="text-muted-foreground"> {t(filtered.length === 1 ? "browseFilters.recipe" : "browseFilters.recipes")}</span>
-        </span>
-
-        <button
-          onClick={() => setOpen((v) => !v)}
-          className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-[13px] transition-colors ${
-            open
-              ? "border-vllm-blue bg-vllm-blue/10 text-foreground ring-1 ring-vllm-blue/30"
-              : "border-foreground/20 text-foreground/80 hover:text-foreground hover:border-foreground/40 hover:bg-muted/40"
-          }`}
-          aria-expanded={open}
-        >
-          <SlidersHorizontal size={13} />
-          <span className="font-medium">{t("browseFilters.filter")}</span>
-          {activeCount > 0 && (
-            <span className="inline-flex items-center justify-center rounded-full bg-vllm-blue text-white text-[10px] font-semibold px-1.5 min-w-[18px] h-[18px] tabular-nums">
-              {activeCount}
-            </span>
-          )}
-          <ChevronDown size={13} className={`transition-transform ${open ? "rotate-180" : ""}`} />
-        </button>
-
-        {/* Active filter pills — only when collapsed (the open panel makes
-            its own selection visible via highlighted chips). */}
-        {!open && hasFilters && (
-          <div className="flex flex-wrap items-center gap-1.5">
-            {activeFilters.map((f) => (
-              <ActivePill key={`${f.key}:${f.value}`} onRemove={() => removeOne(f.key)}>
-                {f.label}
-              </ActivePill>
-            ))}
-          </div>
-        )}
-
-        <div className="flex items-center gap-2 ml-auto">
-          <ArrowDownUp size={13} className="text-muted-foreground" />
-          <select
-            value={sort}
-            onChange={(e) => update({ sort: e.target.value === "released" ? "" : e.target.value })}
-            className="rounded-lg border border-foreground/20 bg-background px-3 py-1.5 text-[13px] focus:outline-none focus:ring-2 focus:ring-vllm-blue/40 hover:border-foreground/40 transition-colors"
-          >
-            {SORT_OPTIONS.map((s) => (
-              <option key={s.id} value={s.id}>{t(`browseFilters.sort${{ released: "Newest", updated: "Updated", size_desc: "Largest", size_asc: "Smallest", name: "Name" }[s.id]}`)}</option>
-            ))}
-          </select>
-          {hasFilters && (
-            <button
-              onClick={clearAll}
-              className="inline-flex items-center gap-1 rounded-lg border border-foreground/20 px-2.5 py-1.5 text-[13px] text-muted-foreground hover:text-foreground hover:border-foreground/40 hover:bg-muted/40 transition-colors"
-            >
-              <X size={12} /> {t("browseFilters.clear")}
-            </button>
-          )}
+    <div className="catalog-layout">
+      <aside className="catalog-filter">
+        <div className="flex items-center justify-between border-b border-border py-4">
+          <span className="section-label">FILTER THE INDEX</span>
+          {hasFilters && <button onClick={clearAll} className="text-xs text-vllm-blue hover:underline">Clear all</button>}
         </div>
-      </div>
-
-      {open && (
-      <div className="rounded-xl border border-foreground/15 divide-y divide-foreground/10 bg-card/40">
+        <label className="catalog-search">
+          <Search size={14} aria-hidden="true" />
+          <input
+            type="search"
+            value={queryInput}
+            onChange={(event) => changeQuery(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") {
+                event.preventDefault();
+                clearTimeout(queryTimer.current);
+                update({ q: queryInput.trim() });
+              }
+              if (event.key === "Escape") changeQuery("");
+            }}
+            placeholder="Filter by model or provider"
+            aria-label="Filter catalog by model or provider"
+          />
+        </label>
+        <button className="lg:hidden flex w-full items-center justify-between border-b border-border py-3 text-sm" onClick={() => setOpen((v) => !v)} aria-expanded={open}>{t("browseFilters.filter")} <ChevronDown size={14} className={open ? "rotate-180" : ""} /></button>
+        <div className={open ? "block" : "hidden lg:block"}>
+        <FilterRow label="Engine">
+          <PillGroup>
+            {[
+              { id: "vllm", label: "vLLM" },
+              { id: "sglang", label: "SGLang" },
+            ].map(({ id, label }) => (
+              <Chip
+                key={id}
+                active={engine.has(id)}
+                count={counts.engine[id]}
+                onClick={() => toggle("engine", id)}
+              >
+                {label}
+              </Chip>
+            ))}
+          </PillGroup>
+        </FilterRow>
         <FilterRow label={t("browseFilters.task")}>
           <PillGroup>
-            {TASK_OPTIONS.map((taskId) => {
-              const m = TASK_META[taskId] || {};
+            {TASK_OPTIONS.map((t) => {
+              const m = TASK_META[t] || {};
               return (
                 <Chip
-                  key={taskId}
+                  key={t}
                   icon={m.icon}
                   iconClass={m.iconClass}
-                  active={tasks.has(taskId)}
-                  count={counts.task[taskId]}
-                  onClick={() => toggle("task", taskId)}
+                  active={tasks.has(t)}
+                  count={counts.task[t]}
+                  onClick={() => toggle("task", t)}
                 >
-                  {t(`tasks.${taskId}`)}
+                  {t}
                 </Chip>
               );
             })}
@@ -476,7 +469,7 @@ export function BrowseList({ recipes, hardwareOptions }) {
                   count={counts.arch[a]}
                   onClick={() => toggle("arch", a)}
                 >
-                  {t(`architecture.${a}`)}
+                  {m.label}
                 </Chip>
               );
             })}
@@ -519,21 +512,11 @@ export function BrowseList({ recipes, hardwareOptions }) {
 
         <FilterRow label={t("command.hardware")}>
           <div className="space-y-2.5">
-            <p className="text-xs text-muted-foreground">{t("browseFilters.showsCompatible")}</p>
+            <p className="text-xs text-muted-foreground">Shows recipes with a compatible variant. Verified hardware is marked in the results.</p>
             {hardwareBrands.map((brand) => (
               <div key={brand.name} className="flex flex-wrap items-center gap-3">
                 <span className="inline-flex items-center gap-2 w-28 shrink-0">
-                  {brand.logo ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={brand.logo} alt="" width={20} height={20} className="rounded shrink-0" aria-hidden />
-                  ) : (
-                    <span
-                      className="inline-flex items-center justify-center w-5 h-5 rounded bg-muted text-[10px] font-bold text-muted-foreground shrink-0"
-                      aria-hidden
-                    >
-                      {brand.name.charAt(0)}
-                    </span>
-                  )}
+                  <span className="provider-monogram h-5 w-5 shrink-0 text-[10px]" aria-hidden="true">{brand.name.charAt(0)}</span>
                   <span className="text-[12px] font-semibold uppercase tracking-wider text-foreground/80">
                     {brand.name}
                   </span>
@@ -562,36 +545,42 @@ export function BrowseList({ recipes, hardwareOptions }) {
             onChange={(e) => update({ provider: e.target.value })}
             className="rounded-lg border border-foreground/20 bg-background px-3 py-2 text-[13px] focus:outline-none focus:ring-2 focus:ring-vllm-blue/40 hover:border-foreground/40 transition-colors"
           >
-            <option value="">{t("browseFilters.allProviders")}</option>
+            <option value="">All providers</option>
             {providers.map((p) => (
               <option key={p.id} value={p.id}>{p.label}</option>
             ))}
           </select>
         </FilterRow>
-      </div>
-      )}
-
+        </div>
+      </aside>
+      <div className="catalog-results">
+        <div className="mb-5 flex flex-wrap items-center justify-between gap-4 border-b border-border pb-5">
+          <div><strong className="text-3xl font-medium tabular-nums">{filtered.length}</strong><span className="ml-2 text-sm text-muted-foreground">of {recipes.length} recipes</span></div>
+          <label className="flex items-center gap-2 text-xs text-muted-foreground">SORT BY <select value={sort} onChange={(e) => update({ sort: e.target.value === "released" ? "" : e.target.value })} className="border-b border-border bg-transparent px-2 py-1 text-sm text-foreground">{SORT_OPTIONS.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}</select></label>
+        </div>
+        {hasFilters && <div className="mb-5 flex flex-wrap gap-2">{activeFilters.map((item) => <ActivePill key={item.key + item.value} onRemove={() => removeOne(item.key)}>{item.label}</ActivePill>)}</div>}
       {/* List */}
       {filtered.length === 0 ? (
         <div className="rounded-xl border border-dashed border-border p-10 text-center text-sm text-muted-foreground">
-          {t("browseFilters.noMatches")} <button onClick={clearAll} className="text-vllm-blue hover:underline">{t("browseFilters.clear")}</button>
+          No recipes match these filters. <button onClick={clearAll} className="text-vllm-blue hover:underline">Clear all</button>
         </div>
       ) : (
-        <div className="rounded-xl border border-border overflow-hidden">
+        <div className="border-t-2 border-foreground overflow-hidden">
           {/* Header — desktop only */}
           <div className="hidden md:grid grid-cols-[1fr_72px_64px_72px_140px_1fr] gap-3 px-4 py-2 border-b border-border bg-muted/30 text-[10px] font-semibold text-muted-foreground uppercase tracking-widest">
             <div>{t("browseFilters.model")}</div>
-            <div>{t("browseFilters.size")}</div>
+            <div>Size</div>
             <div>{t("browseFilters.arch")}</div>
             <div>{t("browseFilters.precision")}</div>
-            <div>{t(selectedHardware ? "browseFilters.verifiedHardware" : "browseFilters.verifiedOn")}</div>
+            <div>{selectedHardware ? "Hardware status" : "Verified on"}</div>
             <div>{t("browseFilters.notes")}</div>
           </div>
           <ul className="divide-y divide-border">
-            {filtered.map((r) => <Row key={r.hf_id} recipe={r} hardware={selectedHardware} precision={selectedPrecision} hardwareById={hardwareById} />)}
+            {filtered.map((r) => <Row key={r.hf_id} recipe={r} hardware={selectedHardware} precision={selectedPrecision} engine={[...engine][0] || null} hardwareById={hardwareById} />)}
           </ul>
         </div>
       )}
+      </div>
     </div>
   );
 }
@@ -602,21 +591,20 @@ function FilterRow({ label, children }) {
   // vs text-[10px]) because this is a dedicated filter surface, not a
   // sidebar packed next to a command card.
   return (
-    <div className="px-4 py-3.5 flex flex-col sm:flex-row sm:items-start gap-2 sm:gap-5">
-      <div className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest sm:w-24 sm:pt-2 shrink-0">
+    <div className="filter-row">
+      <div className="section-label text-muted-foreground">
         {label}
       </div>
-      <div className="flex-1 min-w-0">{children}</div>
+      <div className="min-w-0">{children}</div>
     </div>
   );
 }
 
 function PillGroup({ children }) {
-  return <div className="flex flex-wrap gap-2">{children}</div>;
+  return <div className="filter-options">{children}</div>;
 }
 
 function ActivePill({ children, onRemove }) {
-  const t = useT();
   // Compact pill shown in the status bar when the filter panel is collapsed.
   // Whole pill is the remove affordance — clicking anywhere drops that filter.
   return (
@@ -624,7 +612,7 @@ function ActivePill({ children, onRemove }) {
       type="button"
       onClick={onRemove}
       className="group inline-flex items-center gap-1 rounded-md border border-vllm-blue/40 bg-vllm-blue/10 px-2 py-0.5 text-[12px] text-foreground hover:border-vllm-blue/70 hover:bg-vllm-blue/15 transition-colors"
-      aria-label={t("browseFilters.remove", { label: children })}
+      aria-label={`Remove ${children} filter`}
     >
       <span className="font-medium">{children}</span>
       <X size={11} className="text-muted-foreground group-hover:text-foreground transition-colors" />
@@ -658,7 +646,7 @@ function Chip({ active, count, onClick, icon: Icon, iconClass, dot, logo, mono, 
       onClick={onClick}
       disabled={disabled}
       aria-pressed={active}
-      className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-[13px] transition-all ${style}`}
+      className={`filter-chip inline-flex items-center gap-1.5 transition-colors ${style}`}
     >
       {Icon && <Icon size={13} className={leadIconColor} aria-hidden />}
       {dot && <span className={`inline-block rounded-full shrink-0 ${dotClass}`} aria-hidden />}
@@ -689,20 +677,19 @@ function Chip({ active, count, onClick, icon: Icon, iconClass, dot, logo, mono, 
   );
 }
 
-function Row({ recipe, hardware, precision, hardwareById }) {
-  const t = useT();
+function Row({ recipe, hardware, precision, engine, hardwareById }) {
   const r = recipe;
   const variant = matchingVariant(r, precision, hardware);
   const displayedPrecision = variant?.precision || r.variant?.precision;
   const queryParams = new URLSearchParams();
   if (variant?.key && variant.key !== "default") queryParams.set("variant", variant.key);
   if (hardware) queryParams.set("hardware", hardware);
+  if (engine && engine !== "vllm") queryParams.set("engine", engine);
   const query = queryParams.toString();
   const isMoe = r.model.architecture === "moe";
   const params = r.model.parameter_count || "—";
   const active = r.model.active_parameters;
   const sizeLabel = isMoe && active && active !== params ? `${params}/${active}` : params;
-  const logo = getProviderLogo(r.hf_org);
   const verified = Object.entries(r.meta.hardware || {})
     .filter(([, s]) => s === "verified")
     .map(([h]) => h);
@@ -712,25 +699,19 @@ function Row({ recipe, hardware, precision, hardwareById }) {
     <li>
       <Link
         href={`/${r.hf_id}${query ? `?${query}` : ""}`}
-        className="group block px-4 py-3 hover:bg-muted/30 transition-colors md:grid md:grid-cols-[1fr_72px_64px_72px_140px_1fr] md:gap-3 md:items-center"
+        className="group block px-2 py-5 hover:bg-muted/60 transition-colors md:grid md:grid-cols-[1fr_72px_64px_72px_140px_1fr] md:gap-3 md:items-center"
       >
         {/* Model */}
         <div className="flex items-start gap-2.5 min-w-0">
-          {logo ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={logo} alt="" width={24} height={24} className={`rounded shrink-0 mt-0.5 ${getProviderLogoClass(r.hf_org)}`} />
-          ) : (
-            <div className="w-6 h-6 rounded bg-muted flex items-center justify-center text-[10px] font-bold text-muted-foreground shrink-0">
-              {r.hf_org.charAt(0)}
-            </div>
-          )}
+          <span className="provider-monogram h-6 w-6 shrink-0 text-[11px]" aria-hidden="true">{r.hf_org.charAt(0)}</span>
           <div className="min-w-0">
             <div className="font-medium text-sm group-hover:text-vllm-blue transition-colors truncate">
               {r.hf_repo}
             </div>
             <div className="font-mono text-[10px] text-muted-foreground truncate">
               {r.hf_org}
-              {tasks.length > 0 && <span className="ml-2">· {tasks.map((task) => t(`tasks.${task}`)).join(" · ")}</span>}
+              {tasks.length > 0 && <span className="ml-2">· {tasks.join(" · ")}</span>}
+              {r.engines?.includes("sglang") && <span className="ml-2 font-semibold text-vllm-blue">· SGLang</span>}
             </div>
           </div>
         </div>
@@ -743,7 +724,7 @@ function Row({ recipe, hardware, precision, hardwareById }) {
 
         {/* Arch */}
         <div className="hidden md:block text-xs text-muted-foreground">
-          {t(`architecture.${isMoe ? "moe" : "dense"}`)}
+          {isMoe ? "MoE" : "Dense"}
         </div>
 
         {/* Precision */}
@@ -755,7 +736,7 @@ function Row({ recipe, hardware, precision, hardwareById }) {
         <div className="hidden md:flex flex-wrap gap-1">
           {hardware ? (
             <span className="text-[10px] text-muted-foreground">
-              {hardwareById[hardware]?.label || hardware} · {t(verified.includes(hardware) ? "browseFilters.verified" : "browseFilters.compatible")}
+              {hardwareById[hardware]?.label || hardware} · {verified.includes(hardware) ? t("browseFilters.verified") : t("browseFilters.compatible")}
             </span>
           ) : verified.length === 0 ? (
             <span className="text-[10px] text-muted-foreground/50">—</span>
@@ -777,12 +758,12 @@ function Row({ recipe, hardware, precision, hardwareById }) {
         <div className="md:hidden mt-1.5 flex flex-wrap gap-1.5 text-[11px] text-muted-foreground">
           <span className="font-mono">{sizeLabel}</span>
           <span>·</span>
-          <span>{t(`architecture.${isMoe ? "moe" : "dense"}`)}</span>
+          <span>{isMoe ? "MoE" : "Dense"}</span>
           {displayedPrecision && (<><span>·</span><span className="font-mono uppercase">{displayedPrecision}</span></>)}
           {hardware ? (
             <>
               <span>·</span>
-              <span>{hardwareById[hardware]?.label || hardware} · {t(verified.includes(hardware) ? "browseFilters.verified" : "browseFilters.compatible")}</span>
+              <span>{hardwareById[hardware]?.label || hardware} · {verified.includes(hardware) ? t("browseFilters.verified") : t("browseFilters.compatible")}</span>
             </>
           ) : verified.length > 0 && (
             <>

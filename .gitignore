@@ -4,7 +4,7 @@ site/
 .idea
 .next/
 out/
-node_modules/
+node_modules
 
 # macOS junk
 .DS_Store
@@ -21,12 +21,19 @@ public/platforms.json
 public/kv_store.json
 public/recipe.schema.json
 public/strategies/
-public/providers/
+public/providers
 public/hf-dates.json
 public/*/
 !public/platform-logos/
 !public/engine-logos/
 !public/hardware-logos/
+!public/reports/
+public/reports/**
+!public/reports/**/
+!public/reports/**/*.html
+!public/reports/assets/**
+!public/reports/data/**
+!public/reports/vendor/**
 
 # Superpowers SDD scratch
 .superpowers/

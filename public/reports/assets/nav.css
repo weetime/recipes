@@ -1,0 +1,22 @@
+.site-topbar{height:68px;position:sticky;top:0;z-index:40;border-bottom:1px solid var(--line);background:var(--bg)}
+.sitebar-inner{width:min(1480px,100%);height:100%;margin:0 auto;padding:0 24px;display:flex;align-items:center;gap:24px}
+.site-brand{display:flex;align-items:center;gap:8px;flex:none;font:750 16px/1 var(--sans);letter-spacing:-.06em;text-transform:uppercase}
+.site-brand-mark{display:block;width:8px;height:20px;background:#8cb8fa}
+.site-brand-dot{color:#8cb8fa}
+.site-primary-nav{height:100%;display:flex;align-items:center;gap:28px;padding-left:24px;border-left:1px solid var(--line);font:500 14px/1 var(--sans)}
+.site-primary-nav a{color:var(--text);transition:color .15s}
+.site-primary-nav a:hover,.site-primary-nav a[aria-current="page"]{color:#8cb8fa}
+.site-search{position:relative;display:flex;align-items:center;gap:10px;flex:1;max-width:540px;height:40px;margin-left:auto;padding:0 11px;border:1px solid var(--line);border-radius:4px;background:var(--bg);color:var(--muted)}
+.site-search-icon{font:22px/1 var(--sans);transform:rotate(-20deg);color:var(--muted)}
+.site-search input{width:100%;min-width:0;border:0;outline:0;background:transparent;color:var(--text);font:14px var(--sans)}
+.site-search input::placeholder{color:var(--muted)}
+.site-search kbd{flex:none;color:var(--muted);font:12px var(--mono)}
+.site-actions{display:flex;align-items:center;gap:16px;margin-left:0}
+.site-github{display:flex;align-items:center;gap:5px;color:var(--muted);font:600 12px var(--sans);white-space:nowrap}
+.site-github:hover{color:var(--text)}
+.site-lang,.site-theme{height:34px;min-width:36px;padding:0 9px;border:1px solid var(--line);background:transparent;color:var(--text);font:12px var(--sans);cursor:pointer}
+.site-theme{display:grid;place-items:center;padding:0;font-size:18px}
+:root[data-theme="light"] .site-topbar{background:#f6f7f9}
+:root[data-theme="light"] .site-search{background:#f6f7f9}
+@media(max-width:1050px){.sitebar-inner{gap:16px;padding:0 18px}.site-primary-nav{gap:18px;padding-left:18px}.site-search{max-width:420px}.site-actions{gap:10px}}
+@media(max-width:760px){.site-topbar{height:auto;min-height:60px}.sitebar-inner{min-height:60px;flex-wrap:wrap;gap:12px;padding:10px 16px}.site-brand{font-size:14px}.site-brand-mark{height:18px}.site-primary-nav{height:34px;gap:14px;padding-left:14px;font-size:12px}.site-search{order:3;flex-basis:100%;max-width:none;margin:0;height:36px}.site-actions{margin-left:auto}.site-github{display:none}}
