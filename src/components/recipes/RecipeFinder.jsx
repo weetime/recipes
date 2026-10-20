@@ -1,7 +1,8 @@
 "use client";
 
 import { useMemo } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useSearchParams } from "next/navigation";
+import { useRouter } from "@/i18n/navigation";
 
 export function RecipeFinder({ recipes, taxonomy }) {
   const searchParams = useSearchParams();

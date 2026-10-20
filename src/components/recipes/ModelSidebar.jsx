@@ -1,13 +1,13 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { usePathname } from "next/navigation";
-import Link from "next/link";
+import { usePathname, Link } from "@/i18n/navigation";
 import { getProviderLogo, getProviderLogoClass, getProviderDisplayName } from "@/lib/providers";
 import { primaryRecipeTask, recipeHref } from "@/lib/recipe-utils";
 import { getEngineMeta, recipeEngineIds } from "@/lib/engine-meta";
 import { ChevronRight, Type, Eye, Sparkles, Hash, Cpu } from "lucide-react";
 import { TooltipProvider, InfoTip } from "@/components/ui/tooltip";
+import { useT } from "@/components/i18n/I18nProvider";
 
 const TASK_ICON = {
   text:       Type,
@@ -17,10 +17,12 @@ const TASK_ICON = {
 };
 
 export function ModelSidebar({ recipesByOrg }) {
+  const t = useT();
   const pathname = usePathname();
   const parts = pathname.split("/").filter(Boolean);
-  const currentOrg = parts[0] || "";
-  const currentRepo = parts[1] || "";
+  const routeParts = ["en", "zh"].includes(parts[0]) ? parts.slice(1) : parts;
+  const currentOrg = routeParts[0] || "";
+  const currentRepo = routeParts[1] || "";
 
   // Compute the initial expanded org synchronously so SSR emits the recipe
   // links inside the current org — without this the server HTML only contains
@@ -57,7 +59,7 @@ export function ModelSidebar({ recipesByOrg }) {
     <nav className="w-64 shrink-0 hidden lg:block">
       <div data-sidebar-scroll className="sticky top-16 pt-4 space-y-0.5 max-h-[calc(100vh-5rem)] overflow-y-auto scrollbar-thin">
         <div className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground px-3 pb-2">
-          Providers
+          {t("nav.providers")}
         </div>
         {recipesByOrg.map(([org, models]) => {
           const logo = getProviderLogo(org);
@@ -95,7 +97,7 @@ export function ModelSidebar({ recipesByOrg }) {
                 </Link>
                 <button
                   onClick={() => toggle(org)}
-                  aria-label={isExpanded ? "Collapse" : "Expand"}
+                  aria-label={t(isExpanded ? "nav.collapse" : "nav.expand")}
                   className="px-2 py-2 hover:bg-muted/60 rounded-r-lg transition-colors shrink-0"
                 >
                   <ChevronRight

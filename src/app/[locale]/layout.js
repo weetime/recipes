@@ -1,7 +1,8 @@
 import { Inter, JetBrains_Mono } from "next/font/google";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { Analytics } from "@vercel/analytics/next";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
+import { LanguageSwitcher } from "@/components/i18n/LanguageSwitcher";
 import { SearchBox } from "@/components/recipes/SearchBox";
 import { getAllRecipes } from "@/lib/recipes";
 import { siteUrl } from "@/lib/site-url";
@@ -10,7 +11,11 @@ import {
   buildWebSiteLd,
   jsonLdScript,
 } from "@/lib/jsonld";
-import "./globals.css";
+import { notFound } from "next/navigation";
+import { defaultLocale, isLocale, locales } from "@/i18n/config";
+import { getMessages, getTranslations, setRequestLocale } from "next-intl/server";
+import { NextIntlClientProvider } from "next-intl";
+import "../globals.css";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -26,7 +31,7 @@ const jetbrainsMono = JetBrains_Mono({
 
 const defaultOgUrl = `/og?title=${encodeURIComponent("Model Recipes")}&subtitle=${encodeURIComponent("Deploy any model on any hardware")}`;
 
-export const metadata = {
+const siteMetadata = {
   metadataBase: new URL(siteUrl),
   title: {
     default: "Model Recipes",
@@ -51,7 +56,38 @@ export const metadata = {
   alternates: { canonical: siteUrl },
 };
 
-export default async function RootLayout({ children }) {
+export function generateStaticParams() {
+  return locales.map((locale) => ({ locale }));
+}
+
+export async function generateMetadata({ params }) {
+  const { locale } = await params;
+  const chinese = locale === "zh";
+  return {
+    ...siteMetadata,
+    description: chinese
+      ? "为模型和目标硬件查找推理配方，并生成 vLLM 或 SGLang 服务命令。"
+      : siteMetadata.description,
+    openGraph: {
+      ...siteMetadata.openGraph,
+      locale: chinese ? "zh_CN" : "en_US",
+      url: chinese ? `${siteUrl}/zh` : siteUrl,
+    },
+    alternates: {
+      canonical: chinese ? `${siteUrl}/zh` : siteUrl,
+      languages: { en: siteUrl, zh: `${siteUrl}/zh` },
+    },
+  };
+}
+
+export default async function RootLayout({ children, params }) {
+  const { locale } = await params;
+  if (!isLocale(locale)) notFound();
+  setRequestLocale(locale);
+  const [t, messages] = await Promise.all([
+    getTranslations({ locale }),
+    getMessages({ locale }),
+  ]);
   // Recipes are small (~50 KB) — fine to load into every page for the
   // global search box. Server-rendered, cached across requests.
   const recipes = getAllRecipes();
@@ -88,7 +124,7 @@ export default async function RootLayout({ children }) {
   };
 
   return (
-    <html lang="en" className={`${inter.variable} ${jetbrainsMono.variable}`}>
+    <html lang={locale === "zh" ? "zh-CN" : defaultLocale} className={`${inter.variable} ${jetbrainsMono.variable}`}>
       <head>
         <script
           type="application/ld+json"
@@ -97,10 +133,11 @@ export default async function RootLayout({ children }) {
         />
       </head>
       <body className="antialiased bg-background text-foreground min-h-screen flex flex-col">
+        <NextIntlClientProvider locale={locale} messages={messages}>
         {/* Global header */}
         <header className="border-b border-border bg-background/95 backdrop-blur-sm sticky top-0 z-30">
           <div className="max-w-[1480px] mx-auto px-4 sm:px-6 h-16 flex items-center gap-4">
-            <Link href="/" className="flex items-center gap-2.5 hover:opacity-80 transition-opacity group shrink-0" aria-label="Model Recipes — home">
+            <Link href="/" className="flex items-center gap-2.5 hover:opacity-80 transition-opacity group shrink-0" aria-label={t("nav.home")}>
               {/* Engine-neutral mark: a hexagon "hub" with a center node. The
                   sky→indigo gradient is theme-independent (reads on light and
                   dark); the wordmark below uses text tokens so it adapts. We
@@ -134,10 +171,12 @@ export default async function RootLayout({ children }) {
             </div>
 
             <nav className="flex items-center gap-4 text-sm text-muted-foreground shrink-0">
-              <Link href="/image-selector" className="hover:text-foreground transition-colors hidden sm:inline">Image Selector</Link>
-              <Link href="/browse" className="hover:text-foreground transition-colors hidden sm:inline">Browse</Link>
-              <a href="https://docs.vllm.ai" className="hover:text-foreground transition-colors hidden sm:inline">Docs</a>
-              <a href="https://github.com/weetime/recipes" className="hover:text-foreground transition-colors hidden sm:inline">GitHub</a>
+              <Link href="/image-selector" className="hover:text-foreground transition-colors hidden sm:inline">{t("nav.imageSelector")}</Link>
+              <Link href="/browse" className="hover:text-foreground transition-colors hidden sm:inline">{t("nav.browse")}</Link>
+              <Link href="/reports" className="hover:text-foreground transition-colors hidden sm:inline">{t("nav.performance")}</Link>
+              <a href="https://docs.vllm.ai" className="hover:text-foreground transition-colors hidden sm:inline">{t("nav.docs")}</a>
+              <a href="https://github.com/weetime/recipes" className="hover:text-foreground transition-colors hidden sm:inline">{t("nav.github")}</a>
+              <LanguageSwitcher locale={locale} label={t("nav.switchLanguage")} />
               <ThemeToggle />
             </nav>
           </div>
@@ -153,10 +192,10 @@ export default async function RootLayout({ children }) {
           <div className="max-w-[1480px] mx-auto px-4 sm:px-6 py-5 text-xs text-muted-foreground">
             <div className="flex flex-wrap gap-x-5 gap-y-2">
               <a href="https://github.com/weetime/recipes" className="hover:text-foreground transition-colors">GitHub</a>
-              <a href="https://github.com/weetime/recipes/issues" className="hover:text-foreground transition-colors">Request a recipe</a>
-              <a href="https://docs.vllm.ai" className="hover:text-foreground transition-colors">Documentation</a>
-              <a href="https://vllm.ai/#compatibility" className="hover:text-foreground transition-colors">Supported Models & Hardware</a>
-              <a href="https://vllm.ai/#quick-start" className="hover:text-foreground transition-colors">Install vLLM</a>
+              <a href="https://github.com/weetime/recipes/issues" className="hover:text-foreground transition-colors">{t("footer.request")}</a>
+              <a href="https://docs.vllm.ai" className="hover:text-foreground transition-colors">{t("footer.documentation")}</a>
+              <a href="https://vllm.ai/#compatibility" className="hover:text-foreground transition-colors">{t("footer.hardware")}</a>
+              <a href="https://vllm.ai/#quick-start" className="hover:text-foreground transition-colors">{t("footer.install")}</a>
               <a href="/models.json" className="hover:text-foreground transition-colors">JSON API</a>
             </div>
             {/* Community QR — WeChat group. Black-on-white QR needs a white plate to stay scannable in dark mode. */}
@@ -169,13 +208,14 @@ export default async function RootLayout({ children }) {
                 className="rounded-md border border-border bg-white p-1 shrink-0"
               />
               <div className="leading-tight">
-                <div className="text-foreground font-medium">扫码入群交流</div>
-                <div>微信扫码,加入 weetime 交流群</div>
+                <div className="text-foreground font-medium">{t("footer.community")}</div>
+                <div>{t("footer.communityHint")}</div>
               </div>
             </div>
           </div>
         </footer>
         <Analytics />
+        </NextIntlClientProvider>
       </body>
     </html>
   );

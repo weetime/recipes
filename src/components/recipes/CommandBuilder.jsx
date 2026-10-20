@@ -2,7 +2,8 @@
 
 import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
-import { useSearchParams, useRouter, usePathname } from "next/navigation";
+import { useSearchParams } from "next/navigation";
+import { useRouter, usePathname } from "@/i18n/navigation";
 import { Copy, Check, Terminal, Gauge, Sparkles, ChevronDown, Package, Info, Zap, Globe, Wrench, Brain, ExternalLink } from "lucide-react";
 import { HuggingFaceIcon } from "@/components/icons/PlatformLogos";
 import { resolveCommand, recommendStrategy, isPrecisionCompatible, isHardwareSupported, isVariantHardwareSupported, fitsSingleNode, isHardwareScalable, isKvStoreBrandSupported, variantRunsOnHardware, variantVramMinimumGb, pickFittingVariant, pickDefaultHardware, resolveSingleNodeTp, computeDockerMeta, buildDockerRun, resolveOmniCommand, pdPoolModes, defaultModeFor, isModeSupported, isModeAllowedForVariant, resolveModeKey, isFeatureAllowedForStrategy, isKvOffloadAllowedForStrategy, isKvOffloadSupportedForRecipe, isKvOffloadBrandSupported, strategyAllowsKvOffload, MAX_NODES, nodesForStrategy, isStrategyReachable, isStrategySupportedOnHardware, effectiveCompatibleStrategies, needsMultiNode, multiNodeUnavailable, resolveFrontend, isFrontendSupported, isDynamoSupportedOnHardware, smgUnsupportedReason } from "@/lib/command-synthesis";
@@ -80,8 +81,10 @@ const ADVANCED_OPTIONS = [
   },
 ];
 import { loadPreferences, savePreference, loadRecipeState, saveRecipeState } from "@/lib/preferences";
+import { useT } from "@/components/i18n/I18nProvider";
 
 function CopyButton({ text, className = "" }) {
+  const t = useT();
   const [copied, setCopied] = useState(false);
   const handleCopy = useCallback(() => {
     navigator.clipboard.writeText(text);
@@ -96,12 +99,13 @@ function CopyButton({ text, className = "" }) {
           : "bg-foreground/10 text-foreground/60 hover:bg-foreground/15 hover:text-foreground/90"
         } ${className}`}
     >
-      {copied ? <><Check size={12} /> Copied</> : <><Copy size={12} /> Copy</>}
+      {copied ? <><Check size={12} /> {t("command.copied")}</> : <><Copy size={12} /> {t("command.copy")}</>}
     </button>
   );
 }
 
 function PopoverButton({ label, code, icon: Icon, disabled, disabledNote }) {
+  const t = useT();
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const [rect, setRect] = useState(null);
@@ -172,7 +176,7 @@ function PopoverButton({ label, code, icon: Icon, disabled, disabledNote }) {
             className={`text-[11px] flex items-center gap-1 px-2 py-0.5 rounded transition-colors ${copied ? "text-green-600 dark:text-green-400" : "text-muted-foreground hover:text-foreground"
               }`}
           >
-            {copied ? <><Check size={10} /> Copied</> : <><Copy size={10} /> Copy</>}
+            {copied ? <><Check size={10} /> {t("command.copied")}</> : <><Copy size={10} /> {t("command.copy")}</>}
           </button>
         </div>
         <pre className="px-3 py-2.5 text-xs font-mono leading-relaxed whitespace-pre overflow-x-auto bg-[var(--code-block-bg)] text-[var(--code-block-fg)]">
@@ -375,6 +379,7 @@ function hardwareSelectorLabel(selector, profiles) {
 }
 
 export function CommandBuilder({ recipe, strategies, taxonomy }) {
+  const t = useT();
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
@@ -1988,7 +1993,7 @@ export function CommandBuilder({ recipe, strategies, taxonomy }) {
           </div>
 
           <div className="rounded-xl border border-border divide-y divide-border">
-            <ConfigRow label="Hardware">
+            <ConfigRow label={t("command.hardware")}>
               <div className="space-y-1.5">
                 {hwByBrand.map(([brand, profiles]) => (
                   <div key={brand} className="flex flex-wrap items-center gap-2">
@@ -2167,12 +2172,12 @@ export function CommandBuilder({ recipe, strategies, taxonomy }) {
           <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-[12px] leading-snug flex items-start gap-2">
             <span aria-hidden="true" className="text-amber-500 mt-px">⚠</span>
             <div className="text-foreground/90">
-              <span className="font-semibold text-amber-600 dark:text-amber-400">Insufficient VRAM for single-node: </span>
-              {vramShortfall.hwName} provides {vramShortfall.gpuCount}×
-              {Math.round(vramShortfall.availGb / vramShortfall.gpuCount)}G = {vramShortfall.availGb}GB,
-              but this variant needs at least {vramShortfall.needGb}GB for weights alone
-              (KV cache requires more).{" "}
-              <span className="text-muted-foreground">Switch to a higher-memory GPU, use multi-node TP, or lower <code className="font-mono text-[11px] px-1 py-px rounded bg-muted/50">--max-model-len</code> to shrink the KV cache footprint.</span>
+              <span className="font-semibold text-amber-600 dark:text-amber-400">{t("command.insufficientVram")} </span>
+              {t("command.vramDetail", {
+                available: vramShortfall.availGb,
+                required: vramShortfall.needGb,
+              })}{" "}
+              <span className="text-muted-foreground">{t("command.vramHint")}</span>
             </div>
           </div>
         )}
@@ -2257,7 +2262,7 @@ export function CommandBuilder({ recipe, strategies, taxonomy }) {
         <div className="rounded-xl border border-border divide-y divide-border">
           {/* Engine (only shown when the recipe ships >1 inference engine) */}
           {engineIds.length > 1 && (
-            <ConfigRow label="Engine">
+          <ConfigRow label={t("command.engine")}>
               <PillGroup>
                 {engineIds.map((id) => (
                   <Pill
@@ -2306,7 +2311,7 @@ export function CommandBuilder({ recipe, strategies, taxonomy }) {
           )}
 
           {/* Hardware (first — user's fixed constraint, grouped by brand) */}
-          <ConfigRow label="Hardware">
+          <ConfigRow label={t("command.hardware")}>
             <div className="space-y-1.5">
               {hwByBrand.map(([brand, profiles]) => (
                 <div key={brand} className="flex flex-wrap items-center gap-2">
@@ -2381,7 +2386,7 @@ export function CommandBuilder({ recipe, strategies, taxonomy }) {
 
           {/* Variant */}
           <ConfigRow
-            label="Variant"
+            label={t("command.variant")}
             hint="VRAM shown is the minimum to LOAD the model (weights + CUDA/vLLM runtime overhead, ≈ params × bytes × 1.2). It's not a serving budget — long context or large batch typically needs 1.5–2× more for KV cache."
           >
             <PillGroup>
@@ -2467,7 +2472,7 @@ export function CommandBuilder({ recipe, strategies, taxonomy }) {
               (SGLang's lone single_node_tp), which would otherwise mislabel a
               derived multi-node command. vLLM is unaffected. */}
           {(engine === "vllm" || compatibleStrategies.length > 1) && (
-          <ConfigRow label="Strategy">
+          <ConfigRow label={t("command.strategy")}>
             <PillGroup>
               {compatibleStrategies.map((s) => {
                 const supported = isStrategySupported(s);
@@ -2745,7 +2750,7 @@ export function CommandBuilder({ recipe, strategies, taxonomy }) {
               config-summary header + Head/Worker command tabs. */}
           {engine === "vllm" && (activeStrategy === "pd_cluster" ? (
             <ConfigRow
-              label="Nodes"
+              label={t("command.nodes")}
               hint={pdModes.length > 1
                 ? "Each pool (prefill / decode) sizes and shards independently — pick its parallelism (TP / TEP / DEP) and node count. Total cluster = prefill_nodes + decode_nodes."
                 : "Each pool (prefill / decode) sizes independently. Total cluster = prefill_nodes + decode_nodes."}
@@ -2780,7 +2785,7 @@ export function CommandBuilder({ recipe, strategies, taxonomy }) {
             // and tooltips say so, and totals multiply by the instance count
             // (the plain "2 × GPUs" math would understate the deployment).
             <ConfigRow
-              label={kvInstancesActive ? "Nodes / Instance" : "Nodes"}
+              label={kvInstancesActive ? t("command.nodesInstance") : t("command.nodes")}
               hint={kvInstancesActive
                 ? "Node count of EACH vLLM instance — an instance shards across nodes via the selected strategy's multi-node layout. Total nodes = Instances × this."
                 : undefined}
@@ -2835,7 +2840,7 @@ export function CommandBuilder({ recipe, strategies, taxonomy }) {
                                 : `${n} nodes × ${hwProfile.gpu_count || 8} GPUs = ${n * (hwProfile.gpu_count || 8)} GPUs total. Scale further by replicating the worker command with higher --node-rank / --data-parallel-start-rank.`
                       }
                     >
-                      <span className="font-semibold">{n === 1 ? "Single-node" : `Multi-node (example: ${n})`}</span>
+                      <span className="font-semibold">{n === 1 ? t("command.singleNode") : t("command.multiNode", { count: n })}</span>
                       {n > 1 && !disabled && (
                         <span className="text-muted-foreground ml-1.5 font-mono">
                           {n * (hwProfile.gpu_count || 8)}×GPU
@@ -2888,7 +2893,7 @@ export function CommandBuilder({ recipe, strategies, taxonomy }) {
 
           {/* Features */}
           {Object.keys(activeFeaturesMap).length > 0 && (
-            <ConfigRow label="Features">
+            <ConfigRow label={t("command.features")}>
               <PillGroup>
                 {Object.entries(activeFeaturesMap).map(([key, f]) => {
                   const kvBlocked = kvInstancesActive && !!f?.companion?.command;
@@ -2991,7 +2996,7 @@ export function CommandBuilder({ recipe, strategies, taxonomy }) {
           {/* Advanced (collapsed by default) */}
           <details className="group">
             <summary className="px-4 py-3 cursor-pointer text-[10px] font-semibold text-muted-foreground uppercase tracking-widest hover:bg-muted/30 transition-colors flex items-center gap-2 select-none list-none">
-              <span>Advanced</span>
+              <span>{t("command.advanced")}</span>
               <span className="text-muted-foreground/50 normal-case tracking-normal font-normal">
                 {advanced.length > 0 ? `(${advanced.length} enabled)` : "— performance tuning"}
               </span>
@@ -3439,6 +3444,7 @@ function maxVersion(a, b) {
 }
 
 function InstallBlock({ recipe, engine = "vllm", variant, dockerMeta, installMode, setInstallMode, dockerCudaVariant, setDockerCudaVariant, altCudaSuffix }) {
+  const t = useT();
   // Collapsible install reference. Shows the one-time setup step for the
   // active mode — `uv pip install vllm …` in pip mode, `docker pull <image>`
   // in docker mode. The active tab mirrors the command card's mode toggle
@@ -3609,7 +3615,7 @@ uv pip install -U vllm --torch-backend auto`;
         className="w-full flex items-center gap-3 px-4 py-2.5 text-left hover:bg-white/[0.02] transition-colors"
       >
         <Package size={12} className="text-[var(--command-fg)]/50 shrink-0" />
-        <span className="text-[11px] font-semibold text-[var(--command-fg)]/70 uppercase tracking-widest">Install</span>
+        <span className="text-[11px] font-semibold text-[var(--command-fg)]/70 uppercase tracking-widest">{t("command.install")}</span>
         <span className="text-[11px] text-[var(--command-fg)]/40 font-mono">
           {isVllm ? "vLLM" : "SGLang"}{minV ? ` ${minV}+` : ""}{isVllm && isOmni ? " · vLLM-Omni nightly" : ""} · {isTpu ? "TPU" : isAmd ? "ROCm" : isAscend ? "Ascend" : "CUDA"}
         </span>
@@ -3689,6 +3695,7 @@ uv pip install -U vllm --torch-backend auto`;
 }
 
 function DependenciesBlock({ deps }) {
+  const t = useT();
   // Copy-all only includes required entries — optional ones often target a
   // different platform (e.g. AMD ROCm in a recipe with NVIDIA-only kernels),
   // so blindly copy-pasting everything would mix incompatible installs.
@@ -3701,8 +3708,8 @@ function DependenciesBlock({ deps }) {
       <div className="flex items-center justify-between px-4 pt-3">
         <span className="text-[11px] text-[var(--command-fg)]/50 font-mono inline-flex items-center gap-1.5">
           <Package size={11} /> extra install
-          {requiredCount > 0 && <span className="text-[var(--command-fg)]/40">· {requiredCount} required</span>}
-          {optionalCount > 0 && <span className="text-[var(--command-fg)]/40">· {optionalCount} optional</span>}
+          {requiredCount > 0 && <span className="text-[var(--command-fg)]/40">· {requiredCount} {t("command.required")}</span>}
+          {optionalCount > 0 && <span className="text-[var(--command-fg)]/40">· {optionalCount} {t("command.optional")}</span>}
         </span>
         <CopyButton text={requiredCommands} />
       </div>
@@ -3864,7 +3871,7 @@ function PdClusterBlock({ result, verifyCmd, benchCmd, statusHeader, onRankChang
       </div>
       {isDocker && result.workerDockerSetup && (
         <div className="mx-4 mt-3 rounded-lg border border-[var(--command-fg)]/15 p-3 text-[11px] text-[var(--command-fg)]/70 leading-relaxed">
-          <p className="font-semibold">Worker container setup · automatic</p>
+          <p className="font-semibold">{t("command.workerSetup")}</p>
           <p className="mt-1">
             Each Prefill / Decode Docker command installs the gRPC servicer inside the vLLM container before starting the worker.
             Installation needs network access and repeats for each new container.

@@ -13,7 +13,7 @@ import { getEngineMeta } from "@/lib/engine-meta";
 // short notice instead of (misleadingly) the vLLM guide.
 // MUST be rendered inside a <Suspense> boundary by the caller: useSearchParams()
 // without one corrupts the RSC flight payload on statically-generated routes.
-export function EngineAwareGuide({ recipe, defaultEngine = "vllm" }) {
+export function EngineAwareGuide({ recipe, defaultEngine = "vllm", locale = "en" }) {
   const searchParams = useSearchParams();
   const engine = searchParams.get("engine") || defaultEngine || "vllm";
   const md = pickGuide(engine, recipe);
@@ -32,9 +32,9 @@ export function EngineAwareGuide({ recipe, defaultEngine = "vllm" }) {
     const label = getEngineMeta(engine).label;
     return (
       <p className="text-sm text-muted-foreground leading-relaxed">
-        No {label}-specific guide yet for this model — the command above is the
-        authoritative setup. Switch the Engine pill to vLLM for that engine&apos;s
-        full guide.
+        {locale === "zh"
+          ? `此模型还没有 ${label} 专属指南；以上命令是当前配置依据。切换到 vLLM 可查看该模型现有的完整指南。`
+          : `No ${label}-specific guide yet for this model — the command above is the authoritative setup. Switch the Engine pill to vLLM for that engine's full guide.`}
       </p>
     );
   }

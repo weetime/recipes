@@ -6,6 +6,7 @@ export default function sitemap() {
 
   const recipeEntries = recipes.map((r) => ({
     url: `${siteUrl}/${r.hf_org}/${r.hf_repo}`,
+    alternates: { languages: { en: `${siteUrl}/${r.hf_org}/${r.hf_repo}`, zh: `${siteUrl}/zh/${r.hf_org}/${r.hf_repo}` } },
     lastModified: r.meta.date_updated || undefined,
     changeFrequency: "weekly",
     priority: 0.8,
@@ -21,6 +22,7 @@ export default function sitemap() {
       .at(-1);
     return {
       url: `${siteUrl}/${org}`,
+      alternates: { languages: { en: `${siteUrl}/${org}`, zh: `${siteUrl}/zh/${org}` } },
       lastModified: latest || undefined,
       changeFrequency: "weekly",
       priority: 0.6,
@@ -33,14 +35,27 @@ export default function sitemap() {
     .sort()
     .at(-1);
 
+  const staticPages = ["browse", "image-selector", "reports"].flatMap((path) => [
+    {
+      url: `${siteUrl}/${path}`,
+      alternates: { languages: { en: `${siteUrl}/${path}`, zh: `${siteUrl}/zh/${path}` } },
+    },
+    {
+      url: `${siteUrl}/zh/${path}`,
+      alternates: { languages: { en: `${siteUrl}/${path}`, zh: `${siteUrl}/zh/${path}` } },
+    },
+  ]);
+
   return [
     {
       url: siteUrl,
+      alternates: { languages: { en: siteUrl, zh: `${siteUrl}/zh` } },
       lastModified: homeLastModified || undefined,
       changeFrequency: "daily",
       priority: 1.0,
     },
     ...orgEntries,
     ...recipeEntries,
+    ...staticPages,
   ];
 }

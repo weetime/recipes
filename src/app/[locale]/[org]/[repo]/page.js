@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { notFound, redirect } from "next/navigation";
 import { getAllRecipes, getAllRoutablePairs, findVariantRedirect, getRecipeByHfId } from "@/lib/recipes";
 import { recipeHref } from "@/lib/recipe-utils";
@@ -8,6 +8,8 @@ import { loadStrategies } from "@/lib/strategies";
 import { loadTaxonomy } from "@/lib/taxonomy";
 import { resolveRecipePlatforms } from "@/lib/platforms";
 import { getProviderLogo, getProviderLogoClass } from "@/lib/providers";
+import { getPerformanceReportsForModel } from "@/lib/performance-reports";
+import { getTranslations } from "next-intl/server";
 import { CommandBuilder } from "@/components/recipes/CommandBuilder";
 import { EngineAwareGuide } from "@/components/recipes/EngineAwareGuide";
 import { GuideLinks } from "@/components/recipes/GuideLinks";
@@ -28,7 +30,7 @@ export async function generateStaticParams() {
 }
 
 export async function generateMetadata({ params }) {
-  const { org, repo } = await params;
+  const { org, repo, locale } = await params;
   const recipe = getRecipeByHfId(org, repo);
   if (!recipe) return {};
   const { meta, model } = recipe;
@@ -71,7 +73,7 @@ export async function generateMetadata({ params }) {
       type: "article",
       title: ogTitle,
       description,
-      url: `/${org}/${repo}`,
+      url: locale === "zh" ? `/zh/${org}/${repo}` : `/${org}/${repo}`,
       images: [{ url: ogUrl, width: 1200, height: 630, alt: title }],
     },
     twitter: {
@@ -80,12 +82,16 @@ export async function generateMetadata({ params }) {
       description,
       images: [ogUrl],
     },
-    alternates: { canonical: `/${org}/${repo}` },
+    alternates: {
+      canonical: locale === "zh" ? `/zh/${org}/${repo}` : `/${org}/${repo}`,
+      languages: { en: `/${org}/${repo}`, zh: `/zh/${org}/${repo}` },
+    },
   };
 }
 
 export default async function RecipePage({ params, searchParams }) {
-  const { org, repo } = await params;
+  const { org, repo, locale } = await params;
+  const t = await getTranslations({ locale });
   const recipe = getRecipeByHfId(org, repo);
   if (!recipe) {
     const v = findVariantRedirect(org, repo);
@@ -93,18 +99,19 @@ export default async function RecipePage({ params, searchParams }) {
     // default variant, so a default-variant checkpoint lands on a clean URL.
     if (v) {
       const qs = v.variantKey === "default" ? "" : `?variant=${encodeURIComponent(v.variantKey)}`;
-      redirect(`/${v.parent.hf_org}/${v.parent.hf_repo}${qs}`);
+      redirect(`/${locale}/${v.parent.hf_org}/${v.parent.hf_repo}${qs}`);
     }
     notFound();
   }
   if (org !== recipe.hf_org || repo !== recipe.hf_repo) {
     const qs = new URLSearchParams(await searchParams).toString();
-    redirect(`/${recipe.hf_org}/${recipe.hf_repo}${qs ? `?${qs}` : ""}`);
+    redirect(`/${locale}/${recipe.hf_org}/${recipe.hf_repo}${qs ? `?${qs}` : ""}`);
   }
 
   const strategies = loadStrategies();
   const taxonomy = loadTaxonomy();
   const logo = getProviderLogo(recipe.hf_org);
+  const performanceReports = getPerformanceReportsForModel(recipe.hf_id);
 
   // Per-recipe platform opt-in. Each entry is either a bare id ("modal") or
   // an object with overrides ({ id: "modal", install, url, blurb }) for
@@ -176,7 +183,7 @@ export default async function RecipePage({ params, searchParams }) {
                 className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-vllm-blue transition-colors"
               >
                 <HuggingFaceIcon className="w-3.5 h-3.5" />
-                View on HuggingFace
+                {t("detail.viewHuggingFace")}
                 <ExternalLink size={10} />
               </a>
               {recipe.modelscope_id && (
@@ -187,7 +194,7 @@ export default async function RecipePage({ params, searchParams }) {
                   className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-vllm-blue transition-colors"
                 >
                   <ModelScopeIcon className="w-3.5 h-3.5" />
-                  View on ModelScope
+                  {t("detail.viewModelScope")}
                   <ExternalLink size={10} />
                 </a>
               )}
@@ -199,7 +206,7 @@ export default async function RecipePage({ params, searchParams }) {
         <div className="flex flex-wrap gap-1.5">
           <Badge variant="outline" className="gap-1 text-xs capitalize">
             {recipe.model.architecture === "moe" ? <Layers size={11} /> : <Cpu size={11} />}
-            {recipe.model.architecture}
+            {t(`architecture.${recipe.model.architecture}`)}
           </Badge>
           <Badge variant="outline" className="text-xs">
             {recipe.model.parameter_count}
@@ -231,11 +238,27 @@ export default async function RecipePage({ params, searchParams }) {
               <ExternalLink size={10} className="ml-1 opacity-50" />
             </a>
           )}
-          {recipe.meta.tasks?.map((t) => (
-            <Badge key={t} variant="secondary" className="text-xs capitalize">{t}</Badge>
+          {recipe.meta.tasks?.map((task) => (
+            <Badge key={task} variant="secondary" className="text-xs capitalize">{t(`tasks.${task}`)}</Badge>
           ))}
         </div>
       </header>
+
+      {performanceReports.length > 0 && (
+        <section aria-label={t("nav.performance")} className="mb-8 border-y border-border">
+          {performanceReports.map((report) => (
+            <a key={report.slug} href={report.href} className="group flex flex-wrap items-center justify-between gap-x-6 gap-y-3 py-4 hover:bg-muted/20">
+              <div className="min-w-0">
+                <div className="font-mono text-[10px] tracking-[.1em] text-muted-foreground">{t("detail.performanceReport")}　/　{report.date}</div>
+                <div className="mt-1 font-medium tracking-tight group-hover:text-vllm-blue">{report.title}</div>
+              </div>
+              <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                <span>{report.hardware}</span><span>{report.precision}</span><ExternalLink size={13} />
+              </div>
+            </a>
+          ))}
+        </section>
+      )}
 
       {/* ── Command Builder ── */}
       <section className="mb-10">
@@ -247,9 +270,10 @@ export default async function RecipePage({ params, searchParams }) {
       {/* ── Reference sections ── */}
       <section className="space-y-2">
         {(recipe.guide || Object.values(recipe.engines ?? {}).some((e) => e?.guide)) && (
-          <Accordion title="Guide" defaultOpen>
+          <Accordion title={t("detail.modelNotes")} defaultOpen>
+            <p className="mb-4 text-xs text-muted-foreground">{t("detail.originalContent")}</p>
             <Suspense fallback={null}>
-              <EngineAwareGuide recipe={recipe} defaultEngine={recipe.default_engine || "vllm"} />
+              <EngineAwareGuide recipe={recipe} defaultEngine={recipe.default_engine || "vllm"} locale={locale} />
             </Suspense>
           </Accordion>
         )}
@@ -258,12 +282,12 @@ export default async function RecipePage({ params, searchParams }) {
 
       {/* ── Footer ── */}
       <footer className="mt-10 pt-4 border-t border-border text-sm text-muted-foreground flex flex-wrap gap-x-4 gap-y-2">
-        <span>Updated {recipe.meta.date_updated}</span>
+        <span>{t("detail.updated")} {recipe.meta.date_updated}</span>
         <a
           href={recipe.source?.edit_url || `https://github.com/vllm-project/recipes/edit/main/models/${recipe.hf_org}/${recipe.hf_repo}.yaml`}
           className="inline-flex items-center gap-1 hover:text-foreground transition-colors"
         >
-          <Pencil size={12} /> Edit recipe
+          <Pencil size={12} /> {t("detail.editRecipe")}
         </a>
         {recipe.source?.overlays?.map((o) => o.edit_url && (
           <a
@@ -271,7 +295,7 @@ export default async function RecipePage({ params, searchParams }) {
             href={o.edit_url}
             className="inline-flex items-center gap-1 hover:text-foreground transition-colors"
           >
-            <Pencil size={12} /> Edit {o.source} overlay
+            <Pencil size={12} /> {t("detail.editOverlay", { source: o.source })}
           </a>
         ))}
         {recipe.source?.sha && (
@@ -286,7 +310,7 @@ export default async function RecipePage({ params, searchParams }) {
           href="https://github.com/weetime/recipes/issues"
           className="inline-flex items-center gap-1 hover:text-foreground transition-colors"
         >
-          <Bug size={12} /> Report issue
+          <Bug size={12} /> {t("detail.reportIssue")}
         </a>
         <DeployDialog platforms={enabledPlatforms} hfId={recipe.hf_id} />
         {related.length > 0 && (

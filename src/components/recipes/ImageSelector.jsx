@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { Copy, Check, Info, ChevronDown } from "lucide-react";
 import { TooltipProvider, InfoTip } from "@/components/ui/tooltip";
+import { useT } from "@/components/i18n/I18nProvider";
 import {
   buildMatrix,
   cardHasData,
@@ -16,6 +17,7 @@ import {
 // aren't exported). Kept self-contained so this page never touches that file.
 
 function CopyButton({ text, label = "Copy", className = "" }) {
+  const t = useT();
   const [copied, setCopied] = useState(false);
   const handleCopy = useCallback(() => {
     navigator.clipboard.writeText(text);
@@ -33,11 +35,11 @@ function CopyButton({ text, label = "Copy", className = "" }) {
     >
       {copied ? (
         <>
-          <Check size={12} /> Copied
+          <Check size={12} /> {t("common.copied")}
         </>
       ) : (
         <>
-          <Copy size={12} /> {label}
+          <Copy size={12} /> {label === "Copy" ? t("common.copy") : label}
         </>
       )}
     </button>
@@ -129,14 +131,15 @@ function InlineCode({ children }) {
 }
 
 const OFFLINE_TABS = [
-  { id: "save", label: "Image File Import (Save & Load)" },
-  { id: "tag", label: "Push to Private Registry (Tag & Push)" },
-  { id: "auto", label: "Automated Image Sync" },
+  { id: "save", message: "saveTab" },
+  { id: "tag", message: "tagTab" },
+  { id: "auto", message: "autoTab" },
 ];
 
 const AIR_GAPPED_DOCS = "https://docs.gpustack.ai/latest/installation/air-gapped/#container-images";
 
 function OfflineGuide({ serverImages, workerImages, tagPushCommands, registryHost, version }) {
+  const t = useT();
   const [tab, setTab] = useState("save");
 
   const runWith = (registryRef, systemRegistry) =>
@@ -152,17 +155,17 @@ function OfflineGuide({ serverImages, workerImages, tagPushCommands, registryHos
     <div>
       {/* Tab bar */}
       <div className="flex flex-wrap gap-x-5 border-b border-border/60">
-        {OFFLINE_TABS.map((t) => (
+        {OFFLINE_TABS.map((tabItem) => (
           <button
-            key={t.id}
-            onClick={() => setTab(t.id)}
+            key={tabItem.id}
+            onClick={() => setTab(tabItem.id)}
             className={`-mb-px border-b-2 py-2 text-xs font-medium transition-colors ${
-              tab === t.id
+              tab === tabItem.id
                 ? "border-vllm-blue text-vllm-blue"
                 : "border-transparent text-muted-foreground hover:text-foreground"
             }`}
           >
-            {t.label}
+            {t(`imageSelector.offline.${tabItem.message}`)}
           </button>
         ))}
       </div>
@@ -170,25 +173,25 @@ function OfflineGuide({ serverImages, workerImages, tagPushCommands, registryHos
       <div className="py-3 text-xs text-muted-foreground leading-relaxed">
         {tab === "save" && (
           <div className="space-y-2.5">
-            <p>Suitable for completely air-gapped environments, importing images via files.</p>
+            <p>{t("imageSelector.offline.saveIntro")}</p>
             <ol className="list-decimal pl-5 space-y-3 marker:text-muted-foreground/70">
-              <li>Pull images on a machine with internet access (refer to commands above).</li>
+              <li>{t("imageSelector.offline.pull")}</li>
               <li>
-                Export images to tar files:
+                {t("imageSelector.offline.export")}
                 <CodeBlock>{`docker save -o gpustack-server-images.tar ${serverImages}\n\ndocker save -o gpustack-worker-images.tar ${workerImages}`}</CodeBlock>
               </li>
-              <li>Copy files to the offline machine.</li>
+              <li>{t("imageSelector.offline.copy")}</li>
               <li>
-                Import images by node role:
-                <div className="mt-2 font-semibold text-foreground/80">Server Node:</div>
+                {t("imageSelector.offline.import")}
+                <div className="mt-2 font-semibold text-foreground/80">{t("imageSelector.offline.server")}</div>
                 <CodeBlock>docker load -i gpustack-server-images.tar</CodeBlock>
-                <div className="mt-2 font-semibold text-foreground/80">Worker Node:</div>
+                <div className="mt-2 font-semibold text-foreground/80">{t("imageSelector.offline.worker")}</div>
                 <CodeBlock>docker load -i gpustack-worker-images.tar</CodeBlock>
-                <div className="mt-2 font-semibold text-foreground/80">Server + Worker Node:</div>
+                <div className="mt-2 font-semibold text-foreground/80">{t("imageSelector.offline.serverWorker")}</div>
                 <CodeBlock>{`docker load -i gpustack-server-images.tar\ndocker load -i gpustack-worker-images.tar`}</CodeBlock>
               </li>
               <li>
-                When running GPUStack Server and Worker containers, specify the container registry using the{" "}
+                {t("imageSelector.offline.specifyRegistry")}{" "}
                 <InlineCode>--system-default-container-registry</InlineCode> parameter:
                 <CodeBlock>{runWith(registryHost, registryHost)}</CodeBlock>
               </li>
@@ -198,15 +201,15 @@ function OfflineGuide({ serverImages, workerImages, tagPushCommands, registryHos
 
         {tab === "tag" && (
           <div className="space-y-2.5">
-            <p>Suitable for scenarios where a private registry (e.g., Harbor, Nexus) exists.</p>
+            <p>{t("imageSelector.offline.tagIntro")}</p>
             <ol className="list-decimal pl-5 space-y-3 marker:text-muted-foreground/70">
-              <li>Pull images on a machine with internet access (refer to commands above).</li>
+              <li>{t("imageSelector.offline.pull")}</li>
               <li>
-                Retag and push to the private registry:
+                {t("imageSelector.offline.retag")}
                 <CodeBlock>{`export PrivateRegistry=<your-private-registry>\n${tagPushCommands}`}</CodeBlock>
               </li>
               <li>
-                Specify the image registry via start parameters when running containers:
+                {t("imageSelector.offline.runRegistry")}
                 <CodeBlock>{runWith("$PrivateRegistry", "$PrivateRegistry")}</CodeBlock>
               </li>
             </ol>
@@ -215,25 +218,25 @@ function OfflineGuide({ serverImages, workerImages, tagPushCommands, registryHos
 
         {tab === "auto" && (
           <div className="space-y-2.5">
-            <p>For more automated sync methods, GPUStack provides image management commands:</p>
+            <p>{t("imageSelector.offline.autoIntro")}</p>
             <ul className="space-y-1.5">
               <li>
-                <InlineCode>gpustack copy-images</InlineCode>: Sync images from source to destination registry
+                <InlineCode>gpustack copy-images</InlineCode>: {t("imageSelector.offline.copyImages")}
               </li>
               <li>
-                <InlineCode>gpustack save-images</InlineCode>: Download and save images to local path
+                <InlineCode>gpustack save-images</InlineCode>: {t("imageSelector.offline.saveImages")}
               </li>
               <li>
-                <InlineCode>gpustack load-images</InlineCode>: Import images from local packages
+                <InlineCode>gpustack load-images</InlineCode>: {t("imageSelector.offline.loadImages")}
               </li>
               <li>
-                <InlineCode>gpustack list-images</InlineCode>: List image manifest for current version
+                <InlineCode>gpustack list-images</InlineCode>: {t("imageSelector.offline.listImages")}
               </li>
             </ul>
             <p>
-              All commands support filtering and custom config. For details, refer to{" "}
+              {t("imageSelector.offline.filtering")}{" "}
               <a href={AIR_GAPPED_DOCS} target="_blank" rel="noreferrer" className="text-vllm-blue hover:underline font-medium">
-                Prepare Container Images →
+                {t("imageSelector.offline.prepare")}
               </a>
             </p>
           </div>
@@ -242,7 +245,7 @@ function OfflineGuide({ serverImages, workerImages, tagPushCommands, registryHos
 
       <div className="flex justify-end border-t border-border/60 pt-3">
         <a href={AIR_GAPPED_DOCS} target="_blank" rel="noreferrer" className="text-vllm-blue hover:underline">
-          View full air-gapped docs →
+          {t("imageSelector.offline.fullDocs")}
         </a>
       </div>
     </div>
@@ -252,6 +255,7 @@ function OfflineGuide({ serverImages, workerImages, tagPushCommands, registryHos
 // ── Main component ────────────────────────────────────────────────────
 
 export function ImageSelector({ data, config }) {
+  const t = useT();
   const versions = data.versions || [];
 
   const [gpustackVersion, setGpustackVersion] = useState(versions[0] || "");
@@ -358,9 +362,9 @@ export function ImageSelector({ data, config }) {
       <div className="grid grid-cols-1 lg:grid-cols-[340px_1fr] gap-5 items-start">
         {/* ── Left: Configuration ── */}
         <div className="min-w-0 rounded-xl border border-border bg-card p-5 flex flex-col gap-5">
-          <h2 className="text-base font-semibold tracking-tight">Configuration</h2>
+          <h2 className="text-base font-semibold tracking-tight">{t("imageSelector.configuration")}</h2>
 
-          <Field label="GPU Type">
+          <Field label={t("imageSelector.gpuType")}>
             <div className="grid grid-cols-2 gap-2">
               {config.cards.map((c) => (
                 <Pill
@@ -377,7 +381,7 @@ export function ImageSelector({ data, config }) {
             </div>
           </Field>
 
-          <Field label="Framework Version">
+          <Field label={t("imageSelector.frameworkVersion")}>
             <select
               value={fwOptions.length ? fwKeyOf({ value: frameworkVersion, chip: chipType }) : ""}
               onChange={(e) => {
@@ -396,9 +400,9 @@ export function ImageSelector({ data, config }) {
             </select>
           </Field>
 
-          <Field label="Inference Backend" hint="Leave all unchecked to include every backend image; check to narrow.">
+          <Field label={t("imageSelector.backend")} hint={t("imageSelector.backendHint")}>
             {backendOptions.length === 0 ? (
-              <p className="text-xs text-muted-foreground">No inference backend images for this selection.</p>
+              <p className="text-xs text-muted-foreground">{t("imageSelector.noBackend")}</p>
             ) : (
               <div className="flex flex-col gap-1.5">
                 {backendOptions.map((b) => (
@@ -413,7 +417,7 @@ export function ImageSelector({ data, config }) {
             )}
           </Field>
 
-          <Field label="Optional Images">
+          <Field label={t("imageSelector.optionalImages")}>
             <div className="flex flex-col gap-1.5">
               {config.optionalImages.map((o) => (
                 <CheckRow
@@ -431,8 +435,8 @@ export function ImageSelector({ data, config }) {
         {/* ── Right: Required Images ── */}
         <div className="min-w-0 rounded-xl border border-border bg-card p-5 flex flex-col gap-4">
           <div className="flex items-center justify-between gap-3 flex-wrap">
-            <h2 className="text-base font-semibold tracking-tight">Required Images</h2>
-            <Field label="GPUStack Version">
+            <h2 className="text-base font-semibold tracking-tight">{t("imageSelector.requiredImages")}</h2>
+            <Field label={t("imageSelector.gpuStackVersion")}>
               <select
                 value={gpustackVersion}
                 onChange={(e) => setGpustackVersion(e.target.value)}
@@ -448,7 +452,7 @@ export function ImageSelector({ data, config }) {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Field label="Architecture">
+            <Field label={t("imageSelector.architecture")}>
               <div className="flex flex-wrap gap-1.5">
                 {config.architectures.map((a) => (
                   <Pill key={a.id} active={a.id === arch} onClick={() => setArch(a.id)}>
@@ -457,7 +461,7 @@ export function ImageSelector({ data, config }) {
                 ))}
               </div>
             </Field>
-            <Field label="Registry">
+            <Field label={t("imageSelector.registry")}>
               <div className="flex flex-wrap gap-1.5">
                 {Object.entries(config.registries).map(([key, r]) => (
                   <Pill key={key} active={key === registry} onClick={() => setRegistry(key)}>
@@ -486,7 +490,7 @@ export function ImageSelector({ data, config }) {
                   </button>
                 ))}
               </div>
-              <CopyButton text={command} label="Copy" />
+              <CopyButton text={command} />
             </div>
             <pre className="px-4 py-3 text-xs leading-relaxed font-mono text-[var(--command-fg)] overflow-x-auto whitespace-pre">
               {command.split("\n").map((line, i) => (

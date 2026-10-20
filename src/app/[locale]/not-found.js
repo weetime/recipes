@@ -1,17 +1,19 @@
 "use client";
 
-import { usePathname } from "next/navigation";
-import Link from "next/link";
+import { usePathname, Link } from "@/i18n/navigation";
 import { FileQuestion, GitPullRequest, Search, ExternalLink, BookOpen, Sparkles } from "lucide-react";
+import { useT } from "@/components/i18n/I18nProvider";
 
 // A missed URL here is almost always a model that isn't in the repo yet, not
 // a typo. The page is designed around that — it surfaces the attempted
 // `org/repo` back at the user, prefills a GitHub issue with it, and points to
 // CONTRIBUTING.md for anyone who'd rather open a PR themselves.
 export default function NotFound() {
+  const t = useT();
   const pathname = usePathname() || "";
   const trimmed = pathname.replace(/^\/+|\/+$/g, "");
-  const parts = trimmed.split("/").filter(Boolean);
+  const rawParts = trimmed.split("/").filter(Boolean);
+  const parts = ["en", "zh"].includes(rawParts[0]) ? rawParts.slice(1) : rawParts;
   // Treat `/<org>/<repo>` as a probable model request. Ignore anything that
   // contains reserved segments or is clearly not a recipe URL.
   const looksLikeModel =
@@ -41,15 +43,15 @@ export default function NotFound() {
             404
           </p>
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
-            {hfId ? "No recipe yet for this model" : "Page not found"}
+            {hfId ? t("notFound.noRecipe") : t("notFound.page")}
           </h1>
           {hfId && (
             <p className="text-sm text-muted-foreground mt-2">
-              You were looking for{" "}
+              {t("notFound.lookingFor")}{" "}
               <code className="font-mono text-[12px] bg-muted/60 px-1.5 py-0.5 rounded">
                 {hfId}
               </code>
-              . Help the community — request it below or contribute one yourself.
+              . {t("notFound.help")}
             </p>
           )}
           {!hfId && pathname && (

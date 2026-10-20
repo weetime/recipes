@@ -1,13 +1,15 @@
 "use client";
 
 import { useState, useRef, useEffect, useMemo } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/i18n/navigation";
 import { Search, ArrowRight, Building2, SlidersHorizontal } from "lucide-react";
 import { compareRecipesByDateAdded, recipeHref } from "@/lib/recipe-utils";
 import { getProviderLogo, getProviderLogoClass, getProviderDisplayName, PROVIDERS } from "@/lib/providers";
 import { searchRecipes, searchProviders } from "@/lib/search";
+import { useT } from "@/components/i18n/I18nProvider";
 
 export function SearchBox({ recipes }) {
+  const t = useT();
   const [query, setQuery] = useState("");
   const [focused, setFocused] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -129,7 +131,7 @@ export function SearchBox({ recipes }) {
           onFocus={() => setFocused(true)}
           onBlur={() => setTimeout(() => setFocused(false), 200)}
           onKeyDown={handleKeyDown}
-          placeholder="Search models or providers...  ⌘K"
+          placeholder={t("common.search")}
           className="w-full rounded-lg border border-border bg-background pl-9 pr-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-vllm-blue/40"
         />
       </div>
@@ -138,7 +140,7 @@ export function SearchBox({ recipes }) {
         <div className="absolute top-full mt-1 left-0 right-0 bg-card border border-border rounded-lg shadow-lg overflow-hidden z-50">
           {!query.trim() && (
             <div className="px-3 py-1.5 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground bg-muted/30 border-b border-border">
-              Latest
+              {t("common.latest")}
             </div>
           )}
           {list.map((r, i) => {
@@ -159,6 +161,7 @@ export function SearchBox({ recipes }) {
 }
 
 function ProviderResult({ entry, active, onClick }) {
+  const t = useT();
   const logo = getProviderLogo(entry.org);
   return (
     <button
@@ -181,7 +184,7 @@ function ProviderResult({ entry, active, onClick }) {
           <span className="text-[10px] font-normal text-muted-foreground font-mono">{entry.org}</span>
         </div>
         <div className="text-xs text-muted-foreground">
-          Provider · {entry.count} recipe{entry.count !== 1 ? "s" : ""}
+          {t("search.providerCount", { count: entry.count })}
         </div>
       </div>
       <ArrowRight size={14} className="text-muted-foreground shrink-0" />
@@ -190,12 +193,11 @@ function ProviderResult({ entry, active, onClick }) {
 }
 
 function BrowseAllResult({ entry, active, onClick, query }) {
+  const t = useT();
   // Footer row in the search dropdown. Two voices:
   //   matches:  "Browse N matching recipes →" (link to /browse?q=...)
   //   none:     "Browse all N recipes →" (link to /browse, fallback)
-  const label = entry.fallback
-    ? `Browse all ${entry.count} recipes`
-    : `Browse ${entry.count} matching recipe${entry.count === 1 ? "" : "s"}`;
+  const label = t(entry.fallback ? "search.browseAll" : "search.browseMatches", { count: entry.count });
   return (
     <button
       onMouseDown={onClick}
@@ -214,7 +216,7 @@ function BrowseAllResult({ entry, active, onClick, query }) {
           )}
         </div>
         <div className="text-xs text-muted-foreground">
-          {entry.fallback ? "Open the full filter view" : "Open in browse with filters available"}
+          {t(entry.fallback ? "search.fullFilters" : "search.filtered")}
         </div>
       </div>
       <ArrowRight size={14} className="text-muted-foreground shrink-0" />

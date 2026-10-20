@@ -1,10 +1,11 @@
 "use client";
 
 import { useMemo } from "react";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { Type, Eye, Sparkles, Hash, Layers, Cpu } from "lucide-react";
 import { getProviderLogo, getProviderLogoClass, getProviderDisplayName } from "@/lib/providers";
 import { compareRecipesByDateAdded } from "@/lib/recipe-utils";
+import { useT } from "@/components/i18n/I18nProvider";
 
 const TASK_ICON = { text: Type, multimodal: Eye, omni: Sparkles, embedding: Hash };
 
@@ -16,6 +17,7 @@ const LATEST_COUNT = 8;
 const LATEST_PER_ORG = 2;
 
 export function RecipeCardGrid({ recipes }) {
+  const t = useT();
   const byOrg = useMemo(() => {
     const groups = {};
     for (const r of recipes) {
@@ -50,13 +52,13 @@ export function RecipeCardGrid({ recipes }) {
       {/* Latest recipes — primary freshness signal */}
       <section>
         <div className="flex items-baseline gap-2 mb-3 pb-2 border-b border-border">
-          <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest">Latest recipes</span>
-          <span className="text-[10px] text-muted-foreground/60">newest {latest.length}</span>
+          <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest">{t("home.latest")}</span>
+          <span className="text-[10px] text-muted-foreground/60">{t("home.newest", { count: latest.length })}</span>
           <Link
             href="/browse"
             className="ml-auto text-[11px] text-muted-foreground hover:text-vllm-blue transition-colors"
           >
-            View all {recipes.length} →
+            {t("home.viewAll", { count: recipes.length })}
           </Link>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
@@ -67,7 +69,7 @@ export function RecipeCardGrid({ recipes }) {
       {/* Providers — secondary nav */}
       <section>
         <div className="flex items-baseline gap-2 mb-3 pb-2 border-b border-border">
-          <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest">Browse by provider</span>
+          <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest">{t("home.providersHeading")}</span>
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
           {byOrg.map(([org, models]) => <ProviderTile key={org} org={org} models={models} />)}
@@ -78,6 +80,7 @@ export function RecipeCardGrid({ recipes }) {
 }
 
 function RecipeCard({ recipe }) {
+  const tMsg = useT();
   const v = recipe.variants?.default || {};
   const tasks = recipe.meta?.tasks || [];
   const logo = getProviderLogo(recipe.hf_org);
@@ -133,7 +136,7 @@ function RecipeCard({ recipe }) {
           return (
             <Badge key={t} subtle>
               <Icon size={9} />
-              <span className="capitalize">{t}</span>
+              <span className="capitalize">{tMsg(`tasks.${t}`)}</span>
             </Badge>
           );
         })}

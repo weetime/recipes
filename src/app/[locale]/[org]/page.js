@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { notFound, redirect } from "next/navigation";
 import { getAllRecipes, getRecipesByOrg } from "@/lib/recipes";
 import { getProviderLogo, getProviderLogoClass, getProviderDisplayName } from "@/lib/providers";
@@ -7,6 +7,7 @@ import { siteUrl } from "@/lib/site-url";
 import { Badge } from "@/components/ui/badge";
 import { ExternalLink, Type, Eye, Sparkles, Cpu, Hash } from "lucide-react";
 import { buildBreadcrumbLd, jsonLdScript } from "@/lib/jsonld";
+import { getTranslations } from "next-intl/server";
 
 export async function generateStaticParams() {
   const recipes = getAllRecipes();
@@ -15,16 +16,20 @@ export async function generateStaticParams() {
 }
 
 export async function generateMetadata({ params }) {
-  const { org } = await params;
+  const { org, locale } = await params;
   const displayName = getProviderDisplayName(org);
   const count = getRecipesByOrg(org).length;
-  const description = `vLLM serve recipes for ${displayName} models — ${count} recipe${count === 1 ? "" : "s"} with hardware-tuned commands.`;
+  const description = locale === "zh"
+    ? `${displayName} 模型的 vLLM 服务配方：${count} 个适配硬件的可运行配置。`
+    : `vLLM serve recipes for ${displayName} models — ${count} recipe${count === 1 ? "" : "s"} with hardware-tuned commands.`;
   const ogUrl = `/og?title=${encodeURIComponent(displayName)}&subtitle=${encodeURIComponent(
     `${count} recipe${count === 1 ? "" : "s"}`
   )}&path=${encodeURIComponent(`/${org}`)}`;
   // Page <title> "{displayName} on vLLM" + layout template " | vLLM Recipes"
   // would double the brand. Use absolute and include the count for tab UX.
-  const titleText = `${displayName} on vLLM — ${count} recipe${count === 1 ? "" : "s"}`;
+  const titleText = locale === "zh"
+    ? `${displayName} 模型部署配方 — ${count} 个`
+    : `${displayName} on vLLM — ${count} recipe${count === 1 ? "" : "s"}`;
   return {
     title: { absolute: titleText },
     description,
@@ -32,7 +37,7 @@ export async function generateMetadata({ params }) {
       type: "website",
       title: titleText,
       description,
-      url: `/${org}`,
+      url: locale === "zh" ? `/zh/${org}` : `/${org}`,
       images: [{ url: ogUrl, width: 1200, height: 630, alt: displayName }],
     },
     twitter: {
@@ -41,7 +46,10 @@ export async function generateMetadata({ params }) {
       description,
       images: [ogUrl],
     },
-    alternates: { canonical: `/${org}` },
+    alternates: {
+      canonical: locale === "zh" ? `/zh/${org}` : `/${org}`,
+      languages: { en: `/${org}`, zh: `/zh/${org}` },
+    },
   };
 }
 
@@ -53,14 +61,16 @@ const TASK_META = {
   embedding:  { icon: Hash,     label: "Embedding" },
 };
 const TASK_ORDER = ["multimodal", "text", "omni", "embedding"];
+const TASK_LABEL_ZH = { text: "文本", multimodal: "多模态", omni: "全模态", embedding: "向量嵌入" };
 
 export default async function OrgPage({ params }) {
-  const { org } = await params;
+  const { org, locale } = await params;
+  const t = await getTranslations({ locale });
   const models = getRecipesByOrg(org);
   if (models.length === 0) notFound();
   const canonicalOrg = models[0].hf_org;
   if (org !== canonicalOrg) {
-    redirect(`/${canonicalOrg}`);
+    redirect(`/${locale}/${canonicalOrg}`);
   }
 
   const logo = getProviderLogo(org);
@@ -119,7 +129,7 @@ export default async function OrgPage({ params }) {
           <div className="flex items-center gap-3 mt-1 text-sm text-muted-foreground">
             <span className="font-mono text-xs">{org}</span>
             <span>·</span>
-            <span>{models.length} recipe{models.length > 1 ? "s" : ""}</span>
+            <span>{t("org.recipeCount", { count: models.length })}</span>
             <a
               href={`https://huggingface.co/${org}`}
               target="_blank"
@@ -142,7 +152,9 @@ export default async function OrgPage({ params }) {
               <div className="flex items-center gap-2 mb-3">
                 <Icon size={14} className="text-muted-foreground" />
                 <h2 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground">
-                  {tmeta?.label || task}
+                  {t.has(`tasks.${task}`)
+                    ? t(`tasks.${task}`)
+                    : (locale === "zh" ? (TASK_LABEL_ZH[task] || tmeta?.label || task) : (tmeta?.label || task))}
                 </h2>
                 <span className="text-xs text-muted-foreground/60 tabular-nums">{list.length}</span>
               </div>

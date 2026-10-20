@@ -3,13 +3,21 @@ import { getAllRecipes } from "@/lib/recipes";
 import { loadTaxonomy } from "@/lib/taxonomy";
 import { isHardwareSupported, variantRunsOnHardware } from "@/lib/command-synthesis";
 import { BrowseList } from "@/components/recipes/BrowseList";
+import { getTranslations } from "next-intl/server";
 
-export const metadata = {
-  title: "Browse all recipes",
-  description: "Filter every vLLM recipe by task, architecture, parameter size, precision, hardware, and provider.",
-};
+export async function generateMetadata({ params }) {
+  const { locale } = await params;
+  const chinese = locale === "zh";
+  return {
+    title: chinese ? "浏览全部配方" : "Browse all recipes",
+    description: chinese ? "按任务、架构、参数规模、精度、硬件和提供方筛选 vLLM 配方。" : "Filter every vLLM recipe by task, architecture, parameter size, precision, hardware, and provider.",
+    alternates: { canonical: chinese ? "/zh/browse" : "/browse", languages: { en: "/browse", zh: "/zh/browse" } },
+  };
+}
 
-export default function BrowsePage() {
+export default async function BrowsePage({ params }) {
+  const { locale } = await params;
+  const t = await getTranslations({ locale });
   const recipes = getAllRecipes();
   const hardwareProfiles = Object.entries(loadTaxonomy().hardware_profiles);
   // Slim payload — drop the heavy `guide` markdown before sending to the
@@ -66,9 +74,9 @@ export default function BrowsePage() {
   return (
     <main className="max-w-[1480px] mx-auto px-4 sm:px-6 py-8">
       <header className="mb-5">
-        <h1 className="text-xl font-semibold tracking-tight">Browse all recipes</h1>
+        <h1 className="text-xl font-semibold tracking-tight">{t("browse.title")}</h1>
         <p className="text-sm text-muted-foreground mt-1">
-          Filter {slim.length} recipes by task, architecture, size, precision, and hardware.
+          {t("browse.description", { count: slim.length })}
         </p>
       </header>
       <Suspense fallback={<div className="text-sm text-muted-foreground py-8">Loading...</div>}>

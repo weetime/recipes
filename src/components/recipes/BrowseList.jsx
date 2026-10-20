@@ -1,11 +1,12 @@
 "use client";
 
 import { useMemo, useCallback } from "react";
-import Link from "next/link";
-import { useSearchParams, useRouter } from "next/navigation";
+import { Link, useRouter } from "@/i18n/navigation";
+import { useSearchParams } from "next/navigation";
 import { Layers, Cpu, X, ArrowDownUp, Type, Eye, Sparkles, Hash, SlidersHorizontal, ChevronDown } from "lucide-react";
 import { getProviderLogo, getProviderLogoClass, getProviderDisplayName } from "@/lib/providers";
 import { searchRecipes } from "@/lib/search";
+import { useT } from "@/components/i18n/I18nProvider";
 
 // Per-row decorations: icon (tasks/arch) or colored dot (precision/hardware).
 // Color is family-grouped — precision tiers, GPU brands — so the eye can
@@ -172,6 +173,7 @@ function matchingVariant(recipe, precision, hardware) {
 }
 
 export function BrowseList({ recipes, hardwareOptions }) {
+  const t = useT();
   const searchParams = useSearchParams();
   const router = useRouter();
   const hardwareById = useMemo(
@@ -341,8 +343,8 @@ export function BrowseList({ recipes, hardwareOptions }) {
   const activeFilters = useMemo(() => {
     const out = [];
     if (q) out.push({ key: "q", value: q, label: `"${q}"` });
-    for (const t of tasks) out.push({ key: "task", value: t, label: t });
-    for (const a of archs) out.push({ key: "arch", value: a, label: ARCH_META[a]?.label || a });
+    for (const taskId of tasks) out.push({ key: "task", value: taskId, label: t(`tasks.${taskId}`) });
+    for (const archId of archs) out.push({ key: "arch", value: archId, label: t(`architecture.${archId}`) });
     for (const id of sizes) {
       const b = SIZE_BUCKETS.find((x) => x.id === id);
       if (b) out.push({ key: "size", value: id, label: b.label });
@@ -354,7 +356,7 @@ export function BrowseList({ recipes, hardwareOptions }) {
     }
     if (provider) out.push({ key: "provider", value: provider, label: getProviderDisplayName(provider) });
     return out;
-  }, [q, tasks, archs, sizes, precisions, hardware, provider, hardwareById]);
+  }, [q, tasks, archs, sizes, precisions, hardware, provider, hardwareById, t]);
 
   // Panel state persists in the URL (`?panel=open`) so a refresh keeps
   // whatever the user had. Default is closed — applied filters are
@@ -381,9 +383,9 @@ export function BrowseList({ recipes, hardwareOptions }) {
         <span className="text-sm text-foreground">
           <span className="font-semibold tabular-nums">{filtered.length}</span>
           {hasFilters && (
-            <span className="text-muted-foreground"> of {recipes.length}</span>
+            <span className="text-muted-foreground"> {t("browseFilters.of")} {recipes.length}</span>
           )}
-          <span className="text-muted-foreground"> {filtered.length === 1 ? "recipe" : "recipes"}</span>
+          <span className="text-muted-foreground"> {t(filtered.length === 1 ? "browseFilters.recipe" : "browseFilters.recipes")}</span>
         </span>
 
         <button
@@ -396,7 +398,7 @@ export function BrowseList({ recipes, hardwareOptions }) {
           aria-expanded={open}
         >
           <SlidersHorizontal size={13} />
-          <span className="font-medium">Filter</span>
+          <span className="font-medium">{t("browseFilters.filter")}</span>
           {activeCount > 0 && (
             <span className="inline-flex items-center justify-center rounded-full bg-vllm-blue text-white text-[10px] font-semibold px-1.5 min-w-[18px] h-[18px] tabular-nums">
               {activeCount}
@@ -425,7 +427,7 @@ export function BrowseList({ recipes, hardwareOptions }) {
             className="rounded-lg border border-foreground/20 bg-background px-3 py-1.5 text-[13px] focus:outline-none focus:ring-2 focus:ring-vllm-blue/40 hover:border-foreground/40 transition-colors"
           >
             {SORT_OPTIONS.map((s) => (
-              <option key={s.id} value={s.id}>{s.label}</option>
+              <option key={s.id} value={s.id}>{t(`browseFilters.sort${{ released: "Newest", updated: "Updated", size_desc: "Largest", size_asc: "Smallest", name: "Name" }[s.id]}`)}</option>
             ))}
           </select>
           {hasFilters && (
@@ -433,7 +435,7 @@ export function BrowseList({ recipes, hardwareOptions }) {
               onClick={clearAll}
               className="inline-flex items-center gap-1 rounded-lg border border-foreground/20 px-2.5 py-1.5 text-[13px] text-muted-foreground hover:text-foreground hover:border-foreground/40 hover:bg-muted/40 transition-colors"
             >
-              <X size={12} /> Clear
+              <X size={12} /> {t("browseFilters.clear")}
             </button>
           )}
         </div>
@@ -441,27 +443,27 @@ export function BrowseList({ recipes, hardwareOptions }) {
 
       {open && (
       <div className="rounded-xl border border-foreground/15 divide-y divide-foreground/10 bg-card/40">
-        <FilterRow label="Task">
+        <FilterRow label={t("browseFilters.task")}>
           <PillGroup>
-            {TASK_OPTIONS.map((t) => {
-              const m = TASK_META[t] || {};
+            {TASK_OPTIONS.map((taskId) => {
+              const m = TASK_META[taskId] || {};
               return (
                 <Chip
-                  key={t}
+                  key={taskId}
                   icon={m.icon}
                   iconClass={m.iconClass}
-                  active={tasks.has(t)}
-                  count={counts.task[t]}
-                  onClick={() => toggle("task", t)}
+                  active={tasks.has(taskId)}
+                  count={counts.task[taskId]}
+                  onClick={() => toggle("task", taskId)}
                 >
-                  {t}
+                  {t(`tasks.${taskId}`)}
                 </Chip>
               );
             })}
           </PillGroup>
         </FilterRow>
 
-        <FilterRow label="Arch">
+        <FilterRow label={t("browseFilters.arch")}>
           <PillGroup>
             {ARCH_OPTIONS.map((a) => {
               const m = ARCH_META[a];
@@ -474,14 +476,14 @@ export function BrowseList({ recipes, hardwareOptions }) {
                   count={counts.arch[a]}
                   onClick={() => toggle("arch", a)}
                 >
-                  {m.label}
+                  {t(`architecture.${a}`)}
                 </Chip>
               );
             })}
           </PillGroup>
         </FilterRow>
 
-        <FilterRow label="Size">
+        <FilterRow label={t("browseFilters.size")}>
           <PillGroup>
             {SIZE_BUCKETS.map((b) => (
               <Chip
@@ -498,7 +500,7 @@ export function BrowseList({ recipes, hardwareOptions }) {
           </PillGroup>
         </FilterRow>
 
-        <FilterRow label="Precision">
+        <FilterRow label={t("browseFilters.precision")}>
           <PillGroup>
             {PRECISION_OPTIONS.map((p) => (
               <Chip
@@ -515,9 +517,9 @@ export function BrowseList({ recipes, hardwareOptions }) {
           </PillGroup>
         </FilterRow>
 
-        <FilterRow label="Hardware">
+        <FilterRow label={t("command.hardware")}>
           <div className="space-y-2.5">
-            <p className="text-xs text-muted-foreground">Shows recipes with a compatible variant. Verified hardware is marked in the results.</p>
+            <p className="text-xs text-muted-foreground">{t("browseFilters.showsCompatible")}</p>
             {hardwareBrands.map((brand) => (
               <div key={brand.name} className="flex flex-wrap items-center gap-3">
                 <span className="inline-flex items-center gap-2 w-28 shrink-0">
@@ -554,13 +556,13 @@ export function BrowseList({ recipes, hardwareOptions }) {
           </div>
         </FilterRow>
 
-        <FilterRow label="Provider">
+        <FilterRow label={t("browseFilters.provider")}>
           <select
             value={provider}
             onChange={(e) => update({ provider: e.target.value })}
             className="rounded-lg border border-foreground/20 bg-background px-3 py-2 text-[13px] focus:outline-none focus:ring-2 focus:ring-vllm-blue/40 hover:border-foreground/40 transition-colors"
           >
-            <option value="">All providers</option>
+            <option value="">{t("browseFilters.allProviders")}</option>
             {providers.map((p) => (
               <option key={p.id} value={p.id}>{p.label}</option>
             ))}
@@ -572,18 +574,18 @@ export function BrowseList({ recipes, hardwareOptions }) {
       {/* List */}
       {filtered.length === 0 ? (
         <div className="rounded-xl border border-dashed border-border p-10 text-center text-sm text-muted-foreground">
-          No recipes match these filters. <button onClick={clearAll} className="text-vllm-blue hover:underline">Clear all</button>
+          {t("browseFilters.noMatches")} <button onClick={clearAll} className="text-vllm-blue hover:underline">{t("browseFilters.clear")}</button>
         </div>
       ) : (
         <div className="rounded-xl border border-border overflow-hidden">
           {/* Header — desktop only */}
           <div className="hidden md:grid grid-cols-[1fr_72px_64px_72px_140px_1fr] gap-3 px-4 py-2 border-b border-border bg-muted/30 text-[10px] font-semibold text-muted-foreground uppercase tracking-widest">
-            <div>Model</div>
-            <div>Size</div>
-            <div>Arch</div>
-            <div>Precision</div>
-            <div>{selectedHardware ? "Hardware status" : "Verified on"}</div>
-            <div>Notes</div>
+            <div>{t("browseFilters.model")}</div>
+            <div>{t("browseFilters.size")}</div>
+            <div>{t("browseFilters.arch")}</div>
+            <div>{t("browseFilters.precision")}</div>
+            <div>{t(selectedHardware ? "browseFilters.verifiedHardware" : "browseFilters.verifiedOn")}</div>
+            <div>{t("browseFilters.notes")}</div>
           </div>
           <ul className="divide-y divide-border">
             {filtered.map((r) => <Row key={r.hf_id} recipe={r} hardware={selectedHardware} precision={selectedPrecision} hardwareById={hardwareById} />)}
@@ -614,6 +616,7 @@ function PillGroup({ children }) {
 }
 
 function ActivePill({ children, onRemove }) {
+  const t = useT();
   // Compact pill shown in the status bar when the filter panel is collapsed.
   // Whole pill is the remove affordance — clicking anywhere drops that filter.
   return (
@@ -621,7 +624,7 @@ function ActivePill({ children, onRemove }) {
       type="button"
       onClick={onRemove}
       className="group inline-flex items-center gap-1 rounded-md border border-vllm-blue/40 bg-vllm-blue/10 px-2 py-0.5 text-[12px] text-foreground hover:border-vllm-blue/70 hover:bg-vllm-blue/15 transition-colors"
-      aria-label={`Remove ${children} filter`}
+      aria-label={t("browseFilters.remove", { label: children })}
     >
       <span className="font-medium">{children}</span>
       <X size={11} className="text-muted-foreground group-hover:text-foreground transition-colors" />
@@ -687,6 +690,7 @@ function Chip({ active, count, onClick, icon: Icon, iconClass, dot, logo, mono, 
 }
 
 function Row({ recipe, hardware, precision, hardwareById }) {
+  const t = useT();
   const r = recipe;
   const variant = matchingVariant(r, precision, hardware);
   const displayedPrecision = variant?.precision || r.variant?.precision;
@@ -726,7 +730,7 @@ function Row({ recipe, hardware, precision, hardwareById }) {
             </div>
             <div className="font-mono text-[10px] text-muted-foreground truncate">
               {r.hf_org}
-              {tasks.length > 0 && <span className="ml-2">· {tasks.join(" · ")}</span>}
+              {tasks.length > 0 && <span className="ml-2">· {tasks.map((task) => t(`tasks.${task}`)).join(" · ")}</span>}
             </div>
           </div>
         </div>
@@ -739,7 +743,7 @@ function Row({ recipe, hardware, precision, hardwareById }) {
 
         {/* Arch */}
         <div className="hidden md:block text-xs text-muted-foreground">
-          {isMoe ? "MoE" : "Dense"}
+          {t(`architecture.${isMoe ? "moe" : "dense"}`)}
         </div>
 
         {/* Precision */}
@@ -751,7 +755,7 @@ function Row({ recipe, hardware, precision, hardwareById }) {
         <div className="hidden md:flex flex-wrap gap-1">
           {hardware ? (
             <span className="text-[10px] text-muted-foreground">
-              {hardwareById[hardware]?.label || hardware} · {verified.includes(hardware) ? "Verified" : "Compatible"}
+              {hardwareById[hardware]?.label || hardware} · {t(verified.includes(hardware) ? "browseFilters.verified" : "browseFilters.compatible")}
             </span>
           ) : verified.length === 0 ? (
             <span className="text-[10px] text-muted-foreground/50">—</span>
@@ -773,12 +777,12 @@ function Row({ recipe, hardware, precision, hardwareById }) {
         <div className="md:hidden mt-1.5 flex flex-wrap gap-1.5 text-[11px] text-muted-foreground">
           <span className="font-mono">{sizeLabel}</span>
           <span>·</span>
-          <span>{isMoe ? "MoE" : "Dense"}</span>
+          <span>{t(`architecture.${isMoe ? "moe" : "dense"}`)}</span>
           {displayedPrecision && (<><span>·</span><span className="font-mono uppercase">{displayedPrecision}</span></>)}
           {hardware ? (
             <>
               <span>·</span>
-              <span>{hardwareById[hardware]?.label || hardware} · {verified.includes(hardware) ? "Verified" : "Compatible"}</span>
+              <span>{hardwareById[hardware]?.label || hardware} · {t(verified.includes(hardware) ? "browseFilters.verified" : "browseFilters.compatible")}</span>
             </>
           ) : verified.length > 0 && (
             <>
