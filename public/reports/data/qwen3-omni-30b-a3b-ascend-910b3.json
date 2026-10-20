@@ -1,0 +1,499 @@
+{
+  "title": "Qwen3-Omni-30B-A3B · Ascend 910B3",
+  "breadcrumb": "Qwen3-Omni-30B-A3B",
+  "kicker": "MULTIMODAL SERVING BENCHMARK · STREAMING AUDIO",
+  "lede": {
+    "zh": "这份报告记录 Qwen3-Omni-30B-A3B-Instruct 在 4×Ascend 910B3-64G、vLLM-Omni 0.26.0 上的固定语音 prompt 与文本流式服务测试。约 6 秒音频口径下，4 并发的所有观测请求仍满足 RTF < 1；8 并发开始出现尾部越线。",
+    "en": "This report measures fixed-prompt audio and streaming text serving for Qwen3-Omni-30B-A3B-Instruct on 4× Ascend 910B3-64G with vLLM-Omni 0.26.0. With ~6-second audio, all observed requests remain below RTF 1 at concurrency 4; tail requests cross the limit at concurrency 8."
+  },
+  "chips": [
+    "4 × Ascend 910B3 · 64 GB",
+    "vLLM-Omni 0.26.0",
+    "Thinker TP2 · audio stages 2 replicas each",
+    "Fixed read-aloud prompt · ~6 s audio",
+    "Measured 2026-07"
+  ],
+  "snapshot": {
+    "zh": "固定语音生成 · 文本输出 / TTFT · 首音频包延迟",
+    "en": "Fixed audio generation · text output / TTFT · first audio packet latency"
+  },
+  "sections": [
+    {
+      "id": "audio",
+      "zh": "语音实时性",
+      "en": "Audio real-time behavior"
+    },
+    {
+      "id": "ttfp",
+      "zh": "首音频包延迟",
+      "en": "First audio packet latency"
+    },
+    {
+      "id": "text",
+      "zh": "文本服务",
+      "en": "Text serving"
+    },
+    {
+      "id": "method",
+      "zh": "方法与边界",
+      "en": "Method & limits"
+    }
+  ],
+  "stats": [
+    {
+      "zhLabel": "固定 prompt 实时并发",
+      "enLabel": "Fixed-prompt real-time concurrency",
+      "value": "4",
+      "zhNote": "C4 RTF 最大值 0.951",
+      "enNote": "Maximum RTF 0.951 at C4"
+    },
+    {
+      "zhLabel": "首音频包 TTFP",
+      "enLabel": "First audio packet · TTFP",
+      "value": "438 ms",
+      "zhNote": "C1 中位数",
+      "enNote": "Median at C1"
+    },
+    {
+      "zhLabel": "文本输出吞吐",
+      "enLabel": "Text output throughput",
+      "value": "36.6 tok/s",
+      "zhNote": "C16 · 成功率 100%",
+      "enNote": "C16 · 100% success"
+    }
+  ],
+  "overview": {
+    "heading": {
+      "zh": "RTF 先于吞吐出现实时边界",
+      "en": "The real-time boundary appears before the throughput ceiling"
+    },
+    "intro": {
+      "zh": "固定约 6 秒语音 prompt 下，RTF 中位数从 C1 的 0.70 升至 C8 的 1.00；C8 最大值为 1.06，已不满足所有请求都实时。文本吞吐在 C1–C16 持续增长，测试范围内尚未饱和。",
+      "en": "With a fixed ~6-second audio prompt, median RTF rises from 0.70 at C1 to 1.00 at C8; the C8 maximum is 1.06, so not all requests remain real-time. Text throughput continues to grow from C1 through C16 and does not saturate within the tested range."
+    },
+    "note": {
+      "zh": "此报告只使用固定朗读 prompt 的 audio_rtf.py 口径；不同语言、句长、数据集或官方 Omni Bench 采集工具会改变实时路数，不能把别的口径移入此表。",
+      "en": "This report uses only the audio_rtf.py fixed read-aloud prompt profile. Language, utterance length, dataset, or official Omni-bench collection tools can change the real-time boundary; results from those profiles are not mixed into these tables."
+    }
+  },
+  "blocks": [
+    {
+      "id": "audio",
+      "label": {
+        "zh": "语音实时性",
+        "en": "语音实时性"
+      },
+      "heading": {
+        "zh": "C4 所有观测请求实时，C8 开始出现尾部越线",
+        "en": "All observed requests are real-time at C4; tails cross the limit at C8"
+      },
+      "intro": {
+        "zh": "同一约 6 秒语音生成 prompt，在并发 1/2/4/8/16 下测量音频生成时长与 RTF。实时判定按每点观测最大 RTF < 1。",
+        "en": "The same ~6-second audio-generation prompt was measured at concurrency 1/2/4/8/16. The real-time criterion is maximum observed RTF < 1 at a point."
+      },
+      "chart": {
+        "title": {
+          "zh": "固定语音 prompt · RTF",
+          "en": "Fixed audio prompt · RTF"
+        },
+        "hint": {
+          "zh": "RTF < 1 表示生成快于音频播放时长。",
+          "en": "RTF < 1 means generation is faster than audio playback."
+        },
+        "labels": {
+          "zh": [
+            "C1",
+            "C2",
+            "C4",
+            "C8",
+            "C16"
+          ],
+          "en": [
+            "C1",
+            "C2",
+            "C4",
+            "C8",
+            "C16"
+          ]
+        },
+        "series": [
+          {
+            "zh": "RTF P50",
+            "en": "RTF median",
+            "values": [
+              0.7,
+              0.692,
+              0.906,
+              0.998,
+              1.168
+            ],
+            "color": "blue"
+          },
+          {
+            "zh": "RTF 最大值",
+            "en": "RTF maximum",
+            "values": [
+              0.71,
+              0.705,
+              0.951,
+              1.056,
+              1.295
+            ],
+            "color": "green"
+          }
+        ],
+        "yTitle": {
+          "zh": "RTF",
+          "en": "RTF"
+        }
+      },
+      "table": {
+        "headers": {
+          "zh": [
+            "并发",
+            "RTF P50",
+            "RTF 最大值",
+            "全部观测实时"
+          ],
+          "en": [
+            "Concurrency",
+            "RTF median",
+            "RTF maximum",
+            "All observations real-time"
+          ]
+        },
+        "rows": [
+          [
+            "C1",
+            "0.700",
+            "0.710",
+            "是"
+          ],
+          [
+            "C2",
+            "0.692",
+            "0.705",
+            "是"
+          ],
+          [
+            "C4",
+            "0.906",
+            "0.951",
+            "是"
+          ],
+          [
+            "C8",
+            "0.998",
+            "1.056",
+            "否"
+          ],
+          [
+            "C16",
+            "1.168",
+            "1.295",
+            "否"
+          ]
+        ]
+      },
+      "notes": [
+        {
+          "zh": "C4 最大 RTF 为 0.951，仍低于 1；C8 中位数接近 1，但最大值 1.056 已越线。部署容量需绑定 prompt 和尾部口径，不应仅依据中位数。",
+          "en": "Maximum RTF at C4 is 0.951, below 1. At C8, the median is near 1 but the maximum reaches 1.056. Capacity should be tied to the prompt and tail criterion, not the median alone."
+        }
+      ]
+    },
+    {
+      "id": "ttfp",
+      "label": {
+        "zh": "首音频包延迟",
+        "en": "首音频包延迟"
+      },
+      "heading": {
+        "zh": "首音频包延迟在 C2 到 C4 明显增加",
+        "en": "First-audio-packet latency increases sharply from C2 to C4"
+      },
+      "intro": {
+        "zh": "报告 TTFP P50 与 P95；TTFP 衡量首个音频包到达，不等同于文本首 token TTFT。",
+        "en": "TTFP P50 and P95 are reported. TTFP measures arrival of the first audio packet and is distinct from text TTFT."
+      },
+      "chart": {
+        "title": {
+          "zh": "固定语音 prompt · TTFP",
+          "en": "Fixed audio prompt · TTFP"
+        },
+        "hint": {
+          "zh": "C8 的首包延迟尾部超过 1 秒。",
+          "en": "The first-packet tail exceeds one second at C8."
+        },
+        "labels": {
+          "zh": [
+            "C1",
+            "C2",
+            "C4",
+            "C8"
+          ],
+          "en": [
+            "C1",
+            "C2",
+            "C4",
+            "C8"
+          ]
+        },
+        "series": [
+          {
+            "zh": "TTFP P50",
+            "en": "TTFP median",
+            "values": [
+              438,
+              464,
+              767,
+              894
+            ],
+            "color": "blue"
+          },
+          {
+            "zh": "TTFP P95",
+            "en": "TTFP P95",
+            "values": [
+              448,
+              524,
+              951,
+              1126
+            ],
+            "color": "green"
+          }
+        ],
+        "yTitle": {
+          "zh": "ms",
+          "en": "ms"
+        }
+      },
+      "table": {
+        "headers": {
+          "zh": [
+            "并发",
+            "TTFP P50",
+            "TTFP P95",
+            "文本 TTFT P50",
+            "E2E P50",
+            "RTF P50 / 最大值"
+          ],
+          "en": [
+            "Concurrency",
+            "TTFP median",
+            "TTFP P95",
+            "Text TTFT median",
+            "E2E median",
+            "RTF median / max"
+          ]
+        },
+        "rows": [
+          [
+            "C1",
+            "438 ms",
+            "448 ms",
+            "55 ms",
+            "4.05 s",
+            "0.700 / 0.710"
+          ],
+          [
+            "C2",
+            "464 ms",
+            "524 ms",
+            "88.7 ms",
+            "4.09 s",
+            "0.692 / 0.705"
+          ],
+          [
+            "C4",
+            "767 ms",
+            "951 ms",
+            "110 ms",
+            "5.10 s",
+            "0.906 / 0.951"
+          ],
+          [
+            "C8",
+            "894 ms",
+            "1,126 ms",
+            "127.4 ms",
+            "5.96 s",
+            "0.998 / 1.056"
+          ]
+        ]
+      },
+      "notes": [
+        {
+          "zh": "C2→C4 的 TTFP P50 从 464 ms 升至 767 ms；RTF P50 同时从 0.692 升至 0.906。按交互体验看，首包延迟的变化比 RTF 中位数更早显著。",
+          "en": "From C2 to C4, median TTFP rises from 464 ms to 767 ms, while median RTF rises from 0.692 to 0.906. For interactive use, first-packet latency changes become material before the RTF median crosses 1."
+        }
+      ]
+    },
+    {
+      "id": "text",
+      "label": {
+        "zh": "文本服务",
+        "en": "文本服务"
+      },
+      "heading": {
+        "zh": "文本吞吐随并发上升，C16 达 36.6 tok/s",
+        "en": "Text throughput rises with concurrency to 36.6 tok/s at C16"
+      },
+      "intro": {
+        "zh": "此矩阵是纯文本流式请求，单独统计输出吞吐、文本 TTFT 与端到端耗时。",
+        "en": "This is a separate streaming text matrix reporting output throughput, text TTFT, and end-to-end latency."
+      },
+      "chart": {
+        "title": {
+          "zh": "纯文本输出吞吐",
+          "en": "Text-only output throughput"
+        },
+        "hint": {
+          "zh": "已测至 C16，未观察到吞吐峰值。",
+          "en": "Measured through C16; no throughput peak was observed."
+        },
+        "labels": {
+          "zh": [
+            "C1",
+            "C2",
+            "C4",
+            "C8",
+            "C16"
+          ],
+          "en": [
+            "C1",
+            "C2",
+            "C4",
+            "C8",
+            "C16"
+          ]
+        },
+        "series": [
+          {
+            "zh": "输出 tok/s",
+            "en": "Output tok/s",
+            "values": [
+              4.5,
+              6.8,
+              12.7,
+              23.6,
+              36.6
+            ],
+            "color": "blue"
+          }
+        ],
+        "yTitle": {
+          "zh": "tok/s",
+          "en": "tok/s"
+        }
+      },
+      "table": {
+        "headers": {
+          "zh": [
+            "并发",
+            "文本 TTFT P50",
+            "输出吞吐",
+            "E2E P50",
+            "请求成功率"
+          ],
+          "en": [
+            "Concurrency",
+            "Text TTFT median",
+            "Output tok/s",
+            "E2E median",
+            "Request success"
+          ]
+        },
+        "rows": [
+          [
+            "C1",
+            "55 ms",
+            "4.5 tok/s",
+            "54.5 s",
+            "100%"
+          ],
+          [
+            "C2",
+            "88.7 ms",
+            "6.8 tok/s",
+            "71.9 s",
+            "100%"
+          ],
+          [
+            "C4",
+            "110 ms",
+            "12.7 tok/s",
+            "78.2 s",
+            "100%"
+          ],
+          [
+            "C8",
+            "127.4 ms",
+            "23.6 tok/s",
+            "81.1 s",
+            "100%"
+          ],
+          [
+            "C16",
+            "141.7 ms",
+            "36.6 tok/s",
+            "104.7 s",
+            "100%"
+          ]
+        ]
+      },
+      "notes": [
+        {
+          "zh": "C16 吞吐 36.6 tok/s 是本轮最高测点，不代表硬件饱和峰值。语音输出在 C8 相对纯文本增加约 12.96 s E2E 耗时，适用于本报告的相同请求设置。",
+          "en": "The C16 throughput of 36.6 tok/s is the highest measured point, not a hardware saturation peak. Audio output adds about 12.96 seconds of E2E time versus text-only at C8 under this report’s request setup."
+        }
+      ]
+    }
+  ],
+  "meta": [
+    {
+      "zh": "模型",
+      "en": "Model",
+      "value": "Qwen3-Omni-30B-A3B-Instruct"
+    },
+    {
+      "zh": "硬件",
+      "en": "Hardware",
+      "value": "4 × Ascend 910B3 · 64 GB"
+    },
+    {
+      "zh": "软件栈",
+      "en": "Software stack",
+      "value": "vLLM-Omni 0.26.0"
+    },
+    {
+      "zh": "阶段布局",
+      "en": "Stage layout",
+      "value": "Thinker TP2 · audio stages 2 replicas each"
+    },
+    {
+      "zh": "负载",
+      "en": "Workload",
+      "value": "Fixed read-aloud prompt · ~6 s audio"
+    },
+    {
+      "zh": "测试日期",
+      "en": "Measurement date",
+      "value": "2026-07"
+    }
+  ],
+  "methodIntro": {
+    "zh": "所有结果取自固定朗读 prompt 测量阶段。语音 RTF 以生成墙钟时间除以生成音频时长；文本指标来自流式文本请求。冷启动阶段不用于稳态性能结论。",
+    "en": "Results come from the fixed read-aloud prompt phase. Audio RTF is generation wall time divided by generated audio duration; text metrics come from streaming text requests. Cold-start measurements are excluded from steady-state conclusions."
+  },
+  "methodNotes": [
+    {
+      "zh": "报告记录的实时上限会随语句长度变化。短句数据集后续另有独立测试，其结果不与本报告约 6 秒 prompt 矩阵合并。",
+      "en": "The real-time boundary depends on utterance length. A later short-utterance dataset was tested separately and is not merged with this report’s ~6-second prompt matrix."
+    },
+    {
+      "zh": "测试使用 Thinker TP2、语音阶段副本布局和预热后的服务；硬件节点标签、Kubernetes 资源名、私有地址及本机路径均未写入报告。",
+      "en": "Testing used Thinker TP2, the reported audio-stage replica layout, and warmed services. Host labels, Kubernetes resource names, private addresses, and local paths are omitted."
+    }
+  ]
+}

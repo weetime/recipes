@@ -1,0 +1,338 @@
+{
+  "title": "Qwen3.6-27B W8A8 · Ascend 910B4",
+  "breadcrumb": "Qwen3.6-27B W8A8",
+  "kicker": "DCP × CONTEXT BENCHMARK · W8A8",
+  "lede": {
+    "zh": "在 512-token 输出下，DCP=2 将 250K 输入、C1 的 TPOT 从 85.0 ms 降至 58.5 ms；同一长度 C4 的 TTFT 则增加 30%。",
+    "en": "With 512-token output, DCP=2 reduces TPOT from 85.0 to 58.5 ms at 250K input/C1; at C4, TTFT increases 30% at the same context length."
+  },
+  "chips": [
+    "8 × Ascend 910B4 · 32 GB",
+    "W8A8",
+    "TP8×1 · DCP 1/2",
+    "vLLM-Ascend 0.24.0",
+    "Measured 2026-08"
+  ],
+  "snapshot": {
+    "zh": "64K / 128K / 250K · concurrency 1/2/4 · output 512",
+    "en": "64K / 128K / 250K · concurrency 1/2/4 · output 512"
+  },
+  "sections": [
+    {
+      "id": "decode",
+      "zh": "解码延迟",
+      "en": "Decode latency"
+    },
+    {
+      "id": "tradeoff",
+      "zh": "适用区间",
+      "en": "Operating range"
+    },
+    {
+      "id": "method",
+      "zh": "方法与边界",
+      "en": "Method & limits"
+    }
+  ],
+  "stats": [
+    {
+      "zhLabel": "250K C1 TPOT",
+      "enLabel": "250K C1 TPOT",
+      "value": "85.0 → 58.5",
+      "zhNote": "DCP 1 → 2 · ms",
+      "enNote": "DCP 1 → 2 · ms"
+    },
+    {
+      "zhLabel": "250K C4 TPOT",
+      "enLabel": "250K C4 TPOT",
+      "value": "297.5 → 264.8",
+      "zhNote": "DCP 1 → 2 · ms",
+      "enNote": "DCP 1 → 2 · ms"
+    },
+    {
+      "zhLabel": "最大并发",
+      "enLabel": "Maximum tested concurrency",
+      "value": "4",
+      "zhNote": "未测饱和吞吐",
+      "enNote": "Saturated throughput not measured"
+    }
+  ],
+  "overview": {
+    "heading": {
+      "zh": "解码收益需与预填充代价一起读",
+      "en": "Read decode gains alongside prefill cost"
+    },
+    "intro": {
+      "zh": "DCP=2 在低并发时降低 TPOT，长度越长收益通常越明显；并发 4 的 TTFT 代价达到 21%–30%。输出长度从上一轮的 128 改为本轮 512，因此旧结论不能直接沿用。",
+      "en": "DCP=2 reduces TPOT at low concurrency, with larger gains generally at longer context. At C4, TTFT cost reaches 21%–30%. Output length is 512 in this run, versus 128 in the earlier run, so prior conclusions do not transfer directly."
+    },
+    "note": {
+      "zh": "同配置噪声复测偏差在 ±0.4% 内。矩阵并发只到 4、全程无抢占，因此测得的是固定工作量的延迟变化，不是系统饱和吞吐收益。",
+      "en": "Same-configuration noise checks were within ±0.4%. The matrix reaches only C4 and has no preemptions, so it measures latency changes under fixed work, not saturated throughput gains."
+    }
+  },
+  "blocks": [
+    {
+      "id": "decode",
+      "label": {
+        "zh": "解码延迟",
+        "en": "Decode latency"
+      },
+      "heading": {
+        "zh": "DCP 在低并发长上下文点降低 TPOT；并发 4 时收益缩小",
+        "en": "DCP lowers TPOT at low-concurrency long-context points; gains narrow at C4"
+      },
+      "intro": {
+        "zh": "Qwen3.6-27B W8A8、TP8×1，输出 512；仅 DCP 取值 1 与 2 改变。DCP 的收益随上下文长度变化，但并发 4 的 250K 点不延续该趋势。",
+        "en": "Qwen3.6-27B W8A8 with TP8×1 and 512-token output; only DCP 1 vs 2 changes. The DCP effect varies with context length and does not continue monotonically at the 250K/C4 point."
+      },
+      "notes": [
+        {
+          "zh": "并发 1 的 TPOT 收益从 64K 的 13.8% 扩大到 250K 的 31.2%；并发 4 时 250K 收益回落至 11.0%，同时 TTFT 增加 30%。",
+          "en": "At C1, TPOT reduction grows from 13.8% at 64K to 31.2% at 250K. At C4, the 250K reduction narrows to 11.0% while TTFT rises 30%."
+        }
+      ],
+      "chart": {
+        "title": {
+          "zh": "DCP=1 与 DCP=2 的 TPOT",
+          "en": "TPOT with DCP=1 and DCP=2"
+        },
+        "hint": {
+          "zh": "悬停查看测量点。",
+          "en": "Hover a point to inspect the measurement."
+        },
+        "labels": {
+          "zh": [
+            "64K · C1",
+            "128K · C1",
+            "250K · C1",
+            "64K · C4",
+            "128K · C4",
+            "250K · C4"
+          ],
+          "en": [
+            "64K · C1",
+            "128K · C1",
+            "250K · C1",
+            "64K · C4",
+            "128K · C4",
+            "250K · C4"
+          ]
+        },
+        "series": [
+          {
+            "zh": "DCP=1",
+            "en": "DCP=1",
+            "values": [
+              45,
+              59,
+              85,
+              83.2,
+              148,
+              297.5
+            ],
+            "color": "blue"
+          },
+          {
+            "zh": "DCP=2",
+            "en": "DCP=2",
+            "values": [
+              38.8,
+              45.8,
+              58.5,
+              77.1,
+              127.4,
+              264.8
+            ],
+            "color": "green"
+          }
+        ],
+        "yTitle": {
+          "zh": "TPOT 中位 (ms)",
+          "en": "Median TPOT (ms)"
+        },
+        "type": "line"
+      },
+      "table": {
+        "headers": {
+          "zh": [
+            "输入长度",
+            "并发",
+            "DCP=1 TPOT",
+            "DCP=2 TPOT",
+            "TPOT 变化",
+            "DCP=2 TTFT 变化"
+          ],
+          "en": [
+            "Input length",
+            "Concurrency",
+            "DCP=1 TPOT",
+            "DCP=2 TPOT",
+            "TPOT change",
+            "DCP=2 TTFT change"
+          ]
+        },
+        "rows": [
+          [
+            "64K",
+            "C1",
+            "45.0 ms",
+            "38.8 ms",
+            "−13.8%",
+            "+8.0%"
+          ],
+          [
+            "128K",
+            "C1",
+            "59.0 ms",
+            "45.8 ms",
+            "−22.4%",
+            "+2.2%"
+          ],
+          [
+            "250K",
+            "C1",
+            "85.0 ms",
+            "58.5 ms",
+            "−31.2%",
+            "+4.5%"
+          ],
+          [
+            "64K",
+            "C4",
+            "83.2 ms",
+            "77.1 ms",
+            "−7.4%",
+            "+21.1%"
+          ],
+          [
+            "128K",
+            "C4",
+            "148.0 ms",
+            "127.4 ms",
+            "−13.9%",
+            "+23.2%"
+          ],
+          [
+            "250K",
+            "C4",
+            "297.5 ms",
+            "264.8 ms",
+            "−11.0%",
+            "+30.0%"
+          ]
+        ]
+      }
+    },
+    {
+      "id": "tradeoff",
+      "label": {
+        "zh": "适用区间",
+        "en": "Operating range"
+      },
+      "heading": {
+        "zh": "DCP 取舍取决于 TPOT 与 TTFT 的优先级",
+        "en": "The DCP tradeoff depends on whether TPOT or TTFT is the priority"
+      },
+      "intro": {
+        "zh": "本轮对照使用固定 512 输出；低并发下 decode 收益更明显，高并发时 prefill 侧 TTFT 成本上升。测试并发最高为 4，未测系统饱和吞吐。",
+        "en": "The comparison uses a fixed 512-token output. Decode gains are clearer at low concurrency, while TTFT cost rises at higher concurrency. Maximum tested concurrency was 4; saturated system throughput was not measured."
+      },
+      "notes": [
+        {
+          "zh": "长上下文 + 并发不超过 2 时，本轮矩阵支持 DCP 降低逐 token 延迟；高并发且 TTFT 严格时，需评估额外首 token 时间。饱和吞吐不在本报告结论范围内。",
+          "en": "For long context at concurrency up to 2, this matrix supports lower per-token latency with DCP. At higher concurrency with strict TTFT targets, account for added first-token time. Saturated throughput is outside this report’s scope."
+        }
+      ],
+      "chart": {
+        "title": {
+          "zh": "DCP=2 下 TTFT 变化",
+          "en": "TTFT change with DCP=2"
+        },
+        "hint": {
+          "zh": "悬停查看测量点。",
+          "en": "Hover a point to inspect the measurement."
+        },
+        "labels": {
+          "zh": [
+            "64K · C1",
+            "128K · C1",
+            "250K · C1",
+            "64K · C4",
+            "128K · C4",
+            "250K · C4"
+          ],
+          "en": [
+            "64K · C1",
+            "128K · C1",
+            "250K · C1",
+            "64K · C4",
+            "128K · C4",
+            "250K · C4"
+          ]
+        },
+        "series": [
+          {
+            "zh": "相对 DCP=1",
+            "en": "Relative to DCP=1",
+            "values": [
+              8,
+              2.2,
+              4.5,
+              21.1,
+              23.2,
+              30
+            ],
+            "color": "blue"
+          }
+        ],
+        "yTitle": {
+          "zh": "TTFT 中位变化 (%)",
+          "en": "Median TTFT change (%)"
+        },
+        "type": "line"
+      }
+    }
+  ],
+  "meta": [
+    {
+      "zh": "测试日期",
+      "en": "Test date",
+      "value": "2026-08-04"
+    },
+    {
+      "zh": "硬件拓扑",
+      "en": "Hardware topology",
+      "value": "8 × Ascend 910B4 · TP8×1"
+    },
+    {
+      "zh": "权重精度",
+      "en": "Checkpoint precision",
+      "value": "W8A8"
+    },
+    {
+      "zh": "变量",
+      "en": "Independent variable",
+      "value": "DCP 1 vs 2"
+    },
+    {
+      "zh": "请求形状",
+      "en": "Request shape",
+      "value": "Output 512 · prefix cache off"
+    }
+  ],
+  "methodIntro": [
+    "相同随机种子与请求形状对照 DCP=1/2；输入长度 64K、128K、250K，并发 1、2、4。噪声底使用同配置复测。",
+    "DCP=1/2 is compared with matched seeds and request shapes at 64K, 128K, and 250K input, with concurrency 1, 2, and 4. Noise floor was checked with same-configuration repeats."
+  ],
+  "methodNotes": [
+    {
+      "zh": "TPOT 收益与 TTFT 成本量纲不同；是否启用需按应用的首 token 与流式延迟要求判断。",
+      "en": "TPOT gain and TTFT cost use different units; choose based on the application’s first-token and streaming-latency requirements."
+    },
+    {
+      "zh": "不把固定工作量总 token/秒称为饱和吞吐，本轮并发范围不支持该推断。",
+      "en": "Fixed-work total tokens/s is not called saturated throughput; the tested concurrency range cannot support that inference."
+    }
+  ]
+}

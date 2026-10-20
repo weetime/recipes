@@ -1,0 +1,510 @@
+{
+  "title": "Qwen3-Omni-30B-A3B · A100",
+  "breadcrumb": "Qwen3-Omni-30B-A3B",
+  "kicker": "MULTIMODAL SERVING BENCHMARK · REAL-TIME AUDIO",
+  "lede": {
+    "zh": "这份报告记录 Qwen3-Omni-30B-A3B-Instruct 在 3×A100-80G、vLLM-Omni 0.24.0 上的语音实时性与文本服务表现。官方 omni bench 口径下，RTF 在 C32 为 0.54，C64 升至 1.24；文本输出吞吐测至 C16，尚未达到饱和。",
+    "en": "This report measures Qwen3-Omni-30B-A3B-Instruct on 3× A100-80G with vLLM-Omni 0.24.0. Under the official omni-bench profile, RTF is 0.54 at C32 and rises to 1.24 at C64. Text output throughput was measured through C16 and had not saturated."
+  },
+  "chips": [
+    "3 × A100 · 80 GB",
+    "vLLM-Omni 0.24.0",
+    "Thinker 1 · Talker 2 replicas · Code2Wav 2 replicas",
+    "CUDA Graph · async chunk",
+    "Measured 2026-07-15"
+  ],
+  "snapshot": {
+    "zh": "官方 Omni Bench + 固定朗读 prompt · 语音实时性 / 文本吞吐 / 语音输出额外耗时",
+    "en": "Official Omni Bench + fixed read-aloud prompt · audio real-time behavior / text throughput / audio output overhead"
+  },
+  "sections": [
+    {
+      "id": "omni",
+      "zh": "官方 Omni Bench",
+      "en": "Official Omni Bench"
+    },
+    {
+      "id": "audio",
+      "zh": "固定 prompt 语音负载",
+      "en": "Fixed-prompt audio load"
+    },
+    {
+      "id": "text",
+      "zh": "文本服务",
+      "en": "Text serving"
+    },
+    {
+      "id": "method",
+      "zh": "方法与边界",
+      "en": "Method & limits"
+    }
+  ],
+  "stats": [
+    {
+      "zhLabel": "Omni Bench 实时并发",
+      "enLabel": "Real-time concurrency · Omni Bench",
+      "value": "C32",
+      "zhNote": "RTF 0.54 · C64 为 1.24",
+      "enNote": "RTF 0.54 · 1.24 at C64"
+    },
+    {
+      "zhLabel": "文本输出吞吐",
+      "enLabel": "Text output throughput",
+      "value": "139.7 tok/s",
+      "zhNote": "C16 · 测试尚未饱和",
+      "enNote": "C16 · no saturation observed"
+    },
+    {
+      "zhLabel": "文本 + 语音额外耗时",
+      "enLabel": "Added text-to-audio latency",
+      "value": "≈3.3 s",
+      "zhNote": "同 prompt · C8",
+      "enNote": "Same prompt · C8"
+    }
+  ],
+  "overview": {
+    "heading": {
+      "zh": "语音实时性与文本吞吐是两条独立曲线",
+      "en": "Audio real-time behavior and text throughput are separate curves"
+    },
+    "intro": {
+      "zh": "官方 omni bench 下，语音 RTF 随并发上升，在 C32 仍低于 1，C64 超过 1。文本吞吐随并发增长到 C16 的 139.7 tok/s，测试范围内尚未见顶；TTFT P95 在 C16 增至 357 ms，提示排队开始。",
+      "en": "Under the official omni-bench profile, audio RTF rises with concurrency, remains below 1 at C32, and exceeds 1 at C64. Text throughput grows to 139.7 tok/s at C16 without reaching a measured peak; TTFT P95 reaches 357 ms at C16, indicating emerging queueing."
+    },
+    "note": {
+      "zh": "语音结论以官方 omni bench 为主口径。固定朗读 prompt 是较重的独立脚本，实时上限更保守；两者的 prompt、采集方法不同，不合并成一条曲线。",
+      "en": "The official omni-bench results are the primary audio reference. The fixed read-aloud prompt is a separate, heavier client script with a more conservative real-time boundary. Its prompt and collection method differ, so the two are not combined into one curve."
+    }
+  },
+  "blocks": [
+    {
+      "id": "omni",
+      "label": {
+        "zh": "官方 Omni Bench",
+        "en": "官方 Omni Bench"
+      },
+      "heading": {
+        "zh": "官方口径下，C32 实时，C64 首次越过 RTF=1",
+        "en": "Under the official profile, C32 remains real-time; C64 crosses RTF=1"
+      },
+      "intro": {
+        "zh": "使用 vLLM bench serve --omni，报告并发、请求速率、Audio TTFP 与 Audio RTF。实时定义为 RTF < 1。",
+        "en": "Measured concurrency, request rate, Audio TTFP, and Audio RTF with vLLM bench serve --omni. Real-time is defined as RTF < 1."
+      },
+      "chart": {
+        "title": {
+          "zh": "官方 Omni Bench · RTF",
+          "en": "Official Omni Bench · RTF"
+        },
+        "hint": {
+          "zh": "RTF < 1 表示生成速度快于音频播放时长。",
+          "en": "RTF < 1 means generation completes faster than playback duration."
+        },
+        "labels": {
+          "zh": [
+            "C1",
+            "C8",
+            "C16",
+            "C32",
+            "C64"
+          ],
+          "en": [
+            "C1",
+            "C8",
+            "C16",
+            "C32",
+            "C64"
+          ]
+        },
+        "series": [
+          {
+            "zh": "Audio RTF",
+            "en": "Audio RTF",
+            "values": [
+              0.19,
+              0.28,
+              0.39,
+              0.54,
+              1.24
+            ],
+            "color": "blue"
+          }
+        ],
+        "yTitle": {
+          "zh": "RTF",
+          "en": "RTF"
+        }
+      },
+      "table": {
+        "headers": {
+          "zh": [
+            "并发",
+            "请求速率",
+            "Audio TTFP",
+            "Audio RTF",
+            "RTF < 1"
+          ],
+          "en": [
+            "Concurrency",
+            "Requests/s",
+            "Audio TTFP",
+            "Audio RTF",
+            "RTF < 1"
+          ]
+        },
+        "rows": [
+          [
+            "C1",
+            "0.07",
+            "511 ms",
+            "0.19",
+            "是"
+          ],
+          [
+            "C8",
+            "0.27",
+            "916 ms",
+            "0.28",
+            "是"
+          ],
+          [
+            "C16",
+            "0.44",
+            "1270 ms",
+            "0.39",
+            "是"
+          ],
+          [
+            "C32",
+            "0.61",
+            "1923 ms",
+            "0.54",
+            "是"
+          ],
+          [
+            "C64",
+            "0.53",
+            "3804 ms",
+            "1.24",
+            "否"
+          ]
+        ]
+      },
+      "notes": [
+        {
+          "zh": "C32 的观测 RTF 为 0.54，C64 为 1.24；C64 请求速率也从 C32 的 0.61 req/s 回落到 0.53 req/s。此边界只适用于该模型、硬件与服务配置。",
+          "en": "Observed RTF is 0.54 at C32 and 1.24 at C64; request rate also falls from 0.61 req/s at C32 to 0.53 req/s at C64. This boundary applies only to the measured model, hardware, and serving setup."
+        }
+      ]
+    },
+    {
+      "id": "audio",
+      "label": {
+        "zh": "固定 prompt 音频",
+        "en": "固定 prompt 音频"
+      },
+      "heading": {
+        "zh": "更重的固定朗读脚本在 C8 全部实时，C16 出现尾部超时",
+        "en": "The heavier fixed read-aloud script stays real-time through C8; its tail crosses the limit at C16"
+      },
+      "intro": {
+        "zh": "每个并发点请求约 6 秒生成音频，表中列出 RTF 中位数、最大值以及是否所有观测请求均低于 1。",
+        "en": "Each concurrency point requests about six seconds of generated audio. The table reports median and maximum RTF and whether all observed requests stayed below 1."
+      },
+      "chart": {
+        "title": {
+          "zh": "固定 prompt · RTF 中位数与最大值",
+          "en": "Fixed prompt · median and maximum RTF"
+        },
+        "hint": {
+          "zh": "此脚本比 omni bench 更重，勿与官方工具的测点混算。",
+          "en": "This client script is heavier than omni bench; do not pool its points with the official-tool results."
+        },
+        "labels": {
+          "zh": [
+            "C1",
+            "C4",
+            "C8",
+            "C16",
+            "C32",
+            "C64"
+          ],
+          "en": [
+            "C1",
+            "C4",
+            "C8",
+            "C16",
+            "C32",
+            "C64"
+          ]
+        },
+        "series": [
+          {
+            "zh": "RTF P50",
+            "en": "RTF median",
+            "values": [
+              0.2,
+              0.29,
+              0.56,
+              0.81,
+              1.32,
+              1.37
+            ],
+            "color": "blue"
+          },
+          {
+            "zh": "RTF 最大值",
+            "en": "Maximum RTF",
+            "values": [
+              0.21,
+              0.3,
+              0.76,
+              1.48,
+              1.87,
+              2.12
+            ],
+            "color": "green"
+          }
+        ],
+        "yTitle": {
+          "zh": "RTF",
+          "en": "RTF"
+        }
+      },
+      "table": {
+        "headers": {
+          "zh": [
+            "并发",
+            "RTF P50",
+            "RTF 最大值",
+            "所有观测均实时",
+            "生成 / 音频时长"
+          ],
+          "en": [
+            "Concurrency",
+            "RTF median",
+            "RTF max",
+            "All observed requests real-time",
+            "Generation / audio duration"
+          ]
+        },
+        "rows": [
+          [
+            "C1",
+            "0.20",
+            "0.21",
+            "是",
+            "1.21 / 5.94 s"
+          ],
+          [
+            "C4",
+            "0.29",
+            "0.30",
+            "是",
+            "1.71 / 5.94 s"
+          ],
+          [
+            "C8",
+            "0.56",
+            "0.76",
+            "是",
+            "3.14 / 5.78 s"
+          ],
+          [
+            "C16",
+            "0.81",
+            "1.48",
+            "否",
+            "4.59 / 5.82 s"
+          ],
+          [
+            "C32",
+            "1.32",
+            "1.87",
+            "否",
+            "7.19 / 5.86 s"
+          ],
+          [
+            "C64",
+            "1.37",
+            "2.12",
+            "否",
+            "7.81 / 5.90 s"
+          ]
+        ]
+      },
+      "notes": [
+        {
+          "zh": "固定 prompt 口径下，C8 最大 RTF 为 0.76；C16 中位数仍低于 1，但最大值升到 1.48，因此严格按“所有请求实时”定义时，上限落在 C8。",
+          "en": "For the fixed-prompt profile, maximum RTF is 0.76 at C8. The C16 median remains below 1, but its maximum reaches 1.48; under the strict all-requests-real-time criterion, the boundary is C8."
+        }
+      ]
+    },
+    {
+      "id": "text",
+      "label": {
+        "zh": "文本服务",
+        "en": "文本服务"
+      },
+      "heading": {
+        "zh": "文本吞吐到 C16 仍增长，尾延迟已开始抬升",
+        "en": "Text throughput keeps rising through C16 as tail latency begins to increase"
+      },
+      "intro": {
+        "zh": "流式文本请求在并发 1–16 测量 TTFT、TTFT P95、端到端耗时与输出吞吐。",
+        "en": "Streaming text requests were measured at concurrency 1–16 for TTFT, TTFT P95, end-to-end time, and output throughput."
+      },
+      "chart": {
+        "title": {
+          "zh": "文本输出吞吐与并发",
+          "en": "Text output throughput by concurrency"
+        },
+        "hint": {
+          "zh": "最大测点 C16 尚未饱和，不代表吞吐峰值。",
+          "en": "The highest measured point, C16, had not saturated and is not a throughput peak."
+        },
+        "labels": {
+          "zh": [
+            "C1",
+            "C2",
+            "C4",
+            "C8",
+            "C16"
+          ],
+          "en": [
+            "C1",
+            "C2",
+            "C4",
+            "C8",
+            "C16"
+          ]
+        },
+        "series": [
+          {
+            "zh": "输出吞吐",
+            "en": "Output throughput",
+            "values": [
+              17.6,
+              35.9,
+              53.4,
+              91.8,
+              139.7
+            ],
+            "color": "blue"
+          }
+        ],
+        "yTitle": {
+          "zh": "tok/s",
+          "en": "tok/s"
+        }
+      },
+      "table": {
+        "headers": {
+          "zh": [
+            "并发",
+            "TTFT P50",
+            "TTFT P95",
+            "输出吞吐",
+            "E2E P50"
+          ],
+          "en": [
+            "Concurrency",
+            "TTFT median",
+            "TTFT P95",
+            "Output tok/s",
+            "E2E median"
+          ]
+        },
+        "rows": [
+          [
+            "C1",
+            "66 ms",
+            "75 ms",
+            "17.6 tok/s",
+            "15.4 s"
+          ],
+          [
+            "C2",
+            "66 ms",
+            "100 ms",
+            "35.9 tok/s",
+            "15.5 s"
+          ],
+          [
+            "C4",
+            "68 ms",
+            "110 ms",
+            "53.4 tok/s",
+            "18.2 s"
+          ],
+          [
+            "C8",
+            "82 ms",
+            "145 ms",
+            "91.8 tok/s",
+            "21.9 s"
+          ],
+          [
+            "C16",
+            "106 ms",
+            "357 ms",
+            "139.7 tok/s",
+            "30.7 s"
+          ]
+        ]
+      },
+      "notes": [
+        {
+          "zh": "同一 prompt、C8 下，纯文本 E2E P50 为 0.56 s，text+audio 为 3.88 s，语音输出额外耗时约 3.3 s。",
+          "en": "With the same prompt at C8, text-only E2E median is 0.56 s and text+audio is 3.88 s, an added audio-output cost of about 3.3 s."
+        }
+      ]
+    }
+  ],
+  "meta": [
+    {
+      "zh": "模型",
+      "en": "Model",
+      "value": "Qwen3-Omni-30B-A3B-Instruct"
+    },
+    {
+      "zh": "硬件",
+      "en": "Hardware",
+      "value": "3 × A100 · 80 GB"
+    },
+    {
+      "zh": "软件栈",
+      "en": "Software stack",
+      "value": "vLLM-Omni 0.24.0"
+    },
+    {
+      "zh": "阶段布局",
+      "en": "Stage layout",
+      "value": "Thinker 1 GPU · Talker 2 replicas · Code2Wav 2 replicas"
+    },
+    {
+      "zh": "优化",
+      "en": "Optimizations",
+      "value": "CUDA Graph · async chunk"
+    },
+    {
+      "zh": "测试日期",
+      "en": "Measurement date",
+      "value": "2026-07-15"
+    }
+  ],
+  "methodIntro": {
+    "zh": "测试包含官方 vLLM omni bench 的实时音频矩阵、固定约 6 秒音频 prompt 的客户端 RTF 测量，以及独立的文本并发矩阵。每组测试前预热；报告采用客户端可观测指标。",
+    "en": "The study includes the official vLLM omni-bench real-time audio matrix, a client-side RTF sweep with a fixed ~6-second audio prompt, and a separate text concurrency matrix. Each group was warmed up; reported metrics are client-observed."
+  },
+  "methodNotes": [
+    {
+      "zh": "语音 RTF 与 Audio TTFP 属于生成式音频指标，不能与普通文本 tok/s 混为一谈。固定 prompt 和官方 omni bench 的 prompt 与采集工具不同，分别呈现。",
+      "en": "Audio RTF and Audio TTFP are generative-audio metrics and should not be conflated with text tok/s. The fixed prompt and official omni-bench profiles use different prompts and collection tools and are reported separately."
+    },
+    {
+      "zh": "该报告是单实例基线，不覆盖多实例扩展或长上下文压力。Thinker 使用单卡；改变阶段副本数或启停 CUDA Graph、async chunk 会改变性能。",
+      "en": "This is a single-instance baseline and does not cover multi-instance scaling or long-context stress. Thinker uses one GPU; changing stage replicas or CUDA Graph/async-chunk settings changes performance."
+    }
+  ]
+}

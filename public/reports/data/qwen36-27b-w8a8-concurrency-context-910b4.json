@@ -1,0 +1,288 @@
+{
+  "title": "Qwen3.6-27B W8A8 · Ascend 910B4",
+  "breadcrumb": "Qwen3.6-27B W8A8",
+  "kicker": "CONCURRENCY × CONTEXT BENCHMARK · W8A8",
+  "lede": {
+    "zh": "在 TPOT ≤ 150 ms 条件下，8 × Ascend 910B4 实测 32K/64K/128K 输入的可用并发为 16/8/4。输出长度会改变该边界。",
+    "en": "At TPOT ≤ 150 ms, measurements on 8 × Ascend 910B4 support concurrency 16/8/4 at 32K/64K/128K input. Output length shifts this boundary."
+  },
+  "chips": [
+    "8 × Ascend 910B4 · 32 GB",
+    "W8A8",
+    "TP4×2 · DP2",
+    "vLLM-Ascend 0.24.0",
+    "Measured 2026-07"
+  ],
+  "snapshot": {
+    "zh": "并发 × 长度矩阵 · 输出 64/512 · TPOT SLO",
+    "en": "Concurrency × context matrix · 64/512 output · TPOT SLO"
+  },
+  "sections": [
+    {
+      "id": "capacity",
+      "zh": "并发与上下文",
+      "en": "Concurrency & context"
+    },
+    {
+      "id": "output-shape",
+      "zh": "输出长度效应",
+      "en": "Output-length effect"
+    },
+    {
+      "id": "method",
+      "zh": "方法与边界",
+      "en": "Method & limits"
+    }
+  ],
+  "stats": [
+    {
+      "zhLabel": "SLO 工作集锚点",
+      "enLabel": "SLO working-set anchor",
+      "value": "≈524K",
+      "zhNote": "并发 × 输入长度 tokens",
+      "enNote": "concurrency × input tokens"
+    },
+    {
+      "zhLabel": "32K SLO 并发",
+      "enLabel": "32K SLO concurrency",
+      "value": "16",
+      "zhNote": "512 输出 · TPOT 142 ms",
+      "enNote": "512 output · 142 ms TPOT"
+    },
+    {
+      "zhLabel": "128K SLO 并发",
+      "enLabel": "128K SLO concurrency",
+      "value": "4",
+      "zhNote": "512 输出 · TPOT 118 ms",
+      "enNote": "512 output · 118 ms TPOT"
+    }
+  ],
+  "overview": {
+    "heading": {
+      "zh": "并发上限由请求形状决定",
+      "en": "Concurrency limits depend on request shape"
+    },
+    "intro": {
+      "zh": "原先输出 64 的扫描把 prefill 竞争放大，不能直接代表 Agent 输出形状。补测输出 512 后，32K、64K、128K 的 TPOT SLO 上限分别落在并发 16、8、4。",
+      "en": "The original 64-token output scan amplified prefill interference and does not directly represent Agent output shapes. With 512-token output, the TPOT SLO boundary is concurrency 16, 8, and 4 for 32K, 64K, and 128K."
+    },
+    "note": {
+      "zh": "37 个主测点没有 KV 抢占。并发扫描是离散网格；SLO 上限是观测到的最大达标点，不是连续搜索得到的精确容量。报告不据此声称 KV 容量是普遍无关变量。",
+      "en": "No KV preemptions occurred across 37 primary points. Concurrency was tested on a discrete grid; the SLO limit is the highest observed passing point, not an exact boundary from a continuous search. This does not establish that KV capacity is irrelevant in general."
+    }
+  },
+  "blocks": [
+    {
+      "id": "capacity",
+      "label": {
+        "zh": "并发与上下文",
+        "en": "Concurrency & context"
+      },
+      "heading": {
+        "zh": "输出 512 tokens 时，32K、64K、128K 的 SLO 并发上限分别为 16、8、4",
+        "en": "With 512-token output, the SLO concurrency limits are 16, 8, and 4 at 32K, 64K, and 128K"
+      },
+      "intro": {
+        "zh": "8 × Ascend 910B4、TP4×2、Qwen3.6-27B W8A8。SLO 判据为 TPOT ≤ 150 ms；图中显示各长度档在该判据下的输入 token 速率。",
+        "en": "Qwen3.6-27B W8A8 on 8 × Ascend 910B4 with TP4×2. The SLO threshold is TPOT ≤ 150 ms; the chart shows input-token rates at the measured concurrency limit for each context length."
+      },
+      "notes": [
+        {
+          "zh": "三个网格点的并发×输入长度均为 524,288 tokens；由于扫描使用 2 的幂并发，这个精确乘积可能受测试网格影响。可靠结论是长度翻倍时可用并发大致减半。",
+          "en": "The concurrency × input-length product is 524,288 tokens at these three grid points. Because concurrency was scanned in powers of two, the exact product may reflect the test grid. The supported observation is that usable concurrency roughly halves as context length doubles."
+        }
+      ],
+      "chart": {
+        "title": {
+          "zh": "SLO 边界上的输入吞吐",
+          "en": "Input throughput at the SLO boundary"
+        },
+        "hint": {
+          "zh": "悬停查看测量点。",
+          "en": "Hover a point to inspect the measurement."
+        },
+        "labels": {
+          "zh": [
+            "32K · C16",
+            "64K · C8",
+            "128K · C4"
+          ],
+          "en": [
+            "32K · C16",
+            "64K · C8",
+            "128K · C4"
+          ]
+        },
+        "series": [
+          {
+            "zh": "输入 tok/s",
+            "en": "Input tok/s",
+            "values": [
+              5798,
+              5639,
+              4843
+            ],
+            "color": "blue"
+          }
+        ],
+        "yTitle": {
+          "zh": "输入吞吐 (tok/s)",
+          "en": "Input throughput (tok/s)"
+        },
+        "type": "line"
+      },
+      "table": {
+        "headers": {
+          "zh": [
+            "输入长度",
+            "并发上限",
+            "TPOT 中位",
+            "输入吞吐",
+            "并发 × 长度"
+          ],
+          "en": [
+            "Input length",
+            "Concurrency limit",
+            "Median TPOT",
+            "Input throughput",
+            "Concurrency × length"
+          ]
+        },
+        "rows": [
+          [
+            "32K",
+            "16",
+            "142.0 ms",
+            "5,798 tok/s",
+            "524,288"
+          ],
+          [
+            "64K",
+            "8",
+            "126.4 ms",
+            "5,639 tok/s",
+            "524,288"
+          ],
+          [
+            "128K",
+            "4",
+            "117.8 ms",
+            "4,843 tok/s",
+            "524,288"
+          ]
+        ]
+      }
+    },
+    {
+      "id": "output-shape",
+      "label": {
+        "zh": "输出长度效应",
+        "en": "Output-length effect"
+      },
+      "heading": {
+        "zh": "输出 64 使 prefill 占比过高，压低 decode 的 SLO 并发",
+        "en": "A 64-token output makes prefill dominate and lowers decode SLO concurrency"
+      },
+      "intro": {
+        "zh": "对相同输入长度与并发点补测输出 512。输出 64 的压力测试与 512 的 Agent 形状不可合并成同一吞吐曲线。",
+        "en": "Output-512 points were added at matching input lengths and concurrency. The 64-token stress test and 512-token Agent profile are not combined into one throughput curve."
+      },
+      "notes": [
+        {
+          "zh": "三个匹配点 TPOT 分别下降约 61%、54%、接近 0%；效应并非所有长度/并发组合都相同。prefill 与 decode 竞争是该矩阵观察到的主要负载形状效应，KV 抢占计数为零。",
+          "en": "At the three matched points, TPOT falls by about 61%, 54%, and nearly 0%; the effect is not uniform across all lengths and concurrency levels. Prefill/decode interference is the main workload-shape effect observed in this matrix, with zero KV preemptions."
+        }
+      ],
+      "chart": {
+        "title": {
+          "zh": "TPOT：输出 64 与输出 512",
+          "en": "TPOT: 64-token vs 512-token output"
+        },
+        "hint": {
+          "zh": "悬停查看测量点。",
+          "en": "Hover a point to inspect the measurement."
+        },
+        "labels": {
+          "zh": [
+            "32K · C8",
+            "64K · C4",
+            "128K · C2"
+          ],
+          "en": [
+            "32K · C8",
+            "64K · C4",
+            "128K · C2"
+          ]
+        },
+        "series": [
+          {
+            "zh": "输出 64",
+            "en": "64-token output",
+            "values": [
+              230.5,
+              177.4,
+              76.8
+            ],
+            "color": "blue"
+          },
+          {
+            "zh": "输出 512",
+            "en": "512-token output",
+            "values": [
+              88.9,
+              81.7,
+              78.5
+            ],
+            "color": "green"
+          }
+        ],
+        "yTitle": {
+          "zh": "TPOT 中位 (ms)",
+          "en": "Median TPOT (ms)"
+        },
+        "type": "line"
+      }
+    }
+  ],
+  "meta": [
+    {
+      "zh": "测试日期",
+      "en": "Test date",
+      "value": "2026-07-30"
+    },
+    {
+      "zh": "硬件拓扑",
+      "en": "Hardware topology",
+      "value": "8 × Ascend 910B4 · TP4×2"
+    },
+    {
+      "zh": "推理栈",
+      "en": "Serving stack",
+      "value": "vLLM-Ascend 0.24.0"
+    },
+    {
+      "zh": "精度",
+      "en": "Precision",
+      "value": "W8A8"
+    },
+    {
+      "zh": "样本覆盖",
+      "en": "Coverage",
+      "value": "37 + 18 fixed points"
+    }
+  ],
+  "methodIntro": [
+    "矩阵分开测量输入长度、输出长度和并发；容量读数使用输入 token/s，并与 TPOT SLO 同时报出。",
+    "The matrix varies input length, output length, and concurrency separately. Capacity is reported as input tokens/s alongside the TPOT SLO."
+  ],
+  "methodNotes": [
+    {
+      "zh": "短请求 max-model-len 对照无显著差异；该结果仅限本次 ShareGPT 配置。",
+      "en": "The short-request max-model-len control showed no material difference; this result is limited to the tested ShareGPT configuration."
+    },
+    {
+      "zh": "输出 64 与 512 属不同测试形状，不能只按并发数横向比较吞吐。",
+      "en": "64-token and 512-token outputs are different workload shapes; throughput should not be compared based on concurrency alone."
+    }
+  ]
+}

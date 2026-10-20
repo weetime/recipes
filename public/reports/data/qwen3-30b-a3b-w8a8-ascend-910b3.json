@@ -1,0 +1,267 @@
+{
+  "title": "Qwen3-30B-A3B W8A8 · Ascend 910B3",
+  "breadcrumb": "Qwen3-30B-A3B W8A8",
+  "kicker": "SERVING BENCHMARK · W8A8",
+  "lede": {
+    "zh": "Qwen3-30B-A3B W8A8 在四张 Ascend 910B3 上的服务性能测试。官方 A2 配方使用 TP4、EP 与 EAGLE3；单流 TPOT 为 12.36 ms。",
+    "en": "Serving measurements for Qwen3-30B-A3B W8A8 on four Ascend 910B3 accelerators. The A2 recipe uses TP4, EP, and EAGLE3; single-stream TPOT is 12.36 ms."
+  },
+  "chips": [
+    "4 × Ascend 910B3 · 64 GB",
+    "W8A8",
+    "TP4 · EP · EAGLE3",
+    "vLLM-Ascend",
+    "Measured 2026-08"
+  ],
+  "snapshot": {
+    "zh": "固定长度 · ShareGPT · 长上下文 · Agent · 开放环容量",
+    "en": "Fixed length · ShareGPT · long context · Agent · open-loop capacity"
+  },
+  "sections": [
+    {
+      "id": "serving",
+      "zh": "固定负载与投机解码",
+      "en": "Fixed workloads & speculative decoding"
+    },
+    {
+      "id": "capacity",
+      "zh": "开放环与场景覆盖",
+      "en": "Open-loop & workload coverage"
+    },
+    {
+      "id": "method",
+      "zh": "方法与边界",
+      "en": "Method & limits"
+    }
+  ],
+  "stats": [
+    {
+      "zhLabel": "单流 TPOT 中位",
+      "enLabel": "Single-stream median TPOT",
+      "value": "12.36 ms",
+      "zhNote": "1024 输入 / 128 输出",
+      "enNote": "1024 input / 128 output"
+    },
+    {
+      "zhLabel": "并发 64 输出",
+      "enLabel": "Output at C64",
+      "value": "2,715",
+      "zhNote": "tok/s · 1024 / 2048",
+      "enNote": "tok/s · 1024 / 2048"
+    },
+    {
+      "zhLabel": "Agent 回放",
+      "enLabel": "Agent replay",
+      "value": "310",
+      "zhNote": "tok/s · 8 轮 · C8",
+      "enNote": "tok/s · 8 turns · C8"
+    }
+  ],
+  "overview": {
+    "heading": {
+      "zh": "同一权重内区分单流、并发与开放环结果",
+      "en": "Separate single-stream, concurrent, and open-loop results"
+    },
+    "intro": {
+      "zh": "单流 EAGLE3 对照与其他工作负载分别呈现。并发 64 的固定输出吞吐、有限闭环吞吐与开放环 safe_rps 代表不同测量口径。",
+      "en": "The single-stream EAGLE3 comparison is presented separately from other workloads. Fixed-output throughput at C64, finite closed-loop throughput, and open-loop safe_rps are distinct measurement types."
+    },
+    "note": {
+      "zh": "高生成量与长上下文 P95 受到启动瞬态影响；原始全样本分位数保留为观测值，不解释为稳态尾延迟。safe_rps 的 TTFT-only 与 TTFT+TPOT 阈值分别为 2.80 和 1.86 req/s。",
+      "en": "High-generation and long-context P95 values are affected by startup transients; full-sample percentiles are retained as observations, not steady-state tails. safe_rps is 2.80 req/s for TTFT-only and 1.86 req/s for combined TTFT+TPOT limits."
+    }
+  },
+  "blocks": [
+    {
+      "id": "serving",
+      "label": {
+        "zh": "固定负载与投机解码",
+        "en": "Fixed workloads & speculative decoding"
+      },
+      "heading": {
+        "zh": "EAGLE3 在单流改善 TPOT；并发收益需按工作负载读取",
+        "en": "EAGLE3 improves single-stream TPOT; concurrent results remain workload-specific"
+      },
+      "intro": {
+        "zh": "四张 Ascend 910B3，TP4 + EP + EAGLE3。固定场景在单一部署中测试；下图仅展示官方延迟场景与其单流锚点。",
+        "en": "Four Ascend 910B3 accelerators with TP4 + EP + EAGLE3. Fixed workloads were measured on one deployment; the chart shows the official latency profile and its single-stream point."
+      },
+      "notes": [
+        {
+          "zh": "单流对照显示 TPOT 下降 15.3%、输出吞吐增加 16.1%。这不等于所有负载都能获得同等提升。",
+          "en": "The single-stream comparison shows 15.3% lower TPOT and 16.1% higher output throughput. This does not imply the same gain for all workloads."
+        }
+      ],
+      "chart": {
+        "title": {
+          "zh": "单流吞吐与 TPOT",
+          "en": "Single-stream output rate and TPOT"
+        },
+        "hint": {
+          "zh": "悬停查看测量点。",
+          "en": "Hover a point to inspect the measurement."
+        },
+        "labels": {
+          "zh": [
+            "EAGLE3 off",
+            "EAGLE3 on"
+          ],
+          "en": [
+            "EAGLE3 off",
+            "EAGLE3 on"
+          ]
+        },
+        "series": [
+          {
+            "zh": "输出 tok/s",
+            "en": "Output tok/s",
+            "values": [
+              60.32,
+              70.01
+            ],
+            "color": "blue"
+          }
+        ],
+        "yTitle": {
+          "zh": "输出吞吐 (tok/s)",
+          "en": "Output throughput (tok/s)"
+        },
+        "type": "bar"
+      },
+      "table": {
+        "headers": {
+          "zh": [
+            "指标",
+            "EAGLE3 off",
+            "EAGLE3 on",
+            "变化"
+          ],
+          "en": [
+            "Metric",
+            "EAGLE3 off",
+            "EAGLE3 on",
+            "Change"
+          ]
+        },
+        "rows": [
+          [
+            "单流 TPOT 中位",
+            "15.08 ms",
+            "12.77 ms",
+            "−15.3%"
+          ],
+          [
+            "单流输出吞吐",
+            "60.32 tok/s",
+            "70.01 tok/s",
+            "+16.1%"
+          ],
+          [
+            "并发 64 输出吞吐",
+            "—",
+            "2,715.16 tok/s",
+            "该场景实测"
+          ]
+        ]
+      }
+    },
+    {
+      "id": "capacity",
+      "label": {
+        "zh": "开放环与场景覆盖",
+        "en": "Open-loop & workload coverage"
+      },
+      "heading": {
+        "zh": "严格延迟约束下的到达率低于只约束 TTFT 的结果",
+        "en": "The rate is lower when both TTFT and TPOT are constrained"
+      },
+      "intro": {
+        "zh": "开放环使用 512/256 固定请求形状。其他数据包括高生成量、长上下文、ShareGPT 和 8 轮 Agent 回放。",
+        "en": "Open-loop traffic uses a fixed 512/256 request shape. Other measurements cover long generation, long context, ShareGPT, and an eight-turn Agent replay."
+      },
+      "notes": [
+        {
+          "zh": "所有主要固定场景为单轮测量；EAGLE3 的单流对照方向明确，但不能由此推导跨版本或跨权重的普遍收益。",
+          "en": "Primary fixed workloads are single-run measurements. The single-stream EAGLE3 direction is clear for this setup, but it does not establish a general gain across versions or checkpoints."
+        }
+      ],
+      "chart": {
+        "title": {
+          "zh": "容量边界随 SLO 变化",
+          "en": "Capacity boundary by SLO"
+        },
+        "hint": {
+          "zh": "悬停查看测量点。",
+          "en": "Hover a point to inspect the measurement."
+        },
+        "labels": {
+          "zh": [
+            "TTFT P95 ≤ 1 s",
+            "TTFT P95 ≤ 1 s + TPOT P95 ≤ 50 ms"
+          ],
+          "en": [
+            "TTFT P95 ≤ 1 s",
+            "TTFT P95 ≤ 1 s + TPOT P95 ≤ 50 ms"
+          ]
+        },
+        "series": [
+          {
+            "zh": "safe_rps",
+            "en": "safe_rps",
+            "values": [
+              2.8,
+              1.86
+            ],
+            "color": "blue"
+          }
+        ],
+        "yTitle": {
+          "zh": "请求 / 秒",
+          "en": "Requests per second"
+        },
+        "type": "line"
+      }
+    }
+  ],
+  "meta": [
+    {
+      "zh": "测试日期",
+      "en": "Test date",
+      "value": "2026-08-25"
+    },
+    {
+      "zh": "硬件拓扑",
+      "en": "Hardware topology",
+      "value": "4 × Ascend 910B3 · TP4 + EP"
+    },
+    {
+      "zh": "推理栈",
+      "en": "Serving stack",
+      "value": "vLLM-Ascend · A2 recipe"
+    },
+    {
+      "zh": "投机解码",
+      "en": "Speculative decoding",
+      "value": "EAGLE3"
+    },
+    {
+      "zh": "测量次数",
+      "en": "Run count",
+      "value": "Primary points n=1"
+    }
+  ],
+  "methodIntro": [
+    "固定负载、Agent 回放、开放环容量及 EAGLE3 A/B 使用各自明示的请求形状。报告保留启动瞬态、有限闭环与单次测量限制。",
+    "Fixed workloads, Agent replay, open-loop capacity, and EAGLE3 A/B use explicitly stated request profiles. Startup transient, finite closed-loop, and single-run limitations are retained."
+  ],
+  "methodNotes": [
+    {
+      "zh": "开放环到达过程不与闭环一次性灌入的请求吞吐混为一谈。",
+      "en": "Open-loop arrivals are not equated with request throughput from a one-shot closed-loop batch."
+    },
+    {
+      "zh": "EAGLE3 的接受率在受控到达率测试中保持约 30.68%–31.71%；这是该权重及草稿头设置下的结果。",
+      "en": "EAGLE3 acceptance remained around 30.68%–31.71% in controlled arrival-rate tests; this applies to this checkpoint and draft-head setup."
+    }
+  ]
+}

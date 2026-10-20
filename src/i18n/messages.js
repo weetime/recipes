@@ -69,6 +69,11 @@ export const messages = {
       open: "Open full report",
       modelRecipe: "Model recipe ↗",
       navLabel: "Performance reports", reportConfiguration: "REPORT / CONFIGURATION", result: "RESULT", testCoverage: "TEST COVERAGE", additionalPoint: "ADDITIONAL POINT", read: "Read report", model: "Model recipe",
+      searchPlaceholder: "Search model, GPU, engine, topology…", modelFilter: "Filter by model", allModels: "All models", hardwareFilter: "Filter by GPU model", allHardware: "All GPU models", engineFilter: "Filter by engine", allEngines: "All engines", precisionFilter: "Filter by precision", allPrecisions: "All precisions", workloadFilter: "Filter by test type", allWorkloads: "All test types", sortBy: "Sort reports", matchCount: "{count} of {total} reports", sortScope: "Throughput sort uses the named workload point", noMatches: "No reports match these filters.", topology: "TOPOLOGY", topologyInReport: "See report for parallel layout",
+      singleStream: "C1 SINGLE-STREAM OUTPUT", singleUnavailable: "No C1 measurement",
+      families: { nvidia: "NVIDIA", amd: "AMD", ascend: "Ascend", ppu: "PPU", other: "Other" },
+      tests: { fixed: "Fixed length / capacity", agent: "Agent replay", openLoop: "Open-loop load", longContext: "Long context", stability: "Stability / soak", sharegpt: "ShareGPT", vision: "Vision", quality: "Task quality", videoGeneration: "Video generation" },
+      sort: { newest: "Newest first", model: "Model A–Z", hardware: "Hardware A–Z", "32k-512-c1": "32K / 512 · C1 output throughput ({count})", "8k-256-c16": "8K / 256 · C16 throughput ({count})", "8k-2048-c16": "8K / 2,048 · C16 throughput ({count})" },
     },
     org: { recipeCount: "{count, plural, one {# recipe} other {# recipes}}", back: "← Back to catalog", collection: "Provider collection", also: "Also: {task}" },
     command: {
@@ -170,6 +175,11 @@ export const messages = {
       open: "查看完整报告",
       modelRecipe: "模型配方 ↗",
       navLabel: "性能报告", reportConfiguration: "报告 / 配置", result: "结果", testCoverage: "测试覆盖", additionalPoint: "补充数据", read: "阅读报告", model: "模型配方",
+      searchPlaceholder: "搜索模型、GPU、推理引擎或拓扑…", modelFilter: "按模型筛选", allModels: "全部模型", hardwareFilter: "按 GPU 型号筛选", allHardware: "全部 GPU 型号", engineFilter: "按推理引擎筛选", allEngines: "全部引擎", precisionFilter: "按精度筛选", allPrecisions: "全部精度", workloadFilter: "按测试类型筛选", allWorkloads: "全部测试类型", sortBy: "排序报告", matchCount: "共 {total} 份 · 当前显示 {count} 份", sortScope: "吞吐排序仅针对名称标明的负载点", noMatches: "没有符合筛选条件的报告。", topology: "并行拓扑", topologyInReport: "详情页查看并行配置",
+      singleStream: "C1 单流输出吞吐", singleUnavailable: "未测 C1 单流点",
+      families: { nvidia: "NVIDIA", amd: "AMD", ascend: "昇腾", ppu: "PPU", other: "其他" },
+      tests: { fixed: "定长 / 容量", agent: "Agent 回放", openLoop: "开放环负载", longContext: "长上下文", stability: "稳定性 / 长稳", sharegpt: "ShareGPT", vision: "视觉负载", quality: "任务质量", videoGeneration: "视频生成" },
+      sort: { newest: "最新优先", model: "模型名称 A–Z", hardware: "硬件名称 A–Z", "32k-512-c1": "32K / 512 · C1 输出吞吐（{count} 份）", "8k-256-c16": "8K / 256 · C16 吞吐（{count} 份）", "8k-2048-c16": "8K / 2,048 · C16 吞吐（{count} 份）" },
     },
     org: { recipeCount: "{count} 个模型配方", back: "← 返回模型目录", collection: "提供方模型集合", also: "另有：{task}" },
     command: {

@@ -1,0 +1,437 @@
+{
+  "title": "GLM-5.2 W4A8 · PPU ZW810E · 16 cards",
+  "breadcrumb": "GLM-5.2 W4A8",
+  "kicker": "LONG-CONTEXT SERVING BENCHMARK · W4A8",
+  "lede": {
+    "zh": "在 16 张 PPU ZW810E 上，对 GLM-5.2 W4A8 做真实长 prompt 递增、前缀缓存冷/热复用和容量配置检查。最长成功请求为 660,016 tokens；1M 在该配置下未能达到。",
+    "en": "GLM-5.2 W4A8 was tested on 16 PPU ZW810E accelerators with increasing real prompts, cold/warm prefix-cache reuse, and capacity configuration checks. The longest successful request was 660,016 tokens; 1M was not reached with this configuration."
+  },
+  "chips": [
+    "16 × PPU ZW810E · 96 GB",
+    "GLM-5.2 W4A8 · DSA",
+    "SGLang 0.5.12 · TP16",
+    "BF16 KV cache",
+    "Measured 2026-08"
+  ],
+  "snapshot": {
+    "zh": "端到端 prompt 阶梯 · 前缀缓存 · 可用上下文边界",
+    "en": "End-to-end prompt staircase · prefix cache · usable context boundary"
+  },
+  "sections": [
+    {
+      "id": "context",
+      "zh": "长 prompt 阶梯",
+      "en": "Long-prompt staircase"
+    },
+    {
+      "id": "cache",
+      "zh": "前缀缓存复用",
+      "en": "Prefix-cache reuse"
+    },
+    {
+      "id": "capacity",
+      "zh": "配置与容量",
+      "en": "Configuration and capacity"
+    },
+    {
+      "id": "method",
+      "zh": "方法与边界",
+      "en": "Method & limits"
+    }
+  ],
+  "stats": [
+    {
+      "zhLabel": "最长成功输入",
+      "enLabel": "Longest successful input",
+      "value": "660,016",
+      "zhNote": "端到端真实请求",
+      "enNote": "Successful end-to-end request"
+    },
+    {
+      "zhLabel": "660K 热缓存 TTFT",
+      "enLabel": "660K warm-cache TTFT",
+      "value": "1.71 s",
+      "zhNote": "冷态约 896 s",
+      "enNote": "Cold request took about 896 s"
+    },
+    {
+      "zhLabel": "TP16 短上下文 TPOT",
+      "enLabel": "TP16 short-context TPOT",
+      "value": "26.39 ms",
+      "zhNote": "本轮观测值",
+      "enNote": "Observed in this run"
+    }
+  ],
+  "overview": {
+    "heading": {
+      "zh": "长文档常驻场景受益于前缀缓存",
+      "en": "Prefix caching changes the economics of persistent long documents"
+    },
+    "intro": {
+      "zh": "长输入冷态 TTFT 随 prompt 长度增长；重复提问且命中缓存后，660K 请求的 TTFT 从约 896 秒降至 1.71 秒。容量实测到 660,016 tokens，但这是边界探测，不等于可用安全余量。",
+      "en": "Cold TTFT increases with prompt length. With a cached repeated document, the 660K request’s TTFT falls from about 896 seconds to 1.71 seconds. Capacity was measured to 660,016 tokens, a boundary probe rather than a safe operating margin."
+    },
+    "note": {
+      "zh": "报告中阶梯每个长度仅 1 次；冷/热复用结论是当前固定文本和缓存策略下的观测。1M 未达到，且 96 GB PPU、DSA KV dtype 与当前软件栈限制共同约束可用长度。",
+      "en": "Each staircase length was measured once. Cold/warm results apply to the fixed prompt and cache policy tested. 1M was not reached; the 96 GB PPU, DSA KV dtype support, and tested software stack constrain the usable length."
+    }
+  },
+  "blocks": [
+    {
+      "id": "context",
+      "label": {
+        "zh": "长 prompt",
+        "en": "Long prompts"
+      },
+      "heading": {
+        "zh": "真实请求成功到 660K tokens",
+        "en": "End-to-end requests succeeded up to 660K tokens"
+      },
+      "intro": {
+        "zh": "每档发送一条完整请求，prompt token 数取自服务端统计。这里报告实际请求耗时，不用 KV 池自报值替代端到端可用性。",
+        "en": "One complete request was sent at each length, and prompt token counts came from server-side usage. These are request timings, not KV-pool capacity estimates."
+      },
+      "chart": {
+        "title": {
+          "zh": "冷态长 prompt 端到端耗时",
+          "en": "Cold end-to-end latency for long prompts"
+        },
+        "hint": {
+          "zh": "每点 n=1；只作可达边界观察。",
+          "en": "n=1 per point; observed feasibility only."
+        },
+        "labels": {
+          "zh": [
+            "50K",
+            "100K",
+            "200K",
+            "300K",
+            "400K",
+            "500K",
+            "590K"
+          ],
+          "en": [
+            "50K",
+            "100K",
+            "200K",
+            "300K",
+            "400K",
+            "500K",
+            "590K"
+          ]
+        },
+        "series": [
+          {
+            "zh": "端到端耗时",
+            "en": "End-to-end time",
+            "values": [
+              28.06,
+              58.37,
+              132.37,
+              224.66,
+              335.78,
+              465.77,
+              601.25
+            ],
+            "color": "blue"
+          }
+        ],
+        "yTitle": {
+          "zh": "秒",
+          "en": "seconds"
+        }
+      },
+      "table": {
+        "headers": {
+          "zh": [
+            "目标长度",
+            "服务端 prompt tokens",
+            "端到端耗时",
+            "样本"
+          ],
+          "en": [
+            "Target length",
+            "Server prompt tokens",
+            "End-to-end time",
+            "Sample"
+          ]
+        },
+        "rows": [
+          [
+            "50K",
+            "50,006",
+            "28.1 s",
+            "1 request"
+          ],
+          [
+            "100K",
+            "100,006",
+            "58.4 s",
+            "1 request"
+          ],
+          [
+            "200K",
+            "200,006",
+            "132.4 s",
+            "1 request"
+          ],
+          [
+            "300K",
+            "300,006",
+            "224.7 s",
+            "1 request"
+          ],
+          [
+            "400K",
+            "400,006",
+            "335.8 s",
+            "1 request"
+          ],
+          [
+            "500K",
+            "500,006",
+            "465.8 s",
+            "1 request"
+          ],
+          [
+            "590K",
+            "590,006",
+            "601.2 s",
+            "1 request"
+          ]
+        ]
+      },
+      "notes": [
+        {
+          "zh": "660,016 tokens 的最终边界确认成功；距离该配置估算的 KV 上限不足 2,000 tokens，不能当作稳定运行的安全值。",
+          "en": "The final boundary confirmation succeeded at 660,016 tokens, less than 2,000 tokens below the configuration’s estimated KV limit; it is not a safe sustained operating target."
+        }
+      ]
+    },
+    {
+      "id": "cache",
+      "label": {
+        "zh": "缓存复用",
+        "en": "Cache reuse"
+      },
+      "heading": {
+        "zh": "热前缀将重复长文档的 TTFT 降到秒级",
+        "en": "A warm prefix reduces repeated-document TTFT to seconds"
+      },
+      "intro": {
+        "zh": "同一长文档仅改变末尾问题，先测冷请求，再重复提问并通过服务端 cached token 增量确认命中。",
+        "en": "The document stayed the same while the final question changed. A cold request was followed by repeated queries, with cache hits verified from server-side cached-token deltas."
+      },
+      "chart": {
+        "title": {
+          "zh": "冷 / 热 TTFT",
+          "en": "Cold and warm TTFT"
+        },
+        "hint": {
+          "zh": "缓存已命中 token 数由服务端计数器确认。",
+          "en": "Cached-token hits were confirmed by server-side counters."
+        },
+        "labels": {
+          "zh": [
+            "100K",
+            "300K",
+            "500K",
+            "660K"
+          ],
+          "en": [
+            "100K",
+            "300K",
+            "500K",
+            "660K"
+          ]
+        },
+        "series": [
+          {
+            "zh": "冷请求",
+            "en": "Cold request",
+            "values": [
+              57.685300000000005,
+              221.7879,
+              454.8005,
+              896.0395
+            ],
+            "color": "blue"
+          },
+          {
+            "zh": "热请求中位",
+            "en": "Warm request median",
+            "values": [
+              0.3984,
+              0.8431000000000001,
+              1.3175,
+              1.7082
+            ],
+            "color": "green"
+          }
+        ],
+        "yTitle": {
+          "zh": "TTFT (秒)",
+          "en": "TTFT (seconds)"
+        }
+      },
+      "table": {
+        "headers": {
+          "zh": [
+            "文档长度",
+            "冷 TTFT",
+            "热 TTFT 中位",
+            "加速比",
+            "缓存命中 tokens"
+          ],
+          "en": [
+            "Document length",
+            "Cold TTFT",
+            "Warm TTFT median",
+            "Ratio",
+            "Cached tokens"
+          ]
+        },
+        "rows": [
+          [
+            "100K",
+            "57.7 s",
+            "0.40 s",
+            "144.8×",
+            "99,968"
+          ],
+          [
+            "300K",
+            "221.8 s",
+            "0.84 s",
+            "263.0×",
+            "299,968"
+          ],
+          [
+            "500K",
+            "454.8 s",
+            "1.32 s",
+            "345.2×",
+            "499,968"
+          ],
+          [
+            "660K",
+            "896.0 s",
+            "1.71 s",
+            "524.5×",
+            "659,968"
+          ]
+        ]
+      },
+      "notes": [
+        {
+          "zh": "缓存加速只作用于重复前缀的 prefill；长 KV 下 decode TPOT 仍高于短上下文。",
+          "en": "Cache reuse accelerates prefill for the repeated prefix; decode TPOT with a long KV remains higher than short-context TPOT."
+        }
+      ]
+    },
+    {
+      "id": "capacity",
+      "label": {
+        "zh": "容量与配置",
+        "en": "Capacity & configuration"
+      },
+      "heading": {
+        "zh": "实测边界依赖 TP16 与显存利用率设置",
+        "en": "The measured boundary depends on TP16 and memory-fraction settings"
+      },
+      "intro": {
+        "zh": "测试了 TP8 + DP attention 与多种 TP16 配置。容量数据说明不同配置下可分配的 token 池，不代表每种配置都经过完整性能验收。",
+        "en": "TP8 + DP attention and several TP16 configurations were checked. Capacity values describe token-pool allocation, not full performance qualification of every variant."
+      },
+      "table": {
+        "headers": {
+          "zh": [
+            "配置",
+            "可分配 tokens",
+            "权重/卡",
+            "KV/卡"
+          ],
+          "en": [
+            "Configuration",
+            "Token capacity",
+            "Weights/card",
+            "KV/card"
+          ]
+        },
+        "rows": [
+          [
+            "TP8 + DP attn",
+            "204,800",
+            "61.52 GB",
+            "19.11 GB"
+          ],
+          [
+            "TP16 mem0.85",
+            "590,976",
+            "25.29 GB",
+            "55.13 GB"
+          ],
+          [
+            "TP16 mem0.92",
+            "662,016",
+            "25.29 GB",
+            "61.75 GB"
+          ],
+          [
+            "TP16 ep16",
+            "595,328",
+            "24.88 GB",
+            "55.53 GB"
+          ]
+        ]
+      },
+      "notes": [
+        {
+          "zh": "TP16 显存利用率从 0.85 调到 0.92 后，容量增加约 12%；更大的 chunked prefill 候选发生 OOM，不作为可用配置。",
+          "en": "Raising TP16 memory fraction from 0.85 to 0.92 increased configured capacity by about 12%; larger chunked-prefill candidates ran out of memory and are not treated as usable configurations."
+        }
+      ]
+    }
+  ],
+  "meta": [
+    {
+      "zh": "权重格式",
+      "en": "Checkpoint format",
+      "value": "GLM-5.2 W4A8 · DSA"
+    },
+    {
+      "zh": "硬件拓扑",
+      "en": "Hardware topology",
+      "value": "16 × PPU ZW810E · TP16"
+    },
+    {
+      "zh": "软件栈",
+      "en": "Software stack",
+      "value": "SGLang 0.5.12 · vendor adaptation"
+    },
+    {
+      "zh": "KV cache",
+      "en": "KV cache",
+      "value": "BF16"
+    },
+    {
+      "zh": "测试日期",
+      "en": "Measurement date",
+      "value": "2026-08"
+    }
+  ],
+  "methodIntro": {
+    "zh": "长 prompt 阶梯使用服务端 prompt token 计数与客户端端到端耗时；缓存测试通过服务端 cached token 计数器验证。容量扫参与端到端请求测试分开呈现。",
+    "en": "The long-prompt staircase uses server-side prompt-token counts and client-side end-to-end timings. Cache tests verify hits through the server cached-token counter. Capacity sweeps and end-to-end request tests are reported separately."
+  },
+  "methodNotes": [
+    {
+      "zh": "每个 context staircase 长度 n=1；缓存冷/热各取固定请求观测；不报告统计分位数，也不推断生产 SLO。报告页面不包含节点名、IP、磁盘路径或内部服务地址。",
+      "en": "Each context-staircase length has n=1; cache cold/warm values are observations from fixed requests. No statistical percentiles or production SLO are inferred. Hostnames, IP addresses, storage paths, and internal service addresses are omitted."
+    },
+    {
+      "zh": "测试确认 1M 在该 16 卡 PPU 与软件栈组合下不可达；该结论限定于本次硬件、DSA KV 格式支持和服务配置。",
+      "en": "The test did not reach 1M with this 16-card PPU and software stack. This conclusion is limited to the measured hardware, DSA KV-format support, and serving configuration."
+    }
+  ]
+}

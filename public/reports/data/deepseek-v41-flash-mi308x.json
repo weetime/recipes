@@ -34,6 +34,10 @@
       "en": "Open loop"
     },
     {
+      "zh": "并行拓扑",
+      "en": "Parallel topology"
+    },
+    {
       "id": "method",
       "zh": "方法边界",
       "en": "Method"
@@ -444,6 +448,153 @@
           "en": "At 2.6 req/s, all 600 requests succeeded with TTFT P99 of 1.72 s; at 2.75 req/s, all succeeded but TTFT P99 rose to 5.40 s. Interpret the rate with the latency threshold."
         }
       }
+    },
+    {
+      "id": "topology",
+      "label": {
+        "zh": "并行拓扑",
+        "en": "Parallel topology"
+      },
+      "heading": {
+        "zh": "TP8 提高吞吐并降低 TPOT，容量提升更明显",
+        "en": "TP8 raises throughput and lowers TPOT, with a larger capacity gain"
+      },
+      "intro": {
+        "zh": "同一模型权重在 8×MI308X 上比较 TP4×2 与 TP8×1，均关闭投机解码并保持相同规格与显存利用率。吞吐与 TPOT 按负载类型分别呈现。",
+        "en": "The same checkpoint was tested on 8× MI308X as TP4×2 and TP8×1, with speculative decoding disabled and the same GPU-memory utilization target. Throughput and TPOT are shown by workload."
+      },
+      "chart": {
+        "title": {
+          "zh": "同权重 · TP4×2 与 TP8×1 输出吞吐",
+          "en": "Same checkpoint · output throughput at TP4×2 and TP8×1"
+        },
+        "hint": {
+          "zh": "不同负载形状分开测量；饱和负载来自独立 open-loop 测试。",
+          "en": "Workload shapes were measured separately; saturation is an independent open-loop test."
+        },
+        "labels": {
+          "zh": [
+            "Single stream · 128/128",
+            "Long output · 128/2048",
+            "Mid load · 512/256",
+            "ShareGPT",
+            "Saturated · 512/256",
+            "BFCL Agent"
+          ],
+          "en": [
+            "Single stream · 128/128",
+            "Long output · 128/2048",
+            "Mid load · 512/256",
+            "ShareGPT",
+            "Saturated · 512/256",
+            "BFCL Agent"
+          ]
+        },
+        "series": [
+          {
+            "zh": "TP4×2",
+            "en": "TP4×2",
+            "values": [
+              52.3,
+              428.4,
+              458.5,
+              322.3,
+              825.6,
+              173.9
+            ],
+            "color": "blue"
+          },
+          {
+            "zh": "TP8×1",
+            "en": "TP8×1",
+            "values": [
+              58.1,
+              526.8,
+              531.0,
+              366.0,
+              1040.7,
+              204.2
+            ],
+            "color": "green"
+          }
+        ],
+        "yTitle": {
+          "zh": "tok/s",
+          "en": "tok/s"
+        }
+      },
+      "table": {
+        "headers": {
+          "zh": [
+            "负载",
+            "TP4×2 输出吞吐",
+            "TP8×1 输出吞吐",
+            "TP4×2 TPOT",
+            "TP8×1 TPOT"
+          ],
+          "en": [
+            "Workload",
+            "TP4×2 output tok/s",
+            "TP8×1 output tok/s",
+            "TP4×2 TPOT",
+            "TP8×1 TPOT"
+          ]
+        },
+        "rows": [
+          [
+            "Single stream · 128/128",
+            "52.3 tok/s",
+            "58.1 tok/s",
+            "17.5 ms",
+            "15.8 ms"
+          ],
+          [
+            "Long output · 128/2048",
+            "428.4 tok/s",
+            "526.8 tok/s",
+            "36.9 ms",
+            "29.7 ms"
+          ],
+          [
+            "Mid load · 512/256",
+            "458.5 tok/s",
+            "531.0 tok/s",
+            "49.6 ms",
+            "40.3 ms"
+          ],
+          [
+            "ShareGPT",
+            "322.3 tok/s",
+            "366.0 tok/s",
+            "87.5 ms",
+            "74.4 ms"
+          ],
+          [
+            "Saturated · 512/256",
+            "825.6 tok/s",
+            "1,040.7 tok/s",
+            "435.5 ms",
+            "353.7 ms"
+          ],
+          [
+            "BFCL Agent",
+            "173.9 tok/s",
+            "204.2 tok/s",
+            "42.1 ms",
+            "35.0 ms"
+          ]
+        ]
+      },
+      "notes": [
+        {
+          "zh": "TP8 在六个已测形状的总输出吞吐高约 11%–26%，TPOT 低约 10%–20%；但它使用同样 8 张卡，单卡吞吐效率下降。TP8 的容量优势更大：权重/卡约 64.91 GiB（TP8）对 96.63 GiB（TP4），KV 池约 14.55M 对 2.00M tokens。各 workload 观测样本数和流量形状不同，不能把该表当成统一流量的统计排名。",
+          "en": "Across six measured shapes, TP8 delivers about 11%–26% more aggregate output throughput and 10%–20% lower TPOT, using the same eight cards and therefore lowering per-card throughput efficiency. Its larger advantage is capacity: about 64.91 GiB weights/card at TP8 versus 96.63 GiB at TP4, with KV pools of about 14.55M versus 2.00M tokens. Sample counts and traffic shapes differ by workload, so this is not a statistical ranking under one uniform traffic profile."
+        },
+        {
+          "zh": "TP8 单副本与 TP4×2 + router 的开放环容量扫描是另一种部署问题；路由与副本数同时变化，且高负载点有显著尾延迟波动，本报告不把该结果用于归因 TP 变化。",
+          "en": "The open-loop capacity sweep comparing one TP8 replica with TP4×2 plus a router is a separate deployment question. Replica count and routing change together, and high-load tail latency varies substantially; it is not used to attribute effects to TP alone."
+        }
+      ]
     }
   ],
   "methodIntro": {
@@ -490,6 +641,10 @@
     {
       "zh": "公开数据仅保留汇总指标；未包含请求文本或内部主机信息。",
       "en": "Only aggregate metrics are published; request text and internal host details are excluded."
+    },
+    {
+      "zh": "TP8/TP4 结果取自独立拓扑测量报告；硬件节点标识、地址与本机路径已省略。拓扑表只保留同权重、投机解码关闭的负载点。",
+      "en": "TP8/TP4 results come from a separate topology measurement. Host identifiers, addresses, and local paths are omitted. The topology table includes only same-checkpoint points with speculative decoding disabled."
     }
   ]
 }

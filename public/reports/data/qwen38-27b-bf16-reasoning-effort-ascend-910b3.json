@@ -1,0 +1,323 @@
+{
+  "title": "Qwen3.8-27B BF16 · Ascend 910B3",
+  "breadcrumb": "Qwen3.8-27B BF16",
+  "kicker": "REASONING COST BENCHMARK · BF16",
+  "lede": {
+    "zh": "在难题上，xhigh 的 E2E 中位耗时达到 medium 的 3.1–5.1 倍；low 与 medium 在本实验分辨率下不可区分。",
+    "en": "On hard prompts, xhigh median E2E time is 3.1–5.1× that of medium; low and medium are indistinguishable at this experiment’s resolution."
+  },
+  "chips": [
+    "8 × Ascend 910B3 · 64 GB",
+    "BF16",
+    "TP4",
+    "vLLM-Ascend 0.23.0rc1",
+    "Measured 2026-08"
+  ],
+  "snapshot": {
+    "zh": "reasoning_effort none / low / medium / xhigh · 3 repeats",
+    "en": "reasoning_effort none / low / medium / xhigh · 3 repeats"
+  },
+  "sections": [
+    {
+      "id": "reasoning-effort",
+      "zh": "推理强度与任务难度",
+      "en": "Reasoning effort & task difficulty"
+    },
+    {
+      "id": "throughput",
+      "zh": "回答速率与统计边界",
+      "en": "Answer rate & statistical limits"
+    },
+    {
+      "id": "method",
+      "zh": "方法与边界",
+      "en": "Method & limits"
+    }
+  ],
+  "stats": [
+    {
+      "zhLabel": "Hard · C1 xhigh E2E",
+      "enLabel": "Hard · C1 xhigh E2E",
+      "value": "287.6 s",
+      "zhNote": "medium 为 93.1 s",
+      "enNote": "medium is 93.1 s"
+    },
+    {
+      "zhLabel": "Hard · C32 xhigh E2E",
+      "enLabel": "Hard · C32 xhigh E2E",
+      "value": "606.9 s",
+      "zhNote": "medium 为 119.8 s",
+      "enNote": "medium is 119.8 s"
+    },
+    {
+      "zhLabel": "混合题集回答速率",
+      "enLabel": "Mixed-set answer rate",
+      "value": "0.24–0.38×",
+      "zhNote": "xhigh 相对 low",
+      "enNote": "xhigh relative to low"
+    }
+  ],
+  "overview": {
+    "heading": {
+      "zh": "推理强度不是简单的速度档位",
+      "en": "Reasoning effort is not a simple speed setting"
+    },
+    "intro": {
+      "zh": "参数影响取决于题目难度。xhigh 在 easy 题上产生更短输出，但 hard 题上增加输出与耗时；low 与 medium 的差异落在实验噪声范围内。",
+      "en": "The effect depends on prompt difficulty. xhigh produces shorter outputs on easy prompts but increases output and time on hard prompts; low and medium fall within the experiment’s noise range."
+    },
+    "note": {
+      "zh": "该报告测的是同一 BF16 权重在推理强度设置下的服务成本，不是不同模型或精度之间的比较。结论基于难度平衡的 24 条提示和三次独立测量。",
+      "en": "This report measures serving cost for one BF16 checkpoint under reasoning-effort settings; it is not a comparison across models or precisions. Conclusions use 24 difficulty-balanced prompts and three independent measurements."
+    }
+  },
+  "blocks": [
+    {
+      "id": "reasoning-effort",
+      "label": {
+        "zh": "推理强度与任务难度",
+        "en": "Reasoning effort & task difficulty"
+      },
+      "heading": {
+        "zh": "xhigh 在难题上显著增加输出长度与端到端时间；low 与 medium 难以区分",
+        "en": "xhigh increases output length and end-to-end time on hard prompts; low and medium are not distinguishable here"
+      },
+      "intro": {
+        "zh": "Qwen3.8-27B BF16、8 × Ascend 910B3、TP4。四档 reasoning_effort 使用同一服务实例与同一组难度平衡题目。",
+        "en": "Qwen3.8-27B BF16 on 8 × Ascend 910B3 with TP4. Four reasoning_effort levels used the same serving instance and difficulty-balanced prompts."
+      },
+      "notes": [
+        {
+          "zh": "easy 题的方向不同：xhigh 的输出 token 中位数约为 medium 的 0.37–0.41 倍；hard 题则约为 3.0–5.0 倍。难度分层后再看参数，整体均值会掩盖这种分叉。",
+          "en": "The direction differs on easy prompts: xhigh uses about 0.37–0.41× the median output tokens of medium, while on hard prompts it uses about 3.0–5.0×. Difficulty-stratified results reveal a split that aggregate averages would hide."
+        }
+      ],
+      "chart": {
+        "title": {
+          "zh": "Hard 题端到端时间中位数",
+          "en": "Median end-to-end time on hard prompts"
+        },
+        "hint": {
+          "zh": "悬停查看测量点。",
+          "en": "Hover a point to inspect the measurement."
+        },
+        "labels": {
+          "zh": [
+            "C1",
+            "C8",
+            "C32"
+          ],
+          "en": [
+            "C1",
+            "C8",
+            "C32"
+          ]
+        },
+        "series": [
+          {
+            "zh": "none",
+            "en": "none",
+            "values": [
+              37.8,
+              56.1,
+              68.1
+            ],
+            "color": "blue"
+          },
+          {
+            "zh": "low",
+            "en": "low",
+            "values": [
+              76.3,
+              75.5,
+              125.5
+            ],
+            "color": "blue"
+          },
+          {
+            "zh": "medium",
+            "en": "medium",
+            "values": [
+              93.1,
+              89.1,
+              119.8
+            ],
+            "color": "blue"
+          },
+          {
+            "zh": "xhigh",
+            "en": "xhigh",
+            "values": [
+              287.6,
+              435.8,
+              606.9
+            ],
+            "color": "green"
+          }
+        ],
+        "yTitle": {
+          "zh": "E2E 中位 (秒)",
+          "en": "Median E2E (s)"
+        },
+        "type": "line"
+      },
+      "table": {
+        "headers": {
+          "zh": [
+            "并发",
+            "none",
+            "low",
+            "medium",
+            "xhigh",
+            "xhigh / medium"
+          ],
+          "en": [
+            "Concurrency",
+            "none",
+            "low",
+            "medium",
+            "xhigh",
+            "xhigh / medium"
+          ]
+        },
+        "rows": [
+          [
+            "C1",
+            "37.8 s",
+            "76.3 s",
+            "93.1 s",
+            "287.6 s",
+            "3.09×"
+          ],
+          [
+            "C8",
+            "56.1 s",
+            "75.5 s",
+            "89.1 s",
+            "435.8 s",
+            "4.89×"
+          ],
+          [
+            "C32",
+            "68.1 s",
+            "125.5 s",
+            "119.8 s",
+            "606.9 s",
+            "5.07×"
+          ]
+        ]
+      }
+    },
+    {
+      "id": "throughput",
+      "label": {
+        "zh": "回答速率与统计边界",
+        "en": "Answer rate & statistical limits"
+      },
+      "heading": {
+        "zh": "xhigh 的回答速率为 low 的 0.24–0.38 倍；单流 TTFT/TPOT 未分辨出差异",
+        "en": "xhigh answers at 0.24–0.38× the rate of low; single-stream TTFT/TPOT differences were unresolved"
+      },
+      "intro": {
+        "zh": "每档共 24 条提示，easy/medium/hard 各 8 条；四档看到相同难度构成。三次独立测量方向一致。",
+        "en": "Each round used 24 prompts, eight per easy/medium/hard tier; all effort levels saw the same difficulty mix. The directional result was consistent across three independent measurements."
+      },
+      "notes": [
+        {
+          "zh": "p99 样本不足以作为尾延迟承诺；C32 TTFT 因噪声过高不报告。xhigh 有 2.8%–12.5% 的截断率，真实 token 与时延成本可能更高。",
+          "en": "The sample is insufficient for p99 service claims; C32 TTFT is omitted because its noise floor is too high. xhigh truncation ranges from 2.8% to 12.5%, so uncapped token and latency costs may be higher."
+        }
+      ],
+      "chart": {
+        "title": {
+          "zh": "混合题集回答速率",
+          "en": "Answer rate on the mixed prompt set"
+        },
+        "hint": {
+          "zh": "悬停查看测量点。",
+          "en": "Hover a point to inspect the measurement."
+        },
+        "labels": {
+          "zh": [
+            "C1",
+            "C8",
+            "C32"
+          ],
+          "en": [
+            "C1",
+            "C8",
+            "C32"
+          ]
+        },
+        "series": [
+          {
+            "zh": "low · answers/s",
+            "en": "low · answers/s",
+            "values": [
+              0.0241,
+              0.1121,
+              0.1798
+            ],
+            "color": "blue"
+          },
+          {
+            "zh": "xhigh · answers/s",
+            "en": "xhigh · answers/s",
+            "values": [
+              0.0065,
+              0.027,
+              0.0676
+            ],
+            "color": "blue"
+          }
+        ],
+        "yTitle": {
+          "zh": "回答 / 秒",
+          "en": "Answers per second"
+        },
+        "type": "line"
+      }
+    }
+  ],
+  "meta": [
+    {
+      "zh": "测试日期",
+      "en": "Test date",
+      "value": "2026-08-15"
+    },
+    {
+      "zh": "硬件拓扑",
+      "en": "Hardware topology",
+      "value": "8 × Ascend 910B3 · TP4"
+    },
+    {
+      "zh": "权重精度",
+      "en": "Checkpoint precision",
+      "value": "BF16"
+    },
+    {
+      "zh": "输入数据",
+      "en": "Prompt set",
+      "value": "24 prompts · 8 per difficulty tier"
+    },
+    {
+      "zh": "采样设置",
+      "en": "Sampling",
+      "value": "temperature 1.0 · top_p 0.95 · top_k 20"
+    }
+  ],
+  "methodIntro": [
+    "四档使用同一实例、同一抽样参数和相同难度分布；自然 EOS，prefix cache off。各项按难度分层统计。",
+    "All four settings use the same instance, sampling parameters, and difficulty mix; natural EOS with prefix cache off. Results are stratified by difficulty."
+  ],
+  "methodNotes": [
+    {
+      "zh": "p99 仅 24/72 个样本，不满足尾分位样本门槛；C32 TTFT 不作为结论。",
+      "en": "p99 uses only 24/72 samples and does not meet the tail-percentile sample threshold; C32 TTFT is not reported as a conclusion."
+    },
+    {
+      "zh": "xhigh 的部分请求触达 30,000 token 上限；本文成本应视为该上限下的观测值。",
+      "en": "Some xhigh requests hit the 30,000-token cap; reported costs are observations under that cap."
+    }
+  ]
+}

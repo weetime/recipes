@@ -1,0 +1,290 @@
+{
+  "title": "Qwen3-32B W8A8 · Ascend 910B4",
+  "breadcrumb": "Qwen3-32B W8A8",
+  "kicker": "SERVING BENCHMARK · W8A8",
+  "lede": {
+    "zh": "Qwen3-32B W8A8 在四张 Ascend 910B4 上的标准化服务测试。单流 TPOT 为 17.68 ms；高生成量负载在 C64 达到 1,529 tok/s。",
+    "en": "Standardized serving measurements for Qwen3-32B W8A8 on four Ascend 910B4 accelerators. Single-stream TPOT is 17.68 ms; the long-generation workload reaches 1,529 tok/s at C64."
+  },
+  "chips": [
+    "4 × Ascend 910B4 · 32 GB",
+    "W8A8",
+    "TP4",
+    "vLLM-Ascend 0.26.0rc nightly",
+    "Measured 2026-08"
+  ],
+  "snapshot": {
+    "zh": "固定长度 · ShareGPT · 长上下文 · Agent · 开放环容量",
+    "en": "Fixed length · ShareGPT · long context · Agent · open-loop capacity"
+  },
+  "sections": [
+    {
+      "id": "capacity",
+      "zh": "固定负载",
+      "en": "Fixed workloads"
+    },
+    {
+      "id": "capacity-slo",
+      "zh": "开放环容量",
+      "en": "Open-loop capacity"
+    },
+    {
+      "id": "method",
+      "zh": "方法与边界",
+      "en": "Method & limits"
+    }
+  ],
+  "stats": [
+    {
+      "zhLabel": "单流 TPOT 中位",
+      "enLabel": "Single-stream median TPOT",
+      "value": "17.68 ms",
+      "zhNote": "1024 输入 / 128 输出",
+      "enNote": "1024 input / 128 output"
+    },
+    {
+      "zhLabel": "高生成量 C64 输出",
+      "enLabel": "Long-generation output at C64",
+      "value": "1,529",
+      "zhNote": "tok/s · 1024 / 2048",
+      "enNote": "tok/s · 1024 / 2048"
+    },
+    {
+      "zhLabel": "开放环 safe_rps",
+      "enLabel": "Open-loop safe_rps",
+      "value": "4.97",
+      "zhNote": "TTFT P95 ≤ 1 s",
+      "enNote": "TTFT P95 ≤ 1 s"
+    }
+  ],
+  "overview": {
+    "heading": {
+      "zh": "测试数值必须绑定负载形状",
+      "en": "Keep each result attached to its workload"
+    },
+    "intro": {
+      "zh": "本报告展示固定长度、ShareGPT、长上下文、Agent 和开放环容量结果。不同部署配方之间不拼接曲线；有限闭环批量灌入的排队时间不作为用户延迟。",
+      "en": "The report covers fixed-length, ShareGPT, long-context, Agent, and open-loop capacity workloads. Results from different deployment recipes are not joined into one curve; queue time from finite closed-loop batches is not user latency."
+    },
+    "note": {
+      "zh": "Agent 数字来自单独的自配方部署；官方高吞吐配方的 max-model-len 为 5,500，无法覆盖该 Agent 请求。Agent 与其他配置不可直接并列解释。分位数仅在满足样本门槛时报告。",
+      "en": "Agent measurements use a separate custom deployment; the official high-throughput recipe has a 5,500 max-model-len and cannot run that Agent workload. Do not treat Agent and other configurations as directly comparable. Percentiles are reported only when sample thresholds are met."
+    }
+  },
+  "blocks": [
+    {
+      "id": "capacity",
+      "label": {
+        "zh": "固定负载",
+        "en": "Fixed workloads"
+      },
+      "heading": {
+        "zh": "单流延迟、并发吞吐与长上下文分别呈现不同工作区间",
+        "en": "Single-stream latency, concurrent throughput, and long-context prefill occupy different operating regions"
+      },
+      "intro": {
+        "zh": "四卡 Ascend 910B4、TP4。固定负载使用对应官方 A2 配方；高并发与长上下文属于不同配置，不应拼成同一条连续曲线。",
+        "en": "Four Ascend 910B4 accelerators with TP4. Fixed workloads use their corresponding A2 recipes; high-concurrency and long-context points use distinct configurations and should not be read as one continuous curve."
+      },
+      "notes": [
+        {
+          "zh": "长上下文点以输入吞吐为主读数",
+          "en": "Read the long-context point primarily by input throughput"
+        },
+        {
+          "zh": "该场景的输出吞吐为 22.6 tok/s，输入吞吐为 5,790.7 tok/s；TPOT 中位数 490.46 ms。它不代表短请求服务速度。",
+          "en": "This point reports 22.6 output tok/s and 5,790.7 input tok/s, with a 490.46 ms median TPOT. It does not represent short-request serving speed."
+        }
+      ],
+      "chart": {
+        "title": {
+          "zh": "输出吞吐：高生成量负载",
+          "en": "Output throughput: long-generation workload"
+        },
+        "hint": {
+          "zh": "悬停查看测量点。",
+          "en": "Hover a point to inspect the measurement."
+        },
+        "labels": {
+          "zh": [
+            "C1 · 1024/128",
+            "C64 · 1024/2048",
+            "不限 · 1024/512"
+          ],
+          "en": [
+            "C1 · 1024/128",
+            "C64 · 1024/2048",
+            "不限 · 1024/512"
+          ]
+        },
+        "series": [
+          {
+            "zh": "输出 tok/s",
+            "en": "Output tok/s",
+            "values": [
+              52.9,
+              1529.3,
+              1339.3
+            ],
+            "color": "blue"
+          }
+        ],
+        "yTitle": {
+          "zh": "输出吞吐 (tok/s)",
+          "en": "Output throughput (tok/s)"
+        },
+        "type": "bar",
+        "xTitle": {
+          "zh": "测试点",
+          "en": "Workload point"
+        }
+      },
+      "table": {
+        "headers": {
+          "zh": [
+            "场景",
+            "并发",
+            "TPOT 中位",
+            "输出吞吐",
+            "输入吞吐"
+          ],
+          "en": [
+            "Workload",
+            "Concurrency",
+            "Median TPOT",
+            "Output throughput",
+            "Input throughput"
+          ]
+        },
+        "rows": [
+          [
+            "延迟 1024/128",
+            "C1",
+            "17.68 ms",
+            "52.9 tok/s",
+            "422.9 tok/s"
+          ],
+          [
+            "高生成量 1024/2048",
+            "C64",
+            "34.02 ms",
+            "1,529.3 tok/s",
+            "764.7 tok/s"
+          ],
+          [
+            "长上下文 32768/128",
+            "C16",
+            "490.46 ms",
+            "22.6 tok/s",
+            "5,790.7 tok/s"
+          ],
+          [
+            "ShareGPT",
+            "无固定并发",
+            "145.37 ms",
+            "1,583.0 tok/s",
+            "2,361.0 tok/s"
+          ]
+        ]
+      }
+    },
+    {
+      "id": "capacity-slo",
+      "label": {
+        "zh": "开放环容量",
+        "en": "Open-loop capacity"
+      },
+      "heading": {
+        "zh": "SLO 口径改变可接受的请求到达率",
+        "en": "The request rate depends on the selected SLO"
+      },
+      "intro": {
+        "zh": "在 512 输入 / 256 输出请求形状下进行开放环容量测试。safe_rps 是该负载及阈值下的实验边界，不是其他请求长度的服务承诺。",
+        "en": "Open-loop capacity was tested with 512 input / 256 output. safe_rps is specific to this workload and threshold, not a service guarantee for other request lengths."
+      },
+      "notes": [
+        {
+          "zh": "收紧 TPOT P95 后，容量边界从 4.97 降至 2.78 req/s。阈值组合必须随容量数字一并引用。",
+          "en": "Adding a TPOT P95 limit reduces the measured boundary from 4.97 to 2.78 req/s. Quote the threshold together with the rate."
+        }
+      ],
+      "chart": {
+        "title": {
+          "zh": "SLO 阈值与 safe_rps",
+          "en": "SLO threshold and safe_rps"
+        },
+        "hint": {
+          "zh": "悬停查看测量点。",
+          "en": "Hover a point to inspect the measurement."
+        },
+        "labels": {
+          "zh": [
+            "TTFT P95 ≤ 1,000 ms",
+            "TTFT P95 ≤ 1,000 ms + TPOT P95 ≤ 50 ms"
+          ],
+          "en": [
+            "TTFT P95 ≤ 1,000 ms",
+            "TTFT P95 ≤ 1,000 ms + TPOT P95 ≤ 50 ms"
+          ]
+        },
+        "series": [
+          {
+            "zh": "safe_rps",
+            "en": "safe_rps",
+            "values": [
+              4.97,
+              2.78
+            ],
+            "color": "blue"
+          }
+        ],
+        "yTitle": {
+          "zh": "请求 / 秒",
+          "en": "Requests per second"
+        },
+        "type": "line"
+      }
+    }
+  ],
+  "meta": [
+    {
+      "zh": "测试日期",
+      "en": "Test date",
+      "value": "2026-08-24"
+    },
+    {
+      "zh": "硬件拓扑",
+      "en": "Hardware topology",
+      "value": "4 × Ascend 910B4 · TP4"
+    },
+    {
+      "zh": "权重精度",
+      "en": "Checkpoint precision",
+      "value": "W8A8"
+    },
+    {
+      "zh": "推理栈",
+      "en": "Serving stack",
+      "value": "vLLM-Ascend 0.26.0rc nightly"
+    },
+    {
+      "zh": "并行/缓存",
+      "en": "Parallelism/cache",
+      "value": "TP4 · Prefix-cache varies by recipe"
+    }
+  ],
+  "methodIntro": [
+    "固定长度场景按各自官方配方运行；开放环容量使用预注册 SLO。Agent 场景采用单独的自配方，长上下文使用专用配置。",
+    "Fixed-length workloads use their respective official recipes; open-loop capacity follows preregistered SLOs. Agent uses a separate custom recipe, and long context uses a dedicated configuration."
+  ],
+  "methodNotes": [
+    {
+      "zh": "有限闭环的 1,000 请求批次中，TTFT 包含排队时间，不解释为交互延迟或容量边界。",
+      "en": "For finite closed-loop batches of 1,000 requests, TTFT includes queueing and is not interactive latency or a capacity boundary."
+    },
+    {
+      "zh": "六个有效标准化场景没有抢占；Agent 客户端输入吞吐口径存在限制，报告使用服务端指标。",
+      "en": "No preemptions were observed in the six valid standardized workloads. The Agent client-side input-throughput counter has a known limitation; server-side metrics were used."
+    }
+  ]
+}

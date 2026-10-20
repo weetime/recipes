@@ -1,0 +1,404 @@
+<title>MiniMax-H3 双卡实测</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  :root{
+    --ground:#F2F4F6; --surface:#FFFFFF; --surface-2:#E9ECF0;
+    --border:#D8DDE4; --border-strong:#B9C1CC;
+    --ink:#161B23; --muted:#5A6472; --faint:#828C9B;
+    --accent:#1F6B66; --accent-soft:#DCEBE9;
+    --warn:#9A5A15; --warn-soft:#F6E9D8;
+    --shadow:0 1px 2px rgba(22,27,35,.06), 0 8px 24px -16px rgba(22,27,35,.28);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --ground:#11141A; --surface:#171B23; --surface-2:#1F242E;
+      --border:#2A313D; --border-strong:#3C4553;
+      --ink:#E3E7EE; --muted:#9AA3B2; --faint:#78818F;
+      --accent:#5FB4AD; --accent-soft:#17302E;
+      --warn:#D69B54; --warn-soft:#2E2418;
+      --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -16px rgba(0,0,0,.8);
+    }
+  }
+  :root[data-theme="dark"]{
+    --ground:#11141A; --surface:#171B23; --surface-2:#1F242E;
+    --border:#2A313D; --border-strong:#3C4553;
+    --ink:#E3E7EE; --muted:#9AA3B2; --faint:#78818F;
+    --accent:#5FB4AD; --accent-soft:#17302E;
+    --warn:#D69B54; --warn-soft:#2E2418;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -16px rgba(0,0,0,.8);
+  }
+
+  *{box-sizing:border-box}
+  body{background:var(--ground); color:var(--ink);
+    font-family:"Source Serif 4","Songti SC",Georgia,serif;
+    font-size:16px; line-height:1.65; -webkit-font-smoothing:antialiased}
+  .wrap{max-width:940px; margin:0 auto; padding:40px 22px 72px; display:flex; flex-direction:column; gap:36px}
+
+  h1,h2,h3,.label,th,.kv dt,.pill,.step h3{font-family:Archivo,"PingFang SC","Helvetica Neue",sans-serif}
+  h1{font-size:1.6rem; font-weight:700; letter-spacing:-.01em; margin:0; text-wrap:balance; line-height:1.28}
+  h2{font-size:1.02rem; font-weight:600; margin:0}
+  .label{font-size:.685rem; font-weight:600; text-transform:uppercase; letter-spacing:.11em; color:var(--faint)}
+  p{margin:0}
+  code,.mono,.num{font-family:"IBM Plex Mono",ui-monospace,Menlo,monospace; font-variant-numeric:tabular-nums}
+  code{font-size:.86em; background:var(--surface-2); padding:.1em .38em; border-radius:3px}
+
+  header{display:flex; flex-direction:column; gap:11px; border-bottom:2px solid var(--border-strong); padding-bottom:20px}
+  .meta{display:flex; flex-wrap:wrap; gap:5px 18px; font-family:"IBM Plex Mono",monospace; font-size:.75rem; color:var(--muted)}
+  .meta b{font-weight:500; color:var(--faint)}
+
+  section{display:flex; flex-direction:column; gap:13px}
+  .sechead{display:flex; align-items:baseline; gap:12px; flex-wrap:wrap}
+
+  .scroll{overflow-x:auto; border:1px solid var(--border); border-radius:6px; background:var(--surface); box-shadow:var(--shadow)}
+  table{border-collapse:collapse; width:100%; font-size:.865rem}
+  th{font-size:.69rem; font-weight:600; text-transform:uppercase; letter-spacing:.075em; color:var(--faint);
+     text-align:left; padding:10px 13px; white-space:nowrap; border-bottom:1px solid var(--border-strong); background:var(--surface-2)}
+  td{padding:10px 13px; border-bottom:1px solid var(--border); vertical-align:baseline}
+  tbody tr:last-child td{border-bottom:none}
+  td.n,th.n{text-align:right; font-family:"IBM Plex Mono",monospace; font-variant-numeric:tabular-nums; white-space:nowrap}
+  td.id,td.shape{font-family:"IBM Plex Mono",monospace; white-space:nowrap}
+  td.id{font-weight:600; color:var(--accent)}
+  .hero td{background:var(--accent-soft)}
+  .hero td.n strong{color:var(--accent)}
+  td .note{display:block; font-size:.77rem; color:var(--faint); line-height:1.4}
+  tr.todo td{color:var(--muted)}
+  tr.todo td.id{color:var(--faint)}
+  .pill{display:inline-block; font-size:.66rem; font-weight:600; letter-spacing:.04em; padding:.14em .5em;
+        border-radius:3px; background:var(--surface-2); color:var(--muted); white-space:nowrap}
+  .pill.done{background:var(--accent-soft); color:var(--accent)}
+  .pill.warn{background:var(--warn-soft); color:var(--warn)}
+
+  .steps{display:flex; flex-direction:column; gap:0; border:1px solid var(--border); border-radius:6px;
+         background:var(--surface); box-shadow:var(--shadow); overflow:hidden; counter-reset:s}
+  .step{counter-increment:s; display:grid; grid-template-columns:30px 1fr; gap:13px; padding:14px 17px; border-bottom:1px solid var(--border)}
+  .step:last-child{border-bottom:none}
+  .step::before{content:counter(s); font-family:"IBM Plex Mono",monospace; font-size:.74rem; font-weight:600;
+    color:var(--accent); background:var(--accent-soft); border-radius:3px; height:22px; display:grid; place-items:center; margin-top:1px}
+  .step h3{font-size:.9rem; font-weight:600; margin:0 0 3px}
+  .step p{font-size:.87rem; color:var(--muted)}
+
+  ol.notes{margin:0; padding:0; list-style:none; counter-reset:c; display:flex; flex-direction:column; gap:10px}
+  ol.notes li{counter-increment:c; display:grid; grid-template-columns:24px 1fr; gap:11px; font-size:.885rem; color:var(--muted)}
+  ol.notes li::before{content:counter(c); font-family:"IBM Plex Mono",monospace; font-size:.72rem; font-weight:600;
+    color:var(--warn); background:var(--warn-soft); border-radius:3px; height:20px; display:grid; place-items:center; margin-top:3px}
+  ol.notes b{color:var(--ink); font-weight:600}
+
+  .kv{display:grid; grid-template-columns:max-content 1fr; gap:7px 20px; margin:0; font-size:.85rem}
+  .kv dt{font-size:.71rem; font-weight:600; text-transform:uppercase; letter-spacing:.07em; color:var(--faint); padding-top:.22em}
+  .kv dd{margin:0; font-family:"IBM Plex Mono",monospace; word-break:break-word}
+
+  pre{margin:0; padding:15px 17px; background:var(--surface); border:1px solid var(--border); border-radius:6px; overflow-x:auto;
+      font-family:"IBM Plex Mono",monospace; font-size:.78rem; line-height:1.7; box-shadow:var(--shadow)}
+  .cap{font-size:.85rem; color:var(--muted)}
+  .warn-inline{color:var(--warn); font-weight:600}
+
+  footer{border-top:1px solid var(--border); padding-top:18px; font-size:.79rem; color:var(--faint)}
+  @media (max-width:620px){ .wrap{padding:28px 15px 56px} h1{font-size:1.36rem} }
+</style>
+
+<div class="wrap">
+
+<header>
+  <span class="label">基准测试报告 · FL2VA 与 Ref2VA · 2 / 4 / 8 卡扩展曲线</span>
+  <h1>MiniMax-H3 视频生成基准测试</h1>
+  <div class="meta">
+    <span><b>日期</b> 2026-08-31 ~ 09-01</span>
+    <span><b>硬件</b> 8 × RTX PRO 6000 Blackwell 96GB</span>
+    <span><b>引擎</b> vllm-omni 0.1.dev2381 · SGLang ga1fe4e30a</span>
+    <span><b>精度</b> BF16</span>
+  </div>
+</header>
+
+<section>
+  <div class="steps">
+    <div class="step"><div>
+      <h3>2026-09-01 结案：根因已修复，全矩阵重测完成</h3>
+      <p>初测性能低于预期，排查发现 PCIe ACS 重定向影响 GPU 对等通信。修复后 NCCL all_reduce 带宽从 <b>8.4 提升至 22.8 GB/s</b>，四卡 T2VA 耗时从 <b>329.0 降至 191.1 秒（1.72×）</b>。本文仅报告修复后的性能结果，不公开主机修改步骤；涉及 PCIe 设备隔离的配置应由基础设施维护者评估。</p>
+    </div></div>
+    <div class="step"><div>
+      <h3>本报告不是 MLPerf 提交，不报 MLPerf 分数</h3>
+      <p>MLPerf Inference v6.0 的文生视频基准钉死的模型是 Wan2.2-T2V-A14B，本次被测对象是 MiniMax-H3，两者不可互换。本报告的做法是<b>照搬 MLPerf 的测试规程</b>（标准数据集、确定性控制、场景定义、报数纪律），使结果可复现、可被第三方参考，而非声称任何 MLPerf 成绩。</p>
+    </div></div>
+  </div>
+</section>
+
+<section>
+  <div class="sechead"><h2>全部实测数据</h2><span class="label">17 组 · 每组 2 warmup + n=3 · ACS 修复后</span></div>
+  <div class="scroll">
+    <table>
+      <thead><tr><th>引擎</th><th>任务</th><th class="n">卡数</th><th>并行</th><th class="n">并发</th><th>分辨率</th><th>时长 / 帧</th><th class="n">步数</th><th class="n">耗时</th><th class="n">峰值显存/卡</th></tr></thead>
+      <tbody>
+        <tr><td>vllm-omni</td><td class="mono">t2va</td><td class="n">2</td><td class="mono">TP2 · SP1</td><td class="n">1</td><td class="mono">1344×768</td><td class="mono">5.0s / 124</td><td class="n">50</td><td class="n"><strong>317.6 s</strong></td><td class="n">80.8 GB</td></tr>
+        <tr class="hero"><td>vllm-omni</td><td class="mono">t2va</td><td class="n">4</td><td class="mono">TP2 × SP2</td><td class="n">1</td><td class="mono">1344×768</td><td class="mono">5.0s / 124</td><td class="n">50</td><td class="n"><strong>191.1 s</strong></td><td class="n">80.8 GB</td></tr>
+        <tr><td>vllm-omni</td><td class="mono">t2va</td><td class="n">4</td><td class="mono">TP4 × SP1</td><td class="n">1</td><td class="mono">1344×768</td><td class="mono">5.0s / 124</td><td class="n">50</td><td class="n"><strong>210.5 s</strong></td><td class="n">未记录</td></tr>
+        <tr><td>vllm-omni</td><td class="mono">t2va</td><td class="n">8</td><td class="mono">TP2 × SP4</td><td class="n">1</td><td class="mono">1344×768</td><td class="mono">5.0s / 124</td><td class="n">50</td><td class="n"><strong>135.6 s</strong></td><td class="n">未记录</td></tr>
+        <tr><td>vllm-omni</td><td class="mono">t2va</td><td class="n">2</td><td class="mono">TP2 · SP1</td><td class="n">1</td><td class="mono">832×480</td><td class="mono">5.0s / 124</td><td class="n">50</td><td class="n"><strong>92.0 s</strong></td><td class="n">—</td></tr>
+        <tr><td>vllm-omni</td><td class="mono">t2va</td><td class="n">4</td><td class="mono">TP2 × SP2</td><td class="n">1</td><td class="mono">832×480</td><td class="mono">5.0s / 124</td><td class="n">50</td><td class="n"><strong>59.4 s</strong></td><td class="n">—</td></tr>
+        <tr><td>vllm-omni</td><td class="mono">t2va</td><td class="n">4</td><td class="mono">TP4 × SP1</td><td class="n">1</td><td class="mono">832×480</td><td class="mono">5.0s / 124</td><td class="n">50</td><td class="n"><strong>67.6 s</strong></td><td class="n">—</td></tr>
+        <tr><td>vllm-omni</td><td class="mono">t2va</td><td class="n">8</td><td class="mono">TP2 × SP4</td><td class="n">1</td><td class="mono">832×480</td><td class="mono">5.0s / 124</td><td class="n">50</td><td class="n"><strong>47.7 s</strong></td><td class="n">—</td></tr>
+        <tr><td>vllm-omni</td><td class="mono">ref2va</td><td class="n">2</td><td class="mono">TP2 · SP1</td><td class="n">1</td><td class="mono">1344×768</td><td class="mono">5.0s / 124</td><td class="n">50</td><td class="n"><strong>530.2 s</strong></td><td class="n">未记录</td></tr>
+        <tr><td>vllm-omni</td><td class="mono">ref2va</td><td class="n">4</td><td class="mono">TP2 × SP2</td><td class="n">1</td><td class="mono">1344×768</td><td class="mono">5.0s / 124</td><td class="n">50</td><td class="n"><strong>308.0 s</strong></td><td class="n">未记录</td></tr>
+        <tr><td>vllm-omni</td><td class="mono">ref2va</td><td class="n">8</td><td class="mono">TP2 × SP4</td><td class="n">1</td><td class="mono">1344×768</td><td class="mono">5.0s / 124</td><td class="n">50</td><td class="n"><strong>212.2 s</strong></td><td class="n">未记录</td></tr>
+        <tr><td>SGLang</td><td class="mono">t2va</td><td class="n">2</td><td class="mono">TP2 · SP1</td><td class="n">1</td><td class="mono">1344×768</td><td class="mono">5.0s / 124</td><td class="n">50</td><td class="n"><strong>295.6 s</strong></td><td class="n">71.1 GB</td></tr>
+        <tr class="hero"><td>SGLang</td><td class="mono">t2va</td><td class="n">4</td><td class="mono">TP2 × SP2</td><td class="n">1</td><td class="mono">1344×768</td><td class="mono">5.0s / 124</td><td class="n">50</td><td class="n"><strong>175.6 s</strong></td><td class="n">58.5 GB</td></tr>
+        <tr><td>SGLang</td><td class="mono">t2va</td><td class="n">8</td><td class="mono">TP2 × SP4</td><td class="n">1</td><td class="mono">1344×768</td><td class="mono">5.0s / 124</td><td class="n">50</td><td class="n"><strong>120.1 s</strong></td><td class="n">51.8 GB</td></tr>
+        <tr><td>SGLang</td><td class="mono">ref2va</td><td class="n">2</td><td class="mono">TP2 · SP1</td><td class="n">1</td><td class="mono">1344×768</td><td class="mono">5.0s / 124</td><td class="n">50</td><td class="n"><strong>489.3 s</strong></td><td class="n">74.0 GB</td></tr>
+        <tr><td>SGLang</td><td class="mono">ref2va</td><td class="n">4</td><td class="mono">TP2 × SP2</td><td class="n">1</td><td class="mono">1344×768</td><td class="mono">5.0s / 124</td><td class="n">50</td><td class="n"><strong>282.1 s</strong></td><td class="n">59.5 GB</td></tr>
+        <tr><td>SGLang</td><td class="mono">ref2va</td><td class="n">8</td><td class="mono">TP2 × SP4</td><td class="n">1</td><td class="mono">1344×768</td><td class="mono">5.0s / 124</td><td class="n">50</td><td class="n"><strong>189.4 s</strong></td><td class="n">52.9 GB</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="cap"><b>并发全部为 1</b>（vllm-omni <code>max_num_seqs=1</code>、SGLang <code>batching_max_size=1</code>）——这些是<b>单条延迟，不是吞吐</b>，不能据此推算 QPS 或扩容比例。各档极差 ≤0.5%，产物 md5 组内一致。</p>
+  <p class="cap"><b>耗时口径</b>：vllm-omni 取客户端 e2e，SGLang 取服务端 <code>inference_time_s</code>（该引擎无阶段拆分响应头）。SGLang 客户端墙钟比该值多 1.8–3.4 s；统一按客户端口径则 SGLang 领先幅度略收窄，方向不变。显存标「未记录」的几档是当时未采集，非无占用；832×480 仅在 vllm-omni 侧测过。</p>
+</section>
+
+
+<section>
+  <div class="sechead"><h2>测试方法</h2><span class="label">逐条对照业内标准，偏离必附依据</span></div>
+  <div class="scroll">
+    <table>
+      <thead><tr><th>项</th><th>MLPerf v6.0 文生视频</th><th>本测试</th><th>依据</th></tr></thead>
+      <tbody>
+        <tr><td><b>场景</b></td><td>SingleStream（Server 因算力负担被移除）</td><td class="mono">并发 1</td><td><span class="pill done">照搬</span></td></tr>
+        <tr><td><b>精度</b></td><td>BF16</td><td class="mono">BF16</td><td><span class="pill done">照搬</span></td></tr>
+        <tr><td><b>提示词</b></td><td><code>vbench_prompts.txt</code> 248 条</td><td>VBench <code>subject_consistency</code> 72 条，取前 3 条</td><td><span class="pill done">同源</span><span class="note">交集核对 72/72，是 MLPerf 248 条的完整子集</span></td></tr>
+        <tr><td><b>seed</b></td><td>42</td><td class="mono">42</td><td><span class="pill done">照搬</span></td></tr>
+        <tr><td><b>预热</b></td><td>—</td><td>外部同形状 2 步，排除在测量外</td><td><span class="pill done">照搬</span><span class="note">H3 recipe：首次 regional-compile 请求不得计入稳态测量</span></td></tr>
+        <tr><td><b>样本量</b></td><td>性能模式 100 条</td><td class="mono">3 条</td><td><span class="pill warn">偏离</span><span class="note">H3 recipe：「一次预热丢弃 + 三次请求」；100 条约需 10.5 小时/配置</span></td></tr>
+        <tr><td><b>形状</b></td><td>1280×720 · 81 帧 · 16 fps</td><td>1344×768 · 124 帧 · 24 fps</td><td><span class="pill warn">偏离</span><span class="note">H3 输出契约固定 24 fps、768 短边、32 像素倍数；recipe 指定 1344×768 为 16:9 形状</span></td></tr>
+        <tr><td><b>步数</b></td><td>20</td><td class="mono">50</td><td><span class="pill warn">偏离</span><span class="note">H3 recipe 推荐值，「matches the reference accuracy workloads」</span></td></tr>
+        <tr><td><b>确定性</b></td><td>固定 latent 张量 + 固定 seed</td><td>仅固定 seed</td><td><span class="pill warn">偏离</span><span class="note">工具不支持下发 latent；已用同 seed 产物字节比对验证确定性</span></td></tr>
+        <tr><td><b>negative prompt</b></td><td>固定文本</td><td>不传</td><td><span class="pill warn">偏离</span><span class="note">H3 为 CFG 蒸馏模型，<code>guidance=0.0</code> 无负分支，该字段对其无效</span></td></tr>
+        <tr><td><b>压测脚本</b></td><td>MLPerf loadgen + reference 实现</td><td>vllm-omni 官方 <code>diffusion_benchmark_serving.py</code></td><td><span class="pill warn">偏离</span><span class="note">被测引擎自带官方工具；仅改 1 行（轮询超时 600s→3600s），改动已列明</span></td></tr>
+        <tr><td><b>精度门</b></td><td>VBench 综合分 ≥ 69.775</td><td>未做</td><td><span class="pill warn">未覆盖</span><span class="note">配置 A 即 BF16 参考路径本身；质量门用于改变输出的配置（量化 / 蒸馏 / 缓存）</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="cap"><b>有效性判据</b>（任一不满足即作废重跑）：<code>queue_wait &lt; 1 ms</code> 独占无挤占 · 3 条请求全部成功 · 每条产物经 <code>ffprobe</code> 核验分辨率、帧数、H.264 视频与 32 kHz 立体声 AAC 正确。<b>并发纪律</b>：被测服务 <code>max_num_seqs=1</code> 严格串行，同一时刻只允许一个测试脚本运行。</p>
+</section>
+
+<section>
+  <div class="sechead"><h2>被测配置</h2><span class="label">配置 A</span></div>
+  <pre>vllm serve --model /path/to/MiniMax-H3/FL2VA --omni --port 8000 --trust-remote-code \
+  --tensor-parallel-size 2 --text-encoder-tp-size 2 --num-gpus 2 \
+  --vae-patch-parallel-size 2 --vae-parallel-mode tile --vae-use-tiling \
+  --usp 1 --ring 1 --served-model-name minimax-h3</pre>
+  <dl class="kv">
+    <dt>镜像</dt><dd>vLLM-Omni image (private registry redacted)</dd>
+    <dt>版本</dt><dd>vLLM 0.26.0 · vllm-omni 0.1.dev2381+g310b4b477 · torch 2.11.0+cu130</dd>
+    <dt>注意力后端</dt><dd>CUDNN_ATTN（平台默认解析，sm_120）</dd>
+    <dt>并行</dt><dd>DiT TP2 · text-encoder TP2 · VAE patch 2 · 序列并行 sp_size=1</dd>
+    <dt>调度</dt><dd>max_num_seqs=1（请求串行）</dd>
+    <dt>显存</dt><dd>每卡常驻 66.92 GiB · 测量期峰值 80,848 / 97,887 MiB</dd>
+  </dl>
+</section>
+
+<section>
+  <div class="sechead"><h2>测试结果 · 扩展曲线</h2><span class="label">ACS 修复后 · t2va · 5 秒 · 50 步 · n=3</span></div>
+  <div class="scroll">
+    <table>
+      <thead><tr><th>卡数</th><th>并行</th><th>卡布局</th><th class="n">P1 1344×768</th><th class="n">P2 832×480</th><th class="n">逐档提升</th><th class="n">官方 P1</th><th class="n">我们/官方</th></tr></thead>
+      <tbody>
+        <tr><td class="n">2</td><td class="mono">TP2 · usp1</td><td class="mono">0/1 同组</td><td class="n">317.6 s</td><td class="n">92.0 s</td><td class="n">—</td><td class="n">284.8 s</td><td class="n">1.12×</td></tr>
+        <tr class="hero"><td class="n">4</td><td class="mono">TP2 × USP2</td><td class="mono">0/1/2/3 同组</td><td class="n"><strong>191.1 s</strong></td><td class="n"><strong>59.4 s</strong></td><td class="n"><strong>1.66×</strong></td><td class="n">172.3 s</td><td class="n">1.11×</td></tr>
+        <tr><td class="n">8</td><td class="mono">TP2 × USP4</td><td class="mono">0–7 跨两组</td><td class="n">135.6 s</td><td class="n">47.7 s</td><td class="n">1.41×</td><td class="n">90.5 s</td><td class="n">1.50×</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="cap">极差：P1 各档 0.16%~0.47%，P2 各档 0.005%~0.76%；产物逐字节一致。<b>4 卡是测试节点甜点位</b>——扩展效率 83%，与官方持平；8 卡仍有 1.41× 正收益但边际效率降至 70%，因 8 张卡必须横跨两个 PCIe 组走 <code>SYS</code> 通道（测试节点物理约束）。</p>
+</section>
+
+<section>
+  <div class="sechead"><h2>测试结果 · Ref2VA</h2><span class="label">参考图 + 参考音频 · 1344×768 · 5 秒 · 50 步 · n=3</span></div>
+  <div class="scroll">
+    <table>
+      <thead><tr><th>卡数</th><th>并行</th><th class="n">Ref2VA</th><th class="n">逐档提升</th><th class="n">同形状 FL2VA</th><th class="n">Ref / FL</th><th class="n">极差</th></tr></thead>
+      <tbody>
+        <tr><td class="n">2</td><td class="mono">TP2 · usp1</td><td class="n">530.2 s</td><td class="n">—</td><td class="n">317.6 s</td><td class="n">1.67×</td><td class="n">0.44%</td></tr>
+        <tr class="hero"><td class="n">4</td><td class="mono">TP2 × USP2</td><td class="n"><strong>308.0 s</strong></td><td class="n"><strong>1.72×</strong></td><td class="n">191.1 s</td><td class="n">1.61×</td><td class="n">0.20%</td></tr>
+        <tr><td class="n">8</td><td class="mono">TP2 × USP4</td><td class="n">212.2 s</td><td class="n">1.45×</td><td class="n">135.6 s</td><td class="n">1.56×</td><td class="n">0.24%</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="cap">负载与 FL2VA 的 P1 档同形状，唯一变量是权重分区与参考输入，因此两表可逐行相减。产物每档逐字节一致。<b>该硬件上此前无 Ref2VA 实测</b>——官方 RTX PRO 6000 配方明确写着「latency and memory have not been measured on this host」。</p>
+
+  <div class="scroll">
+    <table>
+      <thead><tr><th>阶段</th><th class="n">2 卡</th><th class="n">8 卡</th><th>说明</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">encode_prompt</td><td class="n">1.95 s</td><td class="n">2.17 s</td><td>参考素材的编码本身几乎不花时间</td></tr>
+        <tr class="hero"><td class="mono">diffuse</td><td class="n"><strong>515.1 s</strong></td><td class="n"><strong>200.1 s</strong></td><td>占 E2E 的 97%——代价全在这里</td></tr>
+        <tr><td class="mono">decode</td><td class="n">5.25 s</td><td class="n">1.74 s</td><td>VAE 解码</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="cap">参考图与参考音频不是「编码一次就完事」：它们的 token 被拼进 DiT 的注意力序列，50 个去噪步每步都要重付。官方文档对多视频 Ref2VA 给出的正是同一机制（<i>expand both the Qwen3-VL vision sequence and the packed DiT attention sequence</i>），该结论有上游文字佐证，非本次推断。</p>
+
+  <div class="scroll">
+    <table>
+      <thead><tr><th>扩展区间</th><th class="n">Ref2VA</th><th class="n">FL2VA</th><th>含义</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">2 → 4</td><td class="n"><strong>1.72×</strong></td><td class="n">1.66×</td><td rowspan="3">序列更长 ⇒ Ulysses 序列并行可切的东西更多 ⇒ 通信占比相对下降。<b>参考类任务比纯文生视频更值得上多卡。</b></td></tr>
+        <tr><td class="mono">4 → 8</td><td class="n"><strong>1.45×</strong></td><td class="n">1.41×</td></tr>
+        <tr><td class="mono">2 → 8</td><td class="n"><strong>2.50×</strong>（效率 62%）</td><td class="n">2.34×（效率 59%）</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section>
+  <div class="sechead"><h2>修复前后对照</h2><span class="label">P1 1344×768</span></div>
+  <div class="scroll">
+    <table>
+      <thead><tr><th>卡数</th><th class="n">修复前</th><th class="n">修复后</th><th class="n">提速</th></tr></thead>
+      <tbody>
+        <tr><td class="n">2</td><td class="n">380.5 s</td><td class="n">317.6 s</td><td class="n">1.20×</td></tr>
+        <tr class="hero"><td class="n">4</td><td class="n">330.2 s</td><td class="n"><strong>191.1 s</strong></td><td class="n"><strong>1.73×</strong></td></tr>
+        <tr><td class="n">8</td><td class="n">未测</td><td class="n">135.6 s</td><td class="n">—</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="cap">4 卡的 1.73× 由两个独立因素叠加：ACS 修复（330.2 → 221.6 s）+ 卡布局钉同组（221.6 → 191.1 s）。</p>
+</section>
+
+<section>
+  <div class="sechead"><h2>4 卡的两种拆分</h2><span class="label">同配置只改 TP/USP · n=3</span></div>
+  <div class="scroll">
+    <table>
+      <thead><tr><th>拆分</th><th class="n">P1 修复前</th><th class="n">P1 修复后</th><th class="n">提速</th><th class="n">P2 修复前</th><th class="n">P2 修复后</th><th class="n">提速</th></tr></thead>
+      <tbody>
+        <tr class="hero"><td class="mono">B · TP2 × USP2</td><td class="n">330.2 s</td><td class="n"><strong>191.1 s</strong></td><td class="n">1.73×</td><td class="n">113.9 s</td><td class="n"><strong>59.4 s</strong></td><td class="n">1.92×</td></tr>
+        <tr><td class="mono">C · TP4 × USP1</td><td class="n">504.1 s</td><td class="n">210.5 s</td><td class="n"><strong>2.39×</strong></td><td class="n">185.2 s</td><td class="n">67.6 s</td><td class="n"><strong>2.74×</strong></td></tr>
+        <tr><td class="mono">C / B</td><td class="n">1.53×</td><td class="n"><strong>1.10×</strong></td><td class="n">—</td><td class="n">1.63×</td><td class="n"><strong>1.14×</strong></td><td class="n">—</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="cap">两份配置除 TP/USP 拆分外完全相同（text-encoder-tp=4、vae-patch-parallel=4、CPU、镜像、环境变量、卡组一字未动），是单变量对照。极差 0.12% / 0.13%，产物逐字节一致。</p>
+  <p class="cap"><b>ACS 对两种拆分的惩罚不对等。</b>TP4 的并发集合通信比 TP2×USP2 密集，被 ACS 罚得更狠——所以修复后 C 的提速（2.39× / 2.74×）显著大于 B（1.73× / 1.92×）。修复前两者看着差 1.5~1.6 倍，修复后只差 <b>10~14%</b>。<span class="warn-inline">在被污染的环境下做配置对比，方向可能对，量级会离谱。</span></p>
+  <p class="cap">修正后的结论：TP2×USP2 仍是 4 卡最优，但优势有限，不构成数量级差距。「PCIe 机器上 TP 度数取显存下限、其余给序列并行」这一方向性建议依然成立，但 TP4 不应再被描述为「负收益」。</p>
+</section>
+
+<section>
+  <div class="sechead"><h2>交叉校验</h2><span class="label">验证结果不是孤证</span></div>
+  <div class="scroll">
+    <table>
+      <thead><tr><th>校验</th><th>对照双方</th><th class="n">差异</th><th>说明</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><b>数据集切换</b></td>
+          <td class="mono">自造提示词 379.1 s ↔ VBench 标准 379.31 s</td>
+          <td class="n">0.06%</td>
+          <td>扩散模型计算量与提示词内容无关（步数与形状固定即固定）</td>
+        </tr>
+        <tr>
+          <td><b>任务比值</b></td>
+          <td class="mono">前测 fl2va/t2va = 1.064 ↔ 本次 1.060</td>
+          <td class="n">0.4%</td>
+          <td>两次独立测量，同画布下 fl2va 比 t2va 贵约 6%</td>
+        </tr>
+        <tr>
+          <td><b>同配置跨时段</b></td>
+          <td class="mono">1344×768 相隔 1.5 小时两轮</td>
+          <td class="n">&lt;1%</td>
+          <td>机器无漂移</td>
+        </tr>
+        <tr>
+          <td><b>确定性</b></td>
+          <td class="mono">同 seed 两次产物字节数</td>
+          <td class="n">0</td>
+          <td>5,370,903 字节完全一致，等效于 MLPerf 的固定 latent 目的</td>
+        </tr>
+        <tr>
+          <td><b>同行数据</b></td>
+          <td class="mono">官方 recipe 2×RTX 5090 = 518 s</td>
+          <td class="n">~18%</td>
+          <td>形状归一后本部署更快，方向与硬件差、无 offload、regional compile 一致</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="cap"><b>未找到公开佐证的部分</b>：BF16 + vllm-omni + RTX PRO 6000 这一精确组合下的第三方数据，检索未获。已有的第三方数据（RTX PRO 6000 / RTX 5090 的 NVFP4 实测）跨精度、跨框架，仅能做量级校验，不可直接并排。</p>
+</section>
+
+<section>
+  <div class="sechead"><h2>跨引擎对照</h2><span class="label">vllm-omni vs SGLang · 同机同卡组同负载 · 各档 n=3</span></div>
+  <div class="scroll">
+    <table>
+      <thead><tr><th>任务</th><th class="n">卡数</th><th>并行</th><th class="n">vllm-omni</th><th class="n">SGLang</th><th class="n">SGLang 快</th></tr></thead>
+      <tbody>
+        <tr><td>FL2VA（t2va）</td><td class="n">2</td><td class="mono">TP2 · SP1</td><td class="n">317.6 s</td><td class="n"><strong>295.6 s</strong></td><td class="n">6.9%</td></tr>
+        <tr><td>FL2VA</td><td class="n">4</td><td class="mono">TP2 × SP2</td><td class="n">191.1 s</td><td class="n"><strong>175.6 s</strong></td><td class="n">8.1%</td></tr>
+        <tr class="hero"><td>FL2VA</td><td class="n">8</td><td class="mono">TP2 × SP4</td><td class="n">135.6 s</td><td class="n"><strong>120.1 s</strong></td><td class="n"><strong>11.4%</strong></td></tr>
+        <tr><td>Ref2VA</td><td class="n">2</td><td class="mono">TP2 · SP1</td><td class="n">530.2 s</td><td class="n"><strong>489.3 s</strong></td><td class="n">7.7%</td></tr>
+        <tr><td>Ref2VA</td><td class="n">4</td><td class="mono">TP2 × SP2</td><td class="n">308.0 s</td><td class="n"><strong>282.1 s</strong></td><td class="n">8.4%</td></tr>
+        <tr class="hero"><td>Ref2VA</td><td class="n">8</td><td class="mono">TP2 × SP4</td><td class="n">212.2 s</td><td class="n"><strong>189.4 s</strong></td><td class="n"><strong>10.7%</strong></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="cap">六档极差均 ≤0.10%，产物每档 md5 三条一致、音轨 AAC 32 kHz 立体声齐全。SGLang 配方取自官方 cookbook（测试节点不在其已验证拓扑表内，形态依 H100 80G 四卡默认与官方跨引擎对比配置 <code>minimax_h3_t2va_5s</code> 选定）；<b>未采用</b>消费卡路径的 <code>--layerwise-offload-components</code>——96 GB 卡实测全常驻峰值仅 51.8~74.0 GB，无需分层卸载。</p>
+
+  <div class="scroll">
+    <table>
+      <thead><tr><th>结论</th><th>依据</th></tr></thead>
+      <tbody>
+        <tr><td><b>SGLang 全程领先，幅度随卡数上升</b></td><td>~7% → ~8% → ~11%，两种任务同步。测试节点 8 卡必须横跨两个 PCIe 组走 <code>SYS</code>，通信压力最大的那档差距也最大——指向两者序列并行实现对拓扑劣势的耐受度不同。</td></tr>
+        <tr class="hero"><td><b>参考条件化的代价与引擎无关</b></td><td>Ref/FL 比值：2 卡 <span class="mono">1.67× / 1.66×</span>、4 卡 <span class="mono">1.61× / 1.61×</span>、8 卡 <span class="mono">1.56× / 1.58×</span>。两个独立实现三个卡数全部重合 ⇒ 这是<b>模型架构决定的</b>（参考 token 拼进 DiT 注意力序列，每个去噪步重付），非某引擎实现问题。机制另有上游文字佐证。</td></tr>
+        <tr><td><b>扩展比 SGLang 略优</b></td><td>FL2VA <span class="mono">1.68× / 1.46×</span> vs <span class="mono">1.66× / 1.41×</span>；Ref2VA <span class="mono">1.73× / 1.49×</span> vs <span class="mono">1.72× / 1.45×</span>。</td></tr>
+        <tr><td><b>SGLang 显存全面更省</b></td><td>FL2VA 71.1 / 58.5 / 51.8 GB，Ref2VA 74.0 / 59.5 / 52.9 GB；vllm-omni 4 卡为 80.8 GB。</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="scroll">
+    <table>
+      <thead><tr><th>口径差异</th><th>vllm-omni</th><th>SGLang</th></tr></thead>
+      <tbody>
+        <tr><td>注意力后端</td><td class="mono">CUDNN_ATTN</td><td class="mono">torch_sdpa</td></tr>
+        <tr><td>预热时机</td><td>首请求内（8 卡 w1→w2 降 12.8%）</td><td>服务启动时（<code>warmup_mode: server</code>，首请求与稳态差 ≤0.11%）</td></tr>
+        <tr><td>主指标</td><td>客户端 e2e</td><td>服务端 <code>inference_time_s</code></td></tr>
+        <tr><td>视频码率</td><td class="mono">~10 Mbps</td><td class="mono">~0.9–1.3 Mbps</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="cap"><span class="warn-inline">这些差异是各自官方配方的一部分，不是可对齐的参数。</span>三点必须随数字一起读：<b>①</b> 预热时机的差异对 SGLang 的单条延迟有利，公平起见须同报启动耗时——SGLang 从 pod 创建到 <code>Uvicorn running</code> 约 5~7 分钟。<b>②</b> 码率差约 7.5 倍，<b>两边产物不可按字节或视觉质量直接比较</b>；<code>inference_time_s</code> 由服务端计时、不含封装，故速度结论不受影响，但 SGLang 的编码参数尚未查明。<b>③</b> 主指标口径不同（服务端 vs 客户端），SGLang 客户端墙钟比 <code>inference_time_s</code> 多 1.8~3.4 s；若统一按客户端口径，SGLang 领先幅度会略微收窄，方向不变。</p>
+  <p class="cap"><b>未覆盖</b>：吞吐与容量（全程并发 1，无 QPS、无拐点、无扩容依据）、长跑稳定性、输出质量比对（未做 SSIM/PSNR/VBench，<b>不能声称两个引擎输出等价</b>）。</p>
+</section>
+
+<section>
+  <div class="sechead"><h2>测试矩阵</h2><span class="label">后续配置沿用同一方法与负载</span></div>
+  <div class="scroll">
+    <table>
+      <thead><tr><th>配置</th><th>卡数</th><th>并行</th><th>引擎 / 精度</th><th>状态</th></tr></thead>
+      <tbody>
+        <tr><td class="id">A</td><td class="n">2</td><td class="mono">TP2 · usp1</td><td>vllm-omni 0.1.dev2381 / BF16</td><td><span class="pill done">已测 n=3</span><span class="note">317.6 s（修复前 380.5 s，官方 284.8 s）</span></td></tr>
+        <tr class="hero"><td class="id">B</td><td class="n">4</td><td class="mono">TP2 × USP2（官方 4 卡配方）</td><td>同 A</td><td><span class="pill done">已测 n=3</span><span class="note">191.1 s，卡布局已钉同组（修复前 329.0 s，官方 172.3 s）；2→4 扩展比 1.66×，官方 1.65×</span></td></tr>
+        <tr><td class="id">D</td><td class="n">8</td><td class="mono">TP2 × USP4（官方 8 卡配方）</td><td>同 A</td><td><span class="pill done">已测 n=3</span><span class="note">135.6 s（官方 90.5 s）；4→8 扩展比 1.41×，官方 1.92×——差距来自 8 卡必须横跨两个 PCIe 组走 SYS 通道</span></td></tr>
+        <tr><td class="id">C</td><td class="n">4</td><td class="mono">TP4 × USP1</td><td>同 A</td><td><span class="pill done">已重测 n=3</span><span class="note">210.5 s / 67.6 s（修复前 504.1 / 185.2）。仅比 TP2×USP2 慢 10~14%，<b>此前「负收益」的量级是 ACS 污染下的假象</b></span></td></tr>
+        <tr class="todo"><td class="id">G</td><td class="n">2</td><td class="mono">TP2</td><td>同 A / 在线 FP8</td><td><span class="pill warn">起不来</span><span class="note">上游缺陷：<code>TypeError: _weight_loader() takes 2 positional arguments but 3 were given</code></span></td></tr>
+        <tr><td class="id">R</td><td class="n">2 / 4 / 8</td><td class="mono">TP2 × USP{1,2,4}</td><td>Ref2VA 分区</td><td><span class="pill done">已测 n=3</span><span class="note">530.2 / 308.0 / 212.2 s；同形状下比 FL2VA 贵 1.56–1.67×，扩展性反而更好</span></td></tr>
+        <tr><td class="id">H</td><td class="n">2 / 4 / 8</td><td class="mono">TP2 × SP{1,2,4}</td><td>SGLang <span class="mono">ga1fe4e30a</span> / BF16</td><td><span class="pill done">已测 n=3 × 6 档</span><span class="note">FL2VA 295.6 / 175.6 / 120.1 s，Ref2VA 489.3 / 282.1 / 189.4 s；全程快 7~11%，显存更省。配方取自官方 cookbook，不做参数对齐</span></td></tr>
+    </tbody>
+    </table>
+  </div>
+  <p class="cap">改变输出的配置（G 量化、缓存、蒸馏等）须附回归门：以配置 A 的 BF16 输出为参考算 SSIM / PSNR / LPIPS，阈值参照 vllm-omni CI 的 <code>SSIM ≥ 0.82 · PSNR ≥ 20 dB</code>。跨引擎横比（配置 H）则需 VBench 绝对分。</p>
+</section>
+
+<section>
+  <div class="sechead"><h2>已知工具缺陷</h2><span class="label">后续测试须规避</span></div>
+  <ol class="notes">
+    <li><span><b><code>image_pixels</code> 统计字段把高度写死为 768。</b>实际公式为 <span class="mono">(宽/16) × 48 × 帧数</span>，7 个已知点全部精确命中。据它反推分辨率会得到错误结论。</span></li>
+    <li><span><b><code>stage_gen_time_ms</code> 包含排队时间。</b>实测一条计算仅 199 秒的请求因排队被记为 580 秒。仅当 <code>queue_wait ≈ 0</code> 时它等于计算耗时。</span></li>
+    <li><span><b><code>denoise_step_latency_ms</code> 不是单步耗时。</b>它等于 <code>stage_gen_time_ms ÷ 步数</code>，既摊入固定开销也含排队。</span></li>
+    <li><span><b>压测客户端轮询超时写死 600 秒</b>（<code>backends.py</code>）。超时请求被记为失败而非「慢但成功」，P1 档必然触发。本次使用仅修改该行的副本。</span></li>
+    <li><span><b>工具自带 warmup 对 <code>t2v</code> 强制 <code>num_frames=1</code></b>（<code>_make_warmup_request</code>），形状与实测不符。本次改用外部同形状预热并置 <code>--warmup-requests 0</code>。</span></li>
+    <li><span><b>VBench-I2V 标准图集当前不可获取</b>：官方 <code>download_data.sh</code> 使用 <code>gdown --id</code>，该参数在 gdown 6.x 已移除，脚本本身失效；三个文件均托管于 Google Drive。因此本轮合规基准只覆盖 t2va。</span></li>
+  </ol>
+</section>
+
+<footer>
+  测试方法与负载定义为本系列共用，后续配置沿用同一规程，结果回填测试矩阵。<br>
+  FL2VA（图生视频）合规数据待标准图集来源解决后补充；已测得同画布下 <span class="mono">fl2va ≈ t2va × 1.06</span> 可作换算参考。<br>
+  Ref2VA 一节使用固定单图 + 5 秒音频参考（本构建拒绝纯图请求，与官方文档不符），并发恒为 1，不含吞吐与容量结论。
+</footer>
+
+</div>

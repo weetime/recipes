@@ -34,6 +34,11 @@
       "en": "Saturation"
     },
     {
+      "id": "dp-attention",
+      "zh": "DP Attention 长上下文配置",
+      "en": "DP Attention and long-context configuration"
+    },
+    {
       "id": "method",
       "zh": "测试方法",
       "en": "Method"
@@ -507,6 +512,296 @@
           ]
         ]
       }
+    },
+    {
+      "id": "dp-attention",
+      "label": {
+        "zh": "DP Attention",
+        "en": "DP Attention"
+      },
+      "heading": {
+        "zh": "MRR32 保持接近基线吞吐，但排队延迟随并发急升",
+        "en": "MRR32 stays near baseline throughput while queueing latency climbs"
+      },
+      "intro": {
+        "zh": "同一 GLM-5.2 W4A8 权重与 8×PPU ZW810E 上，比较纯 TP8 基线、DP Attention + MRR16、DP Attention + MRR32。图表展示输出 256 配置的观测总输出吞吐；下表同时保留 TPOT 与 TTFT。",
+        "en": "The same GLM-5.2 W4A8 checkpoint was measured on 8× PPU ZW810E with a TP8 baseline, DP Attention + MRR16, and DP Attention + MRR32. The chart shows observed aggregate output throughput for the 256-output profile; the table also reports TPOT and TTFT."
+      },
+      "chart": {
+        "title": {
+          "zh": "ShareGPT 输出 256 · 总输出吞吐",
+          "en": "ShareGPT output-256 · aggregate output throughput"
+        },
+        "hint": {
+          "zh": "多档并发已测；不是跨配置硬件峰值排名。",
+          "en": "Observed concurrency sweep; not a cross-configuration hardware-peak ranking."
+        },
+        "labels": {
+          "zh": [
+            "1",
+            "4",
+            "8",
+            "16",
+            "32",
+            "48",
+            "64",
+            "96",
+            "128"
+          ],
+          "en": [
+            "1",
+            "4",
+            "8",
+            "16",
+            "32",
+            "48",
+            "64",
+            "96",
+            "128"
+          ]
+        },
+        "series": [
+          {
+            "zh": "TP8 baseline",
+            "en": "TP8 baseline",
+            "values": [
+              21.36,
+              73.63,
+              135.58,
+              241.88,
+              368.93,
+              269.5,
+              272.87,
+              null,
+              null
+            ],
+            "color": "blue"
+          },
+          {
+            "zh": "DP attention · MRR16",
+            "en": "DP attention · MRR16",
+            "values": [
+              25.38,
+              87.94,
+              145.31,
+              246.32,
+              226.26,
+              235.22,
+              229.93,
+              null,
+              null
+            ],
+            "color": "green"
+          },
+          {
+            "zh": "DP attention · MRR32",
+            "en": "DP attention · MRR32",
+            "values": [
+              24.99,
+              86.81,
+              150.98,
+              235.66,
+              360.6,
+              343.05,
+              338.4,
+              337.34,
+              332.74
+            ],
+            "color": "orange"
+          }
+        ],
+        "yTitle": {
+          "zh": "tok/s",
+          "en": "tok/s"
+        }
+      },
+      "table": {
+        "headers": {
+          "zh": [
+            "并发",
+            "配置",
+            "输出吞吐",
+            "TPOT",
+            "TTFT P50"
+          ],
+          "en": [
+            "Concurrency",
+            "Configuration",
+            "Output tok/s",
+            "TPOT",
+            "TTFT P50"
+          ]
+        },
+        "rows": [
+          [
+            "C1",
+            "TP8 baseline",
+            "21.4 tok/s",
+            "44.67 ms",
+            "0.58 s"
+          ],
+          [
+            "C1",
+            "DP attention · MRR16",
+            "25.4 tok/s",
+            "38.21 ms",
+            "0.29 s"
+          ],
+          [
+            "C1",
+            "DP attention · MRR32",
+            "25.0 tok/s",
+            "38.17 ms",
+            "0.37 s"
+          ],
+          [
+            "C4",
+            "TP8 baseline",
+            "73.6 tok/s",
+            "51.30 ms",
+            "0.56 s"
+          ],
+          [
+            "C4",
+            "DP attention · MRR16",
+            "87.9 tok/s",
+            "42.20 ms",
+            "0.38 s"
+          ],
+          [
+            "C4",
+            "DP attention · MRR32",
+            "86.8 tok/s",
+            "42.54 ms",
+            "0.60 s"
+          ],
+          [
+            "C8",
+            "TP8 baseline",
+            "135.6 tok/s",
+            "54.12 ms",
+            "0.44 s"
+          ],
+          [
+            "C8",
+            "DP attention · MRR16",
+            "145.3 tok/s",
+            "51.03 ms",
+            "0.52 s"
+          ],
+          [
+            "C8",
+            "DP attention · MRR32",
+            "151.0 tok/s",
+            "48.61 ms",
+            "0.58 s"
+          ],
+          [
+            "C16",
+            "TP8 baseline",
+            "241.9 tok/s",
+            "59.28 ms",
+            "0.49 s"
+          ],
+          [
+            "C16",
+            "DP attention · MRR16",
+            "246.3 tok/s",
+            "55.49 ms",
+            "1.38 s"
+          ],
+          [
+            "C16",
+            "DP attention · MRR32",
+            "235.7 tok/s",
+            "62.67 ms",
+            "0.70 s"
+          ],
+          [
+            "C32",
+            "TP8 baseline",
+            "368.9 tok/s",
+            "67.18 ms",
+            "0.66 s"
+          ],
+          [
+            "C32",
+            "DP attention · MRR16",
+            "226.3 tok/s",
+            "66.07 ms",
+            "16.97 s"
+          ],
+          [
+            "C32",
+            "DP attention · MRR32",
+            "360.6 tok/s",
+            "72.90 ms",
+            "1.91 s"
+          ],
+          [
+            "C48",
+            "TP8 baseline",
+            "269.5 tok/s",
+            "105.04 ms",
+            "14.95 s"
+          ],
+          [
+            "C48",
+            "DP attention · MRR16",
+            "235.2 tok/s",
+            "60.74 ms",
+            "31.69 s"
+          ],
+          [
+            "C48",
+            "DP attention · MRR32",
+            "343.1 tok/s",
+            "83.98 ms",
+            "10.37 s"
+          ],
+          [
+            "C64",
+            "TP8 baseline",
+            "272.9 tok/s",
+            "104.09 ms",
+            "30.45 s"
+          ],
+          [
+            "C64",
+            "DP attention · MRR16",
+            "229.9 tok/s",
+            "63.84 ms",
+            "48.32 s"
+          ],
+          [
+            "C64",
+            "DP attention · MRR32",
+            "338.4 tok/s",
+            "82.92 ms",
+            "22.12 s"
+          ],
+          [
+            "C96",
+            "DP attention · MRR32",
+            "337.3 tok/s",
+            "81.96 ms",
+            "41.56 s"
+          ],
+          [
+            "C128",
+            "DP attention · MRR32",
+            "332.7 tok/s",
+            "86.36 ms",
+            "61.00 s"
+          ]
+        ]
+      },
+      "notes": [
+        {
+          "zh": "基线与 MRR32 在 C32 的吞吐分别为 368.9 与 360.6 tok/s；MRR32 的 TTFT 为 1.91 s。到 C48/C64/C96/C128，TTFT 观测值约 10.4/22.1/41.6/61.0 s，已进入明显排队区。测试噪声约为低并发吞吐 3.4%、饱和吞吐 12.1%、TTFT 38%；不同重复次数的点不作细微差异结论。",
+          "en": "At C32, baseline and MRR32 throughput are 368.9 and 360.6 tok/s, while MRR32 TTFT is 1.91 s. At C48/C64/C96/C128, observed TTFT is about 10.4/22.1/41.6/61.0 s, indicating substantial queueing. Measured noise is about 3.4% for low-load throughput, 12.1% for saturated throughput, and 38% for TTFT; points with different repeat counts do not support fine-grained comparisons."
+        }
+      ]
     }
   ],
   "methodIntro": {
@@ -553,6 +848,10 @@
     {
       "zh": "原始机器地址、内部标识与本地路径未公开。",
       "en": "Source machine addresses, internal identifiers, and local paths are omitted."
+    },
+    {
+      "zh": "DP Attention 扫描基于 2026-07 的独立配置批次；MRR16 33 点、MRR32 3 次重复矩阵 39 点，另有 11 个单次观察点，失败点为 0。图表保留所有已测输出 256 并发，不把缺测点插值。",
+      "en": "The DP Attention sweep is a separate July 2026 configuration batch: 33 MRR16 points, 39 MRR32 three-run points, and 11 additional single-run observations; no failed points were recorded. The chart keeps measured output-256 concurrency points and does not interpolate missing values."
     }
   ]
 }

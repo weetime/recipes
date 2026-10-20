@@ -1,0 +1,436 @@
+{
+  "title": "DeepSeek-V4-Flash INT8 · SGLang tuning",
+  "breadcrumb": "DeepSeek-V4-Flash INT8 · PPU",
+  "kicker": "SERVING PERFORMANCE BENCHMARK · CONFIGURATION SWEEP",
+  "lede": {
+    "zh": "这份报告记录 DeepSeek-V4-Flash INT8 在 8×PPU ZW810E、SGLang 0.5.12 上的 MRR 配置扫描与真实 Agent trace 压测。MRR96 观测到 823 tok/s，但低并发惩罚明显；默认单实例面对长输入 Agent 流量时，实际服务速率低于目标到达率。",
+    "en": "This report measures DeepSeek-V4-Flash INT8 on 8× PPU ZW810E with SGLang 0.5.12 across an MRR sweep and real Agent-trace load. MRR96 reaches an observed 823 tok/s but penalizes low concurrency; the default single instance falls short of the offered rate for long-input Agent traffic."
+  },
+  "chips": [
+    "DeepSeek-V4-Flash · INT8 W8A8",
+    "8 × PPU ZW810E · 96 GB",
+    "SGLang 0.5.12 · TP8",
+    "EAGLE speculative decoding",
+    "Measured 2026-07"
+  ],
+  "snapshot": {
+    "zh": "短输入 Chat 配置扫描 · 长输入 Agent 开放环",
+    "en": "Short-input Chat sweep · long-input Agent open-loop"
+  },
+  "sections": [
+    {
+      "id": "chat",
+      "zh": "Chat 吞吐",
+      "en": "Chat throughput"
+    },
+    {
+      "id": "low-load",
+      "zh": "低并发影响",
+      "en": "Low-load tradeoff"
+    },
+    {
+      "id": "agent",
+      "zh": "Agent 长上下文",
+      "en": "Long-context Agent"
+    },
+    {
+      "id": "method",
+      "zh": "方法与边界",
+      "en": "Method & limits"
+    }
+  ],
+  "stats": [
+    {
+      "zhLabel": "峰值观测吞吐",
+      "enLabel": "Observed peak throughput",
+      "value": "823 tok/s",
+      "zhNote": "MRR96 · KV 峰值 78% · 单次",
+      "enNote": "MRR96 · 78% peak KV · single run"
+    },
+    {
+      "zhLabel": "MRR128 KV 峰值",
+      "enLabel": "MRR128 peak KV use",
+      "value": "100%",
+      "zhNote": "吞吐仅比 MRR96 高约 2%",
+      "enNote": "Only ~2% more throughput than MRR96"
+    },
+    {
+      "zhLabel": "Agent 实际速率",
+      "enLabel": "Agent achieved rate",
+      "value": "0.57–1.65 req/s",
+      "zhNote": "目标到达率 3.9 req/s",
+      "enNote": "Offered arrival rate 3.9 req/s"
+    }
+  ],
+  "overview": {
+    "heading": {
+      "zh": "并发上限会改变曲线，Agent 需要更大服务池",
+      "en": "The concurrency cap changes the curve; Agent traffic needs more serving capacity"
+    },
+    "intro": {
+      "zh": "短输入 Chat 的高峰值出现在较高 MRR，但同步上调的 CUDA Graph batch 使低并发吞吐降低。长上下文 Agent trace 则受 prefill 约束，单实例处理速率不足以跟上 3.9 req/s 的到达流。",
+      "en": "Short-input Chat reaches a higher peak at a larger MRR, while the associated CUDA Graph batch increase reduces low-concurrency throughput. Long-context Agent traffic is prefill-bound; one instance cannot keep up with the 3.9 req/s arrival stream."
+    },
+    "note": {
+      "zh": "MRR96 与 Agent 各点为单次观测，不能作为重复性基准。参数扫描同时改变 MRR 与 cuda-graph-bs；Agent 的上下文长度、输入长度与负载组成也不同于 Chat。",
+      "en": "MRR96 and Agent points are single-run observations and do not establish repeatability. The sweep changes MRR and cuda-graph-bs together; Agent context, input length, and traffic differ from Chat."
+    }
+  },
+  "blocks": [
+    {
+      "id": "chat",
+      "label": {
+        "zh": "Chat 并发与 MRR",
+        "en": "Chat 并发与 MRR"
+      },
+      "heading": {
+        "zh": "MRR 96 达到本轮最高吞吐，MRR 128 已接近 KV 上限",
+        "en": "MRR96 reaches the highest observed throughput; MRR128 nears the KV limit"
+      },
+      "intro": {
+        "zh": "在固定 PPU / SGLang / EAGLE 配置下扫描 max-running-requests，并同步改变 cuda-graph-bs。短输入 ShareGPT 测试的并发点随 MRR 变化；重复次数各异，单次观察点只作趋势。",
+        "en": "With fixed PPU/SGLang/EAGLE settings, max-running-requests is swept together with cuda-graph-bs. Short-input ShareGPT points vary with MRR; repeat counts differ, so single-run points are directional."
+      },
+      "chart": {
+        "title": {
+          "zh": "Chat · 配置峰值输出吞吐",
+          "en": "Chat · peak output throughput by setting"
+        },
+        "hint": {
+          "zh": "MRR96 为单次；基线 MR32 与 MR64 为三次中位数。",
+          "en": "MRR96 is a single run; MRR32 and MRR64 are three-run medians."
+        },
+        "labels": {
+          "zh": [
+            "MRR 32",
+            "MRR 48",
+            "MRR 64",
+            "MRR 96",
+            "MRR 128"
+          ],
+          "en": [
+            "MRR 32",
+            "MRR 48",
+            "MRR 64",
+            "MRR 96",
+            "MRR 128"
+          ]
+        },
+        "series": [
+          {
+            "zh": "峰值输出吞吐",
+            "en": "Peak output throughput",
+            "values": [
+              568,
+              619,
+              720,
+              823,
+              842
+            ],
+            "color": "blue"
+          }
+        ],
+        "yTitle": {
+          "zh": "tok/s",
+          "en": "tok/s"
+        }
+      },
+      "table": {
+        "headers": {
+          "zh": [
+            "MRR",
+            "峰值输出吞吐",
+            "该配置 KV 峰值",
+            "重复次数",
+            "最高观测并发"
+          ],
+          "en": [
+            "MRR",
+            "Peak output tok/s",
+            "Peak KV usage",
+            "Repeats",
+            "Highest measured concurrency"
+          ]
+        },
+        "rows": [
+          [
+            "32",
+            "568",
+            "30%",
+            "3x median",
+            "C32"
+          ],
+          [
+            "48",
+            "619",
+            "43%",
+            "1x",
+            "C48"
+          ],
+          [
+            "64",
+            "720",
+            "57%",
+            "3x median",
+            "C64"
+          ],
+          [
+            "96",
+            "823",
+            "78%",
+            "1x",
+            "C96"
+          ],
+          [
+            "128",
+            "842",
+            "100%",
+            "1x",
+            "C128"
+          ]
+        ]
+      },
+      "notes": [
+        {
+          "zh": "MRR96 达 823 tok/s、KV 峰值约 78%；MRR128 达 842 tok/s，但 KV 峰值 100%，相比 MRR96 只多约 2%。MRR96/128 均为单次观察，不据此宣称严格胜出。",
+          "en": "MRR96 reaches 823 tok/s with about 78% peak KV usage; MRR128 reaches 842 tok/s but peaks at 100% KV, only about 2% more than MRR96. Both are single-run observations, so this is not a statistically established win."
+        }
+      ]
+    },
+    {
+      "id": "low-load",
+      "label": {
+        "zh": "低并发惩罚",
+        "en": "低并发惩罚"
+      },
+      "heading": {
+        "zh": "更大的 MRR / CUDA Graph batch 在 C32 降低短流量吞吐",
+        "en": "Higher MRR / CUDA Graph batch lowers throughput at C32"
+      },
+      "intro": {
+        "zh": "配置同时调整 max-running-requests 与 cuda-graph-bs，因此不能把结果归因于单一参数。",
+        "en": "The configuration changes max-running-requests and cuda-graph-bs together, so the effect cannot be attributed to one parameter alone."
+      },
+      "chart": {
+        "title": {
+          "zh": "固定 C32 · 输出吞吐",
+          "en": "Fixed C32 · output throughput"
+        },
+        "hint": {
+          "zh": "MRR32 与 MRR64 为三次中位数；MRR48、MRR96 为单次。",
+          "en": "MRR32 and MRR64 are three-run medians; MRR48 and MRR96 are single runs."
+        },
+        "labels": {
+          "zh": [
+            "MRR32",
+            "MRR48",
+            "MRR64",
+            "MRR96"
+          ],
+          "en": [
+            "MRR32",
+            "MRR48",
+            "MRR64",
+            "MRR96"
+          ]
+        },
+        "series": [
+          {
+            "zh": "输出吞吐",
+            "en": "Output throughput",
+            "values": [
+              568,
+              479,
+              496,
+              340
+            ],
+            "color": "blue"
+          }
+        ],
+        "yTitle": {
+          "zh": "tok/s",
+          "en": "tok/s"
+        }
+      },
+      "table": {
+        "headers": {
+          "zh": [
+            "配置",
+            "C32 输出吞吐",
+            "重复次数",
+            "解读"
+          ],
+          "en": [
+            "Setting",
+            "C32 output tok/s",
+            "Repeats",
+            "Interpretation"
+          ]
+        },
+        "rows": [
+          [
+            "MRR32",
+            "568",
+            "3× median",
+            "默认基线"
+          ],
+          [
+            "MRR48",
+            "479",
+            "1×",
+            "单次观察"
+          ],
+          [
+            "MRR64",
+            "496",
+            "3× median",
+            "单次配置矩阵中位数"
+          ],
+          [
+            "MRR96",
+            "340",
+            "1×",
+            "大 batch 的低并发开销"
+          ]
+        ]
+      },
+      "notes": [
+        {
+          "zh": "若工作负载常处于低并发，默认 MRR32 的观测表现更好；只看峰值会掩盖 C32 的低并发惩罚。",
+          "en": "For workloads that stay at low concurrency, the default MRR32 performs better in this observation; peak-only reporting would hide the C32 penalty."
+        }
+      ]
+    },
+    {
+      "id": "agent",
+      "label": {
+        "zh": "Agent 长上下文",
+        "en": "Agent 长上下文"
+      },
+      "heading": {
+        "zh": "单实例无法承接 3.9 req/s 的长输入 Agent 到达流量",
+        "en": "One instance cannot keep up with a 3.9 req/s long-input Agent arrival stream"
+      },
+      "intro": {
+        "zh": "真实 tool-agent trace 采用开放环回放；仅测试默认单实例配置。8K 与 64K 上下文点各为单次观测。",
+        "en": "A real tool-agent trace is replayed open-loop against the default single-instance configuration. The 8K and 64K context points are single-run observations."
+      },
+      "chart": {
+        "title": {
+          "zh": "Agent · TTFT 与实际请求速率",
+          "en": "Agent · TTFT and achieved request rate"
+        },
+        "hint": {
+          "zh": "长输入 prefill 成为主瓶颈；TTFT P50 见表格。",
+          "en": "Long-input prefill dominates; TTFT medians are in the table."
+        },
+        "labels": {
+          "zh": [
+            "8K context",
+            "64K context"
+          ],
+          "en": [
+            "8K context",
+            "64K context"
+          ]
+        },
+        "series": [
+          {
+            "zh": "实际请求速率",
+            "en": "Achieved request rate",
+            "values": [
+              1.65,
+              0.57
+            ],
+            "color": "blue"
+          }
+        ],
+        "yTitle": {
+          "zh": "req/s",
+          "en": "req/s"
+        }
+      },
+      "table": {
+        "headers": {
+          "zh": [
+            "上下文配置",
+            "平均输入 tokens",
+            "请求数",
+            "TTFT P50",
+            "实际速率",
+            "输入到达率"
+          ],
+          "en": [
+            "Context",
+            "Mean input tokens",
+            "Requests",
+            "TTFT P50",
+            "Achieved req/s",
+            "Offered arrival rate"
+          ]
+        },
+        "rows": [
+          [
+            "8K",
+            "4,807",
+            "232",
+            "65.1 s",
+            "1.65 req/s",
+            "3.9 req/s"
+          ],
+          [
+            "64K",
+            "8,725",
+            "113",
+            "108.3 s",
+            "0.57 req/s",
+            "3.9 req/s"
+          ]
+        ]
+      },
+      "notes": [
+        {
+          "zh": "8K 实际速率为目标到达率的约 42%，64K 仅约 15%；TTFT P50 为 65–108 秒。增加上下文上限不能解决 prefill 算力不足，反而放行更长请求后会加重排队。",
+          "en": "Achieved rate is about 42% of offered load at 8K and 15% at 64K; median TTFT is 65–108 seconds. Raising the context limit does not solve prefill capacity and can worsen queueing by admitting longer requests."
+        }
+      ]
+    }
+  ],
+  "meta": [
+    {
+      "zh": "模型",
+      "en": "Model",
+      "value": "DeepSeek-V4-Flash · INT8 W8A8"
+    },
+    {
+      "zh": "硬件拓扑",
+      "en": "Hardware topology",
+      "value": "8 × PPU ZW810E · TP8"
+    },
+    {
+      "zh": "软件栈",
+      "en": "Software stack",
+      "value": "SGLang 0.5.12 · EAGLE"
+    },
+    {
+      "zh": "Chat负载",
+      "en": "Chat workload",
+      "value": "ShareGPT · ISL ~800 · OSL 256"
+    },
+    {
+      "zh": "Agent负载",
+      "en": "Agent workload",
+      "value": "Real tool-agent trace · open-loop · 3.9 req/s"
+    }
+  ],
+  "methodIntro": {
+    "zh": "Chat 参数按 MRR 32/48/64/96/128 扫描；MRR32 与 MRR64 取三轮中位，其他设置单次。Agent 真实 trace 采用默认配置并测 8K / 64K 上下文，每个点单次。",
+    "en": "Chat settings sweep MRR 32/48/64/96/128; MRR32 and MRR64 use medians of three runs, while other settings are single runs. The real Agent trace uses the default configuration at 8K and 64K context, one run per point."
+  },
+  "methodNotes": [
+    {
+      "zh": "MRR 较高时 cuda-graph-bs 同步改变，不将效果归因于单一参数。",
+      "en": "High-MRR settings move cuda-graph-bs at the same time; no isolated causal claim is made for MRR."
+    }
+  ]
+}

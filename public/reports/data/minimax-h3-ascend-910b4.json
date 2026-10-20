@@ -1,0 +1,330 @@
+{
+  "title": "MiniMax-H3 · Ascend 910B4 · T2VA video generation",
+  "breadcrumb": "MiniMax-H3",
+  "kicker": "VIDEO GENERATION BENCHMARK · BF16",
+  "lede": {
+    "zh": "MiniMax-H3 在 8 张 Ascend 910B4 上完成 1344×768、24 fps、约 5.21 秒视频生成。50 步端到端耗时两次为 458.4 秒与 456.5 秒，输出视频逐字节一致。",
+    "en": "MiniMax-H3 generated a 1344×768, 24 fps, 5.21-second video on eight Ascend 910B4 accelerators. Two 50-step end-to-end runs took 458.4 s and 456.5 s and produced byte-identical video."
+  },
+  "chips": [
+    "8 × Ascend 910B4 · 64 GB",
+    "BF16",
+    "SGLang 0.5.17 · temporary Ascend branch",
+    "SP8 · Ulysses8",
+    "Measured 2026-09"
+  ],
+  "snapshot": {
+    "zh": "T2VA · 1344×768 · 124 帧 · 50 步 · 单请求",
+    "en": "T2VA · 1344×768 · 124 frames · 50 steps · single request"
+  },
+  "sections": [
+    {
+      "id": "generation",
+      "zh": "生成耗时",
+      "en": "Generation time"
+    },
+    {
+      "id": "output",
+      "zh": "输出校验",
+      "en": "Output validation"
+    },
+    {
+      "id": "method",
+      "zh": "方法与边界",
+      "en": "Method & limits"
+    }
+  ],
+  "stats": [
+    {
+      "zhLabel": "50 步端到端耗时",
+      "enLabel": "50-step end-to-end time",
+      "value": "458.4 s",
+      "zhNote": "重复测量 456.5 s · n=2",
+      "enNote": "Repeat measured 456.5 s · n=2"
+    },
+    {
+      "zhLabel": "去噪阶段",
+      "enLabel": "Denoising phase",
+      "value": "323.7 s",
+      "zhNote": "约 6.6 秒 / 步",
+      "enNote": "About 6.6 s per step"
+    },
+    {
+      "zhLabel": "重复输出校验",
+      "enLabel": "Repeated output validation",
+      "value": "2 / 2",
+      "zhNote": "逐字节一致",
+      "enNote": "Byte-identical outputs"
+    }
+  ],
+  "overview": {
+    "heading": {
+      "zh": "生成链路跑通，正式版仍有适配缺口",
+      "en": "Generation works on the tested branch; upstream release still has integration gaps"
+    },
+    "intro": {
+      "zh": "A2 分支版本完成真实视频生成；50 步重复运行耗时差 0.4%。该实验验证的是经过临时 Ascend 适配的 SGLang 分支，不能视为 SGLang 0.5.17 正式版直接可用。",
+      "en": "The A2 branch completed real video generation; the two 50-step runs differed by 0.4%. This validates a temporarily adapted SGLang branch, not out-of-the-box support in SGLang 0.5.17."
+    },
+    "note": {
+      "zh": "总耗时含约 132–135 秒去噪之外的阶段（VAE 解码、音频处理和封装），不等同于纯 NPU 推理耗时。",
+      "en": "End-to-end time includes about 132–135 s outside denoising (VAE decode, audio processing, and packaging); it is not pure NPU inference time."
+    }
+  },
+  "blocks": [
+    {
+      "id": "generation",
+      "label": {
+        "zh": "生成耗时",
+        "en": "Generation time"
+      },
+      "heading": {
+        "zh": "两次生成耗时稳定在约 457 秒",
+        "en": "Two runs complete in about 457 seconds"
+      },
+      "intro": {
+        "zh": "负载为 5 秒目标视频、1344×768、24 fps、50 步。两次 run 的生成总计分别为 458.4 秒和 456.5 秒。",
+        "en": "The workload used a 5-second target video, 1344×768 resolution, 24 fps, and 50 steps. The two runs took 458.4 s and 456.5 s end to end."
+      },
+      "notes": [
+        {
+          "zh": "去噪阶段分别为 323.70 秒和 324.22 秒，约 6.6 秒/步。",
+          "en": "Denoising took 323.70 s and 324.22 s, or about 6.6 s per step."
+        },
+        {
+          "zh": "去噪之外尾段约 132–135 秒，主要包括 VAE 解码、音频处理与视频封装。",
+          "en": "The outside-denoising tail is about 132–135 s, including VAE decode, audio processing, and video packaging."
+        }
+      ],
+      "chart": {
+        "title": {
+          "zh": "50 步端到端生成时间",
+          "en": "50-step end-to-end generation time"
+        },
+        "hint": {
+          "zh": "两次重复 run；越低耗时越短。",
+          "en": "Two repeated runs; lower is faster."
+        },
+        "labels": {
+          "zh": [
+            "Run 1",
+            "Run 2"
+          ],
+          "en": [
+            "Run 1",
+            "Run 2"
+          ]
+        },
+        "series": [
+          {
+            "zh": "生成耗时",
+            "en": "Generation time",
+            "values": [
+              458.4,
+              456.5
+            ],
+            "color": "blue"
+          }
+        ],
+        "yTitle": {
+          "zh": "秒",
+          "en": "Seconds"
+        },
+        "type": "bar"
+      },
+      "table": {
+        "headers": {
+          "zh": [
+            "阶段",
+            "Run 1",
+            "Run 2"
+          ],
+          "en": [
+            "Phase",
+            "Run 1",
+            "Run 2"
+          ]
+        },
+        "rows": [
+          [
+            "端到端生成",
+            "458.4 s",
+            "456.5 s"
+          ],
+          [
+            "去噪",
+            "323.70 s",
+            "324.22 s"
+          ],
+          [
+            "去噪之外尾段",
+            "约 135 s",
+            "约 132 s"
+          ],
+          [
+            "稳态单步",
+            "约 6.6 s",
+            "约 6.6 s"
+          ]
+        ]
+      }
+    },
+    {
+      "id": "output",
+      "label": {
+        "zh": "输出校验",
+        "en": "Output validation"
+      },
+      "heading": {
+        "zh": "固定 seed 下结果可复现，媒体格式通过校验",
+        "en": "Output is reproducible at fixed seed and passes media validation"
+      },
+      "intro": {
+        "zh": "两次 50 步输出逐字节一致。媒体检查确认 H.264 视频为 1344×768、24 fps、124 帧，包含 AAC 立体声音频，时长约 5.21 秒。",
+        "en": "The two 50-step outputs were byte-identical. Media inspection confirmed H.264 at 1344×768, 24 fps, and 124 frames, with AAC stereo audio and a duration of about 5.21 s."
+      },
+      "notes": [
+        {
+          "zh": "抽帧人工检查与提示词“人物在海中游泳”一致。",
+          "en": "A sampled frame was reviewed and matched the prompt describing a person swimming in the ocean."
+        },
+        {
+          "zh": "固定 seed 重复验证不代表跨提示词的画质质量评测。",
+          "en": "Fixed-seed repeats do not constitute a quality evaluation across prompts."
+        }
+      ],
+      "table": {
+        "headers": {
+          "zh": [
+            "校验项",
+            "结果"
+          ],
+          "en": [
+            "Validation",
+            "Result"
+          ]
+        },
+        "rows": [
+          [
+            "分辨率 / 帧率",
+            "1344×768 / 24 fps"
+          ],
+          [
+            "时长 / 视频编码",
+            "约 5.21 s / H.264"
+          ],
+          [
+            "音频",
+            "AAC · 32 kHz stereo"
+          ],
+          [
+            "重复输出",
+            "2 / 2 逐字节一致"
+          ]
+        ]
+      }
+    },
+    {
+      "id": "method",
+      "label": {
+        "zh": "方法与边界",
+        "en": "Method & limits"
+      },
+      "heading": {
+        "zh": "结果来自临时 Ascend 分支，适配状态必须随数据说明",
+        "en": "Results use a temporary Ascend branch; its status is part of the result"
+      },
+      "intro": {
+        "zh": "使用 SGLang 0.5.17 的 Ascend 专用临时分支，SP8 + Ulysses8；启用 Ascend Flash Attention，关闭 Cache-DiT，VAE 使用 CPU offload。",
+        "en": "The run used a temporary Ascend-specific branch based on SGLang 0.5.17 with SP8 + Ulysses8; Ascend Flash Attention enabled, Cache-DiT disabled, and VAE CPU offload."
+      },
+      "notes": [
+        {
+          "zh": "正式版 SGLang 0.5.17 的去噪链路仍被 Ascend 设备判断与 packed-varlen attention 接口缺口阻断；本结果依赖分支适配。",
+          "en": "The stock SGLang 0.5.17 denoising path remained blocked by Ascend device checks and a packed-varlen-attention interface gap; this result depends on branch patches."
+        },
+        {
+          "zh": "样本量 n=2，仅列两次原始值，不报告尾部分位数，也不声称统计稳定性。",
+          "en": "At n=2, the report lists both raw values and makes no tail-percentile or statistical-stability claim."
+        },
+        {
+          "zh": "已移除内部节点地址、镜像仓库、集群配置和模型挂载路径。",
+          "en": "Internal node addresses, image registry, cluster configuration, and model mount paths have been removed."
+        }
+      ],
+      "table": {
+        "headers": {
+          "zh": [
+            "配置项",
+            "设置"
+          ],
+          "en": [
+            "Configuration",
+            "Setting"
+          ]
+        },
+        "rows": [
+          [
+            "并行布局",
+            "SP8 + Ulysses8"
+          ],
+          [
+            "注意力",
+            "Ascend Flash Attention"
+          ],
+          [
+            "Cache-DiT",
+            "关闭"
+          ],
+          [
+            "VAE",
+            "CPU offload"
+          ],
+          [
+            "样本",
+            "50 步 n=2；4 步 smoke n=1"
+          ]
+        ]
+      }
+    }
+  ],
+  "meta": [
+    {
+      "zh": "实验日期",
+      "en": "Test date",
+      "value": "2026-09-01"
+    },
+    {
+      "zh": "硬件",
+      "en": "Hardware",
+      "value": "8 × Ascend 910B4 · 64 GB"
+    },
+    {
+      "zh": "精度",
+      "en": "Precision",
+      "value": "BF16"
+    },
+    {
+      "zh": "引擎",
+      "en": "Engine",
+      "value": "SGLang 0.5.17 · temporary Ascend branch"
+    },
+    {
+      "zh": "任务",
+      "en": "Task",
+      "value": "MiniMax-H3 FL2VA / T2VA"
+    }
+  ],
+  "methodIntro": [
+    {
+      "zh": "分别记录端到端生成时间、去噪阶段时间并核验输出。正式版未适配路径与临时分支路径需区分。",
+      "en": "End-to-end and denoising-phase time were recorded separately and outputs validated. Stock release behavior must be distinguished from the temporary branch."
+    }
+  ],
+  "methodNotes": [
+    {
+      "zh": "本报告描述视频生成任务，不是文本生成吞吐测试。",
+      "en": "This report describes video generation, not text-generation throughput."
+    }
+  ]
+}

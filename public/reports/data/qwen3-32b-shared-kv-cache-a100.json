@@ -1,0 +1,319 @@
+{
+  "title": "Qwen3-32B · shared KV cache pool",
+  "breadcrumb": "Qwen3-32B · shared KV cache",
+  "kicker": "SERVING SYSTEMS BENCHMARK · MULTI-TURN AGENT",
+  "lede": {
+    "zh": "这份报告在 8×A100、4 个 Qwen3-32B TP2 副本上测试共享 KV 缓存池。对长上下文多轮流量，280 GB DRAM 池覆盖工作集并制造真实跨实例复用；C10 的 TTFT P50 降低 3.37×，SLO goodput 提高 2.44×。",
+    "en": "This report evaluates a shared KV cache pool across four Qwen3-32B TP2 replicas on 8× A100. For long-context multi-turn traffic, a 280 GB DRAM pool covers the working set and enables real cross-replica reuse; at C10, median TTFT improves 3.37× and SLO goodput rises 2.44×."
+  },
+  "chips": [
+    "Qwen3-32B · BF16",
+    "8 × A100 · 80 GB",
+    "vLLM 0.20.0 · LMCache 0.4.4 · Mooncake Store",
+    "4 × TP2 replicas · round-robin",
+    "Measured 2026-07-21"
+  ],
+  "snapshot": {
+    "zh": "共享 KV 池开关对照 · 真实长上下文多轮 Agent",
+    "en": "Shared KV pool on/off · long-context multi-turn Agent traffic"
+  },
+  "sections": [
+    {
+      "id": "goodput",
+      "zh": "性能与 Goodput",
+      "en": "Performance and goodput"
+    },
+    {
+      "id": "reuse",
+      "zh": "缓存复用",
+      "en": "Cache reuse"
+    },
+    {
+      "id": "method",
+      "zh": "方法与边界",
+      "en": "Method & limits"
+    }
+  ],
+  "stats": [
+    {
+      "zhLabel": "TTFT P50 改善 · C10",
+      "enLabel": "TTFT P50 improvement · C10",
+      "value": "3.37×",
+      "zhNote": "3,957 → 1,174 ms",
+      "enNote": "3,957 → 1,174 ms"
+    },
+    {
+      "zhLabel": "SLO goodput 改善 · C10",
+      "enLabel": "SLO goodput improvement · C10",
+      "value": "2.44×",
+      "zhNote": "0.36 → 0.88 req/s",
+      "enNote": "0.36 → 0.88 req/s"
+    },
+    {
+      "zhLabel": "跨实例新增命中",
+      "enLabel": "Added cross-replica hits",
+      "value": "33%",
+      "zhNote": "总前缀服务率约 65%",
+      "enNote": "About 65% total prefix served"
+    }
+  ],
+  "overview": {
+    "heading": {
+      "zh": "收益取决于工作集与路由",
+      "en": "Benefits depend on working set and routing"
+    },
+    "intro": {
+      "zh": "池关闭时本地缓存命中约 30%；启用后本地命中约 31%，共享池再补约 33%。C10 的时延与 goodput 改善来自跨实例命中；C30 时 decode TPOT 已超 SLO，prefill 缓存只能部分改善表现。",
+      "en": "With the pool off, local cache hits are about 30%. With it on, local hits are about 31%, and the shared pool adds about 33%. C10 latency and goodput gains come from cross-replica hits; at C30, decode TPOT exceeds the SLO, so prefill caching only partially improves behavior."
+    },
+    "note": {
+      "zh": "这是条件型优化：工作集需大于单副本 GPU 缓存，池容量需覆盖工作集，同时路由要产生跨副本 miss。短上下文或工作集能留在本地缓存时，外部池可能没有收益。",
+      "en": "This is conditional: the working set must exceed local GPU cache, the pool must cover it, and routing must create cross-replica misses. Short contexts or a working set that stays local may see no benefit."
+    }
+  },
+  "blocks": [
+    {
+      "id": "goodput",
+      "label": {
+        "zh": "延迟与 SLO goodput",
+        "en": "延迟与 SLO goodput"
+      },
+      "heading": {
+        "zh": "工作集超过单副本缓存时，共享池提升首字延迟与达标吞吐",
+        "en": "When the working set exceeds local cache, a shared pool improves TTFT and SLO goodput"
+      },
+      "intro": {
+        "zh": "采用 120 个长上下文会话、每会话约 18K token，round-robin 路由制造跨实例缓存缺失。开启 280 GB DRAM 池后，记录 TTFT、TPOT、达标吞吐和总请求吞吐。",
+        "en": "The workload uses 120 long-context sessions of about 18K tokens each, with round-robin routing to create cross-replica cache misses. TTFT, TPOT, SLO goodput, and total request throughput are measured with a 280 GB DRAM pool enabled and disabled."
+      },
+      "chart": {
+        "title": {
+          "zh": "SLO goodput · req/s",
+          "en": "SLO goodput · req/s"
+        },
+        "hint": {
+          "zh": "Goodput 定义：TTFT ≤2 s 且 TPOT ≤100 ms 的请求吞吐。",
+          "en": "Goodput counts requests meeting TTFT ≤2 s and TPOT ≤100 ms."
+        },
+        "labels": {
+          "zh": [
+            "C10",
+            "C30"
+          ],
+          "en": [
+            "C10",
+            "C30"
+          ]
+        },
+        "series": [
+          {
+            "zh": "关闭共享池",
+            "en": "Pool off",
+            "values": [
+              0.36,
+              0.18
+            ],
+            "color": "blue"
+          },
+          {
+            "zh": "开启共享池",
+            "en": "Pool on",
+            "values": [
+              0.88,
+              0.37
+            ],
+            "color": "green"
+          }
+        ],
+        "yTitle": {
+          "zh": "requests/s",
+          "en": "requests/s"
+        }
+      },
+      "table": {
+        "headers": {
+          "zh": [
+            "并发",
+            "TTFT P50 · off",
+            "TTFT P50 · on",
+            "Goodput · off",
+            "Goodput · on",
+            "总吞吐 · off",
+            "总吞吐 · on"
+          ],
+          "en": [
+            "Concurrency",
+            "TTFT P50 · off",
+            "TTFT P50 · on",
+            "Goodput · off",
+            "Goodput · on",
+            "Total throughput · off",
+            "Total throughput · on"
+          ]
+        },
+        "rows": [
+          [
+            "C10",
+            "3957 ms",
+            "1174 ms",
+            "0.36 req/s",
+            "0.88 req/s",
+            "0.96 req/s",
+            "1.34 req/s"
+          ],
+          [
+            "C30",
+            "4289 ms",
+            "4159 ms",
+            "0.18 req/s",
+            "0.37 req/s",
+            "0.83 req/s",
+            "1.10 req/s"
+          ]
+        ]
+      },
+      "notes": [
+        {
+          "zh": "C10 时共享池将 TTFT P50 从 3.96 s 降至 1.17 s，goodput 从 0.36 提至 0.88 req/s；C30 goodput 从 0.18 提至 0.37 req/s。C30 TPOT P90 仍为 415.9 ms，decode 已超过 100 ms SLO，池缓存无法单独修复该瓶颈。",
+          "en": "At C10, the pool lowers median TTFT from 3.96 s to 1.17 s and raises goodput from 0.36 to 0.88 req/s; at C30, goodput rises from 0.18 to 0.37 req/s. At C30, TPOT P90 remains 415.9 ms, above the 100 ms SLO, so shared caching alone cannot resolve the decode bottleneck."
+        }
+      ]
+    },
+    {
+      "id": "reuse",
+      "label": {
+        "zh": "跨实例缓存复用",
+        "en": "跨实例缓存复用"
+      },
+      "heading": {
+        "zh": "280 GB 池覆盖工作集后，跨实例命中补上约三分之一前缀",
+        "en": "A 280 GB pool covering the working set adds cross-replica hits for about one third of prefixes"
+      },
+      "intro": {
+        "zh": "测量本地 prefix cache 与外部共享池的有效命中贡献，并用隔离单请求验证跨实例取回时延。",
+        "en": "Local prefix-cache hits and external shared-pool hits are measured separately; an isolated request validates cross-replica retrieval latency."
+      },
+      "chart": {
+        "title": {
+          "zh": "前缀由本地缓存 / 共享池服务",
+          "en": "Prefix served by local cache / shared pool"
+        },
+        "hint": {
+          "zh": "约 65% 总命中由本地 31% + 共享池新增 33% 构成。",
+          "en": "About 65% total hits comprise 31% local plus 33% from the shared pool."
+        },
+        "labels": {
+          "zh": [
+            "池关闭",
+            "池开启"
+          ],
+          "en": [
+            "池关闭",
+            "池开启"
+          ]
+        },
+        "series": [
+          {
+            "zh": "本地命中",
+            "en": "Local hit",
+            "values": [
+              30,
+              31
+            ],
+            "color": "blue"
+          },
+          {
+            "zh": "共享池新增",
+            "en": "External pool hit",
+            "values": [
+              0,
+              33
+            ],
+            "color": "green"
+          }
+        ],
+        "yTitle": {
+          "zh": "% prefixes",
+          "en": "% prefixes"
+        }
+      },
+      "table": {
+        "headers": {
+          "zh": [
+            "设置",
+            "本地命中",
+            "共享池命中",
+            "总服务前缀",
+            "池容量"
+          ],
+          "en": [
+            "Setting",
+            "Local hit",
+            "Shared-pool hit",
+            "Total served prefix",
+            "Pool size"
+          ]
+        },
+        "rows": [
+          [
+            "池关闭",
+            "30%",
+            "0%",
+            "约 30%",
+            "—"
+          ],
+          [
+            "池开启",
+            "31%",
+            "33%",
+            "约 65%",
+            "280 GB"
+          ]
+        ]
+      },
+      "notes": [
+        {
+          "zh": "另一次隔离取回测量为跨实例读取 295 ms，对照冷重算 1,050 ms。该值是单请求隔离对照，不代表每个请求的端到端 TTFT。",
+          "en": "An isolated retrieval measured 295 ms for cross-replica fetch versus 1,050 ms for cold recomputation. This is an isolated single-request comparison, not end-to-end TTFT for every request."
+        }
+      ]
+    }
+  ],
+  "meta": [
+    {
+      "zh": "模型",
+      "en": "Model",
+      "value": "Qwen3-32B · BF16 · TP2 · 4 replicas"
+    },
+    {
+      "zh": "硬件",
+      "en": "Hardware",
+      "value": "8 × A100 · 80 GB · RDMA network"
+    },
+    {
+      "zh": "共享池",
+      "en": "Shared pool",
+      "value": "280 GB DRAM"
+    },
+    {
+      "zh": "负载",
+      "en": "Workload",
+      "value": "120 sessions · ~18K-token multi-turn context"
+    },
+    {
+      "zh": "SLO",
+      "en": "SLO",
+      "value": "TTFT ≤ 2 s · TPOT ≤ 100 ms"
+    }
+  ],
+  "methodIntro": {
+    "zh": "使用官方 vLLM 多轮基准工具，先预热再采集逐请求统计；round-robin 刻意形成跨实例缓存缺失。比较共享池关闭 / 开启两个并发档，按请求是否满足 TTFT 与 TPOT 双阈值计算 SLO goodput。",
+    "en": "The official vLLM multi-turn benchmark was warmed up before per-request measurements. Round-robin routing intentionally creates cross-replica cache misses. Pool-off/on results were measured at two concurrency levels, with SLO goodput counting requests that satisfy both TTFT and TPOT thresholds"
+  },
+  "methodNotes": [
+    {
+      "zh": "主结果来自 C10/C30 两档闭环流量；其他池大小和更深会话轮次是边界/佐证实验，不与主矩阵合并。共享池容量不足以容纳工作集时会发生池内驱逐。",
+      "en": "Primary results are from closed-loop C10/C30 traffic. Other pool sizes and deeper-turn sessions are corroborating or boundary tests and are not pooled with the main matrix. A pool too small for the working set will evict entries."
+    }
+  ]
+}

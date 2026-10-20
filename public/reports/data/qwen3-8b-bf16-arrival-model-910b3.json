@@ -1,0 +1,277 @@
+{
+  "title": "Qwen3-8B BF16 · Ascend 910B3",
+  "breadcrumb": "Qwen3-8B BF16",
+  "kicker": "LOAD-GENERATOR CALIBRATION · BF16",
+  "lede": {
+    "zh": "同一单卡部署与 512/256 请求形状下，不同到达过程给出不同 TTFT P99；guidellm poisson 的 427 ms 阈值边界为 2.788 req/s。",
+    "en": "With the same single-card deployment and 512/256 request, different arrival processes produce different TTFT P99; the guidellm poisson boundary at a 427 ms threshold is 2.788 req/s."
+  },
+  "chips": [
+    "1 × Ascend 910B3 · 64 GB",
+    "BF16",
+    "TP1",
+    "vLLM 0.25.1 · vLLM-Ascend 0.19.1rc2",
+    "Measured 2026-08"
+  ],
+  "snapshot": {
+    "zh": "512 输入 / 256 输出 · 恒定与泊松到达 · 闭环对照",
+    "en": "512 input / 256 output · constant and Poisson arrivals · closed-loop controls"
+  },
+  "sections": [
+    {
+      "id": "arrival",
+      "zh": "到达过程",
+      "en": "Arrival process"
+    },
+    {
+      "id": "interpretation",
+      "zh": "结果解释",
+      "en": "Interpretation"
+    },
+    {
+      "id": "method",
+      "zh": "方法与边界",
+      "en": "Method & limits"
+    }
+  ],
+  "stats": [
+    {
+      "zhLabel": "闭环最大吞吐",
+      "enLabel": "Maximum closed-loop throughput",
+      "value": "8.11 req/s",
+      "zhNote": "不能当作容量边界",
+      "enNote": "Not a capacity boundary"
+    },
+    {
+      "zhLabel": "Poisson safe_rps",
+      "enLabel": "Poisson safe_rps",
+      "value": "2.788 req/s",
+      "zhNote": "TTFT P99 ≤ 427 ms · n=3",
+      "enNote": "TTFT P99 ≤ 427 ms · n=3"
+    },
+    {
+      "zhLabel": "主 SLO",
+      "enLabel": "Primary SLO",
+      "value": "<0.280 req/s",
+      "zhNote": "P99 ≤ 200 ms · 下界",
+      "enNote": "P99 ≤ 200 ms · upper bound"
+    }
+  ],
+  "overview": {
+    "heading": {
+      "zh": "容量结果必须写清请求如何到达",
+      "en": "Capacity results must state how requests arrive"
+    },
+    "intro": {
+      "zh": "闭环满载吞吐、固定时长 sweep 和开环泊松到达测量的是不同现象。闭环生成器会随响应时间变长自动降低新请求发出速率，可能掩盖过载。",
+      "en": "Closed-loop saturation, fixed-duration sweeps, and open-loop Poisson arrivals measure different behaviors. A closed-loop generator reduces offered load as response time grows and can hide overload."
+    },
+    "note": {
+      "zh": "427 ms P99 下恒定到达与真泊松的 safe_rps 是下界；只有 guidellm poisson 越过阈值并经三次复测确认。主 200 ms P99 在最低档已不达标，未测出精确 safe_rps。",
+      "en": "At 427 ms P99, constant and true-Poisson safe_rps are lower bounds; only guidellm poisson crossed the threshold and was confirmed in three repeats. The primary 200 ms P99 failed at the lowest rate, so exact safe_rps was not measured."
+    }
+  },
+  "blocks": [
+    {
+      "id": "arrival",
+      "label": {
+        "zh": "到达过程",
+        "en": "Arrival process"
+      },
+      "heading": {
+        "zh": "请求成团度改变观测到的延迟",
+        "en": "Arrival burstiness changes observed latency"
+      },
+      "intro": {
+        "zh": "固定 512 输入 / 256 输出，在同一 Qwen3-8B BF16 单卡部署上测试恒定到达、真泊松及 guidellm 标称 poisson。",
+        "en": "Constant, true-Poisson, and guidellm nominal-poisson arrivals were tested with fixed 512 input / 256 output on one Qwen3-8B BF16 deployment."
+      },
+      "notes": [
+        {
+          "zh": "不同到达过程的 P99 不能直接当作容量排名；需同时看 safe_rps 阈值和离散指数。",
+          "en": "P99 across arrival processes is not a direct capacity ranking; interpret it with the safe_rps threshold and dispersion index."
+        }
+      ],
+      "chart": {
+        "title": {
+          "zh": "λ≈6 req/s 时的 TTFT P99",
+          "en": "TTFT P99 at λ≈6 req/s"
+        },
+        "hint": {
+          "zh": "三种到达过程的请求间隔分布不同。",
+          "en": "The request-interval distributions differ across the three arrival processes."
+        },
+        "labels": {
+          "zh": [
+            "恒定 · GuideLLM",
+            "真泊松 · AIPerf",
+            "Poisson · GuideLLM"
+          ],
+          "en": [
+            "Constant · GuideLLM",
+            "True Poisson · AIPerf",
+            "Poisson · GuideLLM"
+          ]
+        },
+        "series": [
+          {
+            "zh": "TTFT P99",
+            "en": "TTFT P99",
+            "values": [
+              138.8,
+              260.3,
+              671.6
+            ],
+            "color": "blue"
+          }
+        ],
+        "yTitle": {
+          "zh": "TTFT P99 (ms)",
+          "en": "TTFT P99 (ms)"
+        },
+        "type": "bar"
+      },
+      "table": {
+        "headers": {
+          "zh": [
+            "到达过程",
+            "离散指数",
+            "λ≈6 P99",
+            "safe_rps · P99≤427 ms"
+          ],
+          "en": [
+            "Arrival process",
+            "Dispersion index",
+            "P99 at λ≈6",
+            "safe_rps · P99≤427 ms"
+          ]
+        },
+        "rows": [
+          [
+            "恒定 · GuideLLM",
+            "0.000",
+            "138.8 ms",
+            "≥6.00 req/s · 下界"
+          ],
+          [
+            "真泊松 · AIPerf",
+            "≈1.0",
+            "260.3 ms",
+            "≥7.71 req/s · 下界"
+          ],
+          [
+            "Poisson · GuideLLM",
+            "4–10",
+            "671.6 ms",
+            "2.788 req/s · n=3"
+          ]
+        ]
+      }
+    },
+    {
+      "id": "interpretation",
+      "label": {
+        "zh": "结果解释",
+        "en": "Interpretation"
+      },
+      "heading": {
+        "zh": "不要把闭环吞吐当成开放环容量",
+        "en": "Do not treat closed-loop throughput as open-loop capacity"
+      },
+      "intro": {
+        "zh": "同一部署的闭环最大吞吐为 8.11 req/s；此值表示完成速率，不是可持续到达率。guideLLM 30 秒/档和 300 秒/档 sweep 得到的最高达标点也不同。",
+        "en": "The same deployment reaches 8.11 req/s maximum closed-loop throughput; this is a completion rate, not a sustainable arrival rate. GuideLLM 30-second and 300-second steps also yield different highest passing points."
+      },
+      "notes": [
+        {
+          "zh": "λ=12 档有 23.5% 请求未完成，幸存请求的延迟分位数存在偏差，不用作服务体验结论。",
+          "en": "At λ=12, 23.5% of requests did not complete; survivor latency percentiles are biased and are not used as service-experience conclusions."
+        }
+      ],
+      "chart": {
+        "title": {
+          "zh": "三种容量读数回答不同问题",
+          "en": "Three capacity readings answer different questions"
+        },
+        "hint": {
+          "zh": "该比较中的 SLO 和 sweep 时长不同；仅展示各自读数。",
+          "en": "SLO and sweep duration differ; values are shown in their original contexts."
+        },
+        "labels": {
+          "zh": [
+            "闭环完成速率",
+            "300 s/档 · 最高达标",
+            "427 ms P99 · poisson"
+          ],
+          "en": [
+            "Closed-loop completion",
+            "300 s/step · highest pass",
+            "427 ms P99 · poisson"
+          ]
+        },
+        "series": [
+          {
+            "zh": "请求 / 秒",
+            "en": "Requests per second",
+            "values": [
+              8.11,
+              8.14,
+              2.788
+            ],
+            "color": "blue"
+          }
+        ],
+        "yTitle": {
+          "zh": "req/s · 非同一容量口径",
+          "en": "req/s · different capacity interpretations"
+        },
+        "type": "bar"
+      }
+    }
+  ],
+  "meta": [
+    {
+      "zh": "测试日期",
+      "en": "Test date",
+      "value": "2026-08-25"
+    },
+    {
+      "zh": "硬件拓扑",
+      "en": "Hardware topology",
+      "value": "1 × Ascend 910B3 · TP1"
+    },
+    {
+      "zh": "权重精度",
+      "en": "Checkpoint precision",
+      "value": "BF16"
+    },
+    {
+      "zh": "推理栈",
+      "en": "Serving stack",
+      "value": "vLLM 0.25.1 · vLLM-Ascend 0.19.1rc2"
+    },
+    {
+      "zh": "请求形状",
+      "en": "Request profile",
+      "value": "512 input · 256 output"
+    }
+  ],
+  "methodIntro": {
+    "zh": "保持同一服务部署与请求形状，改变到达过程、压测工具及每档测试时长。容量结论必须绑定 SLO、到达模型和档位时长。",
+    "en": "The serving deployment and request profile are held constant while arrival process, load tool, and step duration vary. Capacity conclusions must include SLO, arrival model, and step duration."
+  },
+  "methodNotes": [
+    {
+      "zh": "主阈值 TTFT P99 ≤ 200 ms 在最低测试档已失败，因此 safe_rps 只能限定为低于该档，无法给出精确边界。",
+      "en": "The primary TTFT P99 ≤ 200 ms threshold failed at the lowest tested rate, so safe_rps is bounded below that step and has no exact measured boundary."
+    },
+    {
+      "zh": "恒定与真泊松到达在 427 ms P99 下未越阈，仅给出下界；不能拿下界与 2.788 req/s 直接计算比例。",
+      "en": "Constant and true-Poisson arrivals did not cross the 427 ms P99 threshold, so only lower bounds are available; do not divide those bounds by 2.788 req/s."
+    },
+    {
+      "zh": "该报告评估压测方法对同一权重结果的影响，不比较模型权重。",
+      "en": "This report studies how load-generation methods affect measurements for one checkpoint; it does not compare model checkpoints."
+    }
+  ]
+}

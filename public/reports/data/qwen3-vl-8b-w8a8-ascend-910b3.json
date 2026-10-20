@@ -1,0 +1,300 @@
+{
+  "title": "Qwen3-VL-8B-Instruct W8A8 · Ascend 910B3",
+  "breadcrumb": "Qwen3-VL-8B W8A8",
+  "kicker": "MULTIMODAL SERVING BENCHMARK · W8A8",
+  "lede": {
+    "zh": "单卡 Ascend 910B3 上的 Qwen3-VL-8B W8A8 测试显示，1080p 图像请求 TTFT 中位数为 2.44 秒；纯文本的 120 ms 不能代表视觉请求首 token 延迟。",
+    "en": "Qwen3-VL-8B W8A8 measurements on one Ascend 910B3 show a 2.44 s median TTFT for 1080p image requests. The 120 ms text-only point does not represent first-token latency for vision requests."
+  },
+  "chips": [
+    "1 × Ascend 910B3 · 64 GB",
+    "A2-format W8A8",
+    "TP1 · DP1",
+    "vLLM-Ascend",
+    "Measured 2026-09"
+  ],
+  "snapshot": {
+    "zh": "文本 · 256² / 720p / 1080p 图像 · 长上下文 · 开放环",
+    "en": "Text · 256² / 720p / 1080p images · long context · open-loop"
+  },
+  "sections": [
+    {
+      "id": "vision",
+      "zh": "视觉输入成本",
+      "en": "Vision input cost"
+    },
+    {
+      "id": "capacity",
+      "zh": "容量与适配范围",
+      "en": "Capacity & compatibility"
+    },
+    {
+      "id": "method",
+      "zh": "方法与边界",
+      "en": "Method & limits"
+    }
+  ],
+  "stats": [
+    {
+      "zhLabel": "单流 TPOT 中位",
+      "enLabel": "Single-stream median TPOT",
+      "value": "12.87 ms",
+      "zhNote": "文本 128 / 128 · C1",
+      "enNote": "Text 128 / 128 · C1"
+    },
+    {
+      "zhLabel": "最高图像分辨率 TTFT",
+      "enLabel": "Highest-resolution image TTFT",
+      "value": "2.44 s",
+      "zhNote": "1080p · 中位数",
+      "enNote": "1080p · median"
+    },
+    {
+      "zhLabel": "1080p safe_rps",
+      "enLabel": "1080p safe_rps",
+      "value": "1.75",
+      "zhNote": "TTFT P95 ≤ 2 s",
+      "enNote": "TTFT P95 ≤ 2 s"
+    }
+  ],
+  "overview": {
+    "heading": {
+      "zh": "对视觉模型，首 token 延迟必须附带图像输入",
+      "en": "For vision models, attach image inputs to TTFT"
+    },
+    "intro": {
+      "zh": "文本和图像是不同预填充负载。官方文本随机输入规程不会触发视觉编码器，因此单独报告文本结果会低估图像请求的首 token 时间。",
+      "en": "Text and image prompts create different prefill workloads. A text-only random-input procedure does not exercise the vision encoder, so reporting only text results understates first-token time for image requests."
+    },
+    "note": {
+      "zh": "256²、720p 与 1080p 的请求数均为 128，P95 满足样本门槛。模型完整性、图像输入 token 账本与服务端指标已逐档核对；该权重/硬件组合并非官方配方已标注的组合。",
+      "en": "The 256², 720p, and 1080p points each use 128 requests, meeting the report’s P95 sample threshold. Token accounting and server-side metrics were checked per workload; this checkpoint/hardware pairing is not listed in the official recipe."
+    }
+  },
+  "blocks": [
+    {
+      "id": "vision",
+      "label": {
+        "zh": "视觉输入成本",
+        "en": "Vision input cost"
+      },
+      "heading": {
+        "zh": "图像分辨率主要拉高 TTFT，解码 TPOT 的变化较小",
+        "en": "Image resolution mainly increases TTFT, while decode TPOT changes less"
+      },
+      "intro": {
+        "zh": "单张 Ascend 910B3、TP1。相同服务部署下测试文本与三档图像分辨率；图像场景使用合成分辨率输入，功能验证另用真实图像。",
+        "en": "One Ascend 910B3 accelerator with TP1. Text and three image resolutions were measured on the same serving deployment; synthetic resolution inputs were used for performance points, with real images used separately for functional validation."
+      },
+      "notes": [
+        {
+          "zh": "1080p 图像相对纯文本测试的 TTFT 约高 20 倍，但这两种输入形状不同，不能理解为对同一请求的回归比例。图片 token 从约 74 增至约 2,050 时，主要成本出现在预填充阶段。",
+          "en": "The 1080p image point has roughly 20× the TTFT of the text-only test, but the input profiles differ; this is not a regression ratio for the same request. As image tokens increase from about 74 to about 2,050, most added cost appears in prefill."
+        }
+      ],
+      "chart": {
+        "title": {
+          "zh": "输入形状与 TTFT 中位数",
+          "en": "Input profile and median TTFT"
+        },
+        "hint": {
+          "zh": "悬停查看测量点。",
+          "en": "Hover a point to inspect the measurement."
+        },
+        "labels": {
+          "zh": [
+            "Text 200/128",
+            "Image 256²",
+            "Image 720×1280",
+            "Image 1080×1920"
+          ],
+          "en": [
+            "Text 200/128",
+            "Image 256²",
+            "Image 720×1280",
+            "Image 1080×1920"
+          ]
+        },
+        "series": [
+          {
+            "zh": "TTFT (ms)",
+            "en": "TTFT (ms)",
+            "values": [
+              119.7,
+              357.0,
+              995.4,
+              2436.2
+            ],
+            "color": "blue"
+          }
+        ],
+        "yTitle": {
+          "zh": "TTFT (ms)",
+          "en": "TTFT (ms)"
+        },
+        "type": "bar"
+      },
+      "table": {
+        "headers": {
+          "zh": [
+            "负载",
+            "请求数",
+            "并发",
+            "TTFT 中位",
+            "TTFT P95",
+            "TPOT 中位",
+            "输出吞吐"
+          ],
+          "en": [
+            "Workload",
+            "Requests",
+            "Concurrency",
+            "Median TTFT",
+            "TTFT P95",
+            "Median TPOT",
+            "Output throughput"
+          ]
+        },
+        "rows": [
+          [
+            "文本 200/128",
+            "200",
+            "rate 1",
+            "119.7 ms",
+            "206.3 ms",
+            "14.67 ms",
+            "126.9 tok/s"
+          ],
+          [
+            "图像 256²",
+            "128",
+            "C8",
+            "357.0 ms",
+            "383.9 ms",
+            "14.28 ms",
+            "470.0 tok/s"
+          ],
+          [
+            "图像 720×1280",
+            "128",
+            "C8",
+            "995.4 ms",
+            "1,149.5 ms",
+            "16.18 ms",
+            "329.9 tok/s"
+          ],
+          [
+            "图像 1080×1920",
+            "128",
+            "C8",
+            "2,436.2 ms",
+            "2,688.1 ms",
+            "19.80 ms",
+            "208.4 tok/s"
+          ]
+        ]
+      }
+    },
+    {
+      "id": "capacity",
+      "label": {
+        "zh": "容量与适配范围",
+        "en": "Capacity & compatibility"
+      },
+      "heading": {
+        "zh": "单流可用；官方纯文本规程不足以代表视觉负载",
+        "en": "Serving works at single-stream load; a text-only recipe does not represent vision traffic"
+      },
+      "intro": {
+        "zh": "性能矩阵覆盖文本、长上下文和多模态输入，并另测开环到达率。该 W8A8 权重格式未被官方配方标注为 A2 组合，因此结果属于兼容性与性能实测。",
+        "en": "The matrix covers text, long context, multimodal inputs, and open-loop arrivals. This W8A8 checkpoint format is not listed by the official recipe for A2, so these results are compatibility and performance measurements."
+      },
+      "notes": [
+        {
+          "zh": "图像负载的 safe_rps 使用 TTFT P95 ≤ 2 s；1080p 下为 1.75 req/s。每个点都应与分辨率和约 2,050 图像 token 的输入口径一起引用。",
+          "en": "Vision safe_rps uses a TTFT P95 ≤ 2 s threshold; the 1080p point is 1.75 req/s. Quote each rate with its resolution and input profile of about 2,050 image tokens."
+        }
+      ],
+      "chart": {
+        "title": {
+          "zh": "视觉请求开放环 safe_rps",
+          "en": "Open-loop safe_rps for vision requests"
+        },
+        "hint": {
+          "zh": "悬停查看测量点。",
+          "en": "Hover a point to inspect the measurement."
+        },
+        "labels": {
+          "zh": [
+            "Text",
+            "720p",
+            "1080p"
+          ],
+          "en": [
+            "Text",
+            "720p",
+            "1080p"
+          ]
+        },
+        "series": [
+          {
+            "zh": "safe_rps · TTFT P95 ≤ 2 s",
+            "en": "safe_rps · TTFT P95 ≤ 2 s",
+            "values": [
+              3.75,
+              4.25,
+              1.75
+            ],
+            "color": "blue"
+          }
+        ],
+        "yTitle": {
+          "zh": "请求 / 秒",
+          "en": "Requests per second"
+        },
+        "type": "line"
+      }
+    }
+  ],
+  "meta": [
+    {
+      "zh": "测试日期",
+      "en": "Test date",
+      "value": "2026-09-17"
+    },
+    {
+      "zh": "硬件拓扑",
+      "en": "Hardware topology",
+      "value": "1 × Ascend 910B3 · TP1 · DP1"
+    },
+    {
+      "zh": "权重格式",
+      "en": "Checkpoint format",
+      "value": "msmodelslim A2 W8A8"
+    },
+    {
+      "zh": "服务限制",
+      "en": "Serving limits",
+      "value": "max-model-len 32,768 · prefix cache off"
+    },
+    {
+      "zh": "输入方式",
+      "en": "Input method",
+      "value": "Synthetic resolution sweep + real-image smoke test"
+    }
+  ],
+  "methodIntro": [
+    "固定长度矩阵按官方服务工具运行；视觉性能点按分辨率固定图像 token，开环容量另行扫描。所有图像相关结论都保持输入形状可见。",
+    "The fixed-length matrix uses the official serving benchmark tool; vision points fix image-token counts by resolution, while open-loop capacity is measured separately. Input profiles remain explicit for all image-related conclusions."
+  ],
+  "methodNotes": [
+    {
+      "zh": "EAGLE3/MTP 未运行：该 W8A8 权重中没有可用的 MTP 模块。",
+      "en": "EAGLE3/MTP was not run because this W8A8 checkpoint does not contain an available MTP module."
+    },
+    {
+      "zh": "满载 TPOT 会受图执行路径的已知批大小限制影响；不据该点推导单流视觉解码速度。",
+      "en": "Saturated TPOT is affected by a known graph-execution batch-size limit; it is not used to infer single-stream vision decode speed."
+    }
+  ]
+}

@@ -1,0 +1,528 @@
+{
+  "title": "Qwen3-8B BF16 · Ascend 910B4",
+  "breadcrumb": "Qwen3-8B BF16",
+  "kicker": "SERVING PERFORMANCE BENCHMARK · THREE ENGINES",
+  "lede": {
+    "zh": "同一份 Qwen3-8B BF16 权重在 Ascend 910B4 上接受固定长度、Agent 形状回放和 ShareGPT 负载测试。单卡测试覆盖 45 个合成测点；4 卡 TP4 测试覆盖 105 个 Agent 形状测点和 500 条 ShareGPT 提示词。",
+    "en": "The same Qwen3-8B BF16 checkpoint was measured on Ascend 910B4 with fixed-length requests, Agent-shaped replay, and ShareGPT traffic. The single-card study covered 45 synthetic points; the 4-card TP4 study covered 105 Agent-shaped points and 500 ShareGPT prompts."
+  },
+  "chips": [
+    "Qwen3-8B · BF16",
+    "Ascend 910B4 · 32 GB/card",
+    "Single card TP1 / 4 cards TP4",
+    "vLLM-Ascend 0.18.0rc1 · MindIE 2.1 · SGLang-CANN",
+    "Measured 2026-05"
+  ],
+  "snapshot": {
+    "zh": "固定长度 · 多轮 Agent 形状 · ShareGPT 真实对话",
+    "en": "Fixed length · multi-turn Agent-shaped traffic · ShareGPT conversations"
+  },
+  "sections": [
+    {
+      "id": "synthetic",
+      "zh": "固定长度负载",
+      "en": "Fixed-length traffic"
+    },
+    {
+      "id": "agent",
+      "zh": "多轮 Agent 形状",
+      "en": "Multi-turn Agent-shaped traffic"
+    },
+    {
+      "id": "sharegpt",
+      "zh": "ShareGPT 回放",
+      "en": "ShareGPT replay"
+    },
+    {
+      "id": "method",
+      "zh": "方法与边界",
+      "en": "Method & limits"
+    }
+  ],
+  "stats": [
+    {
+      "zhLabel": "单卡通用场景峰值",
+      "enLabel": "Single-card mid-shape throughput",
+      "value": "1,004 tok/s",
+      "zhNote": "输入 512 / 输出 256 · C64",
+      "enNote": "512 input / 256 output · C64"
+    },
+    {
+      "zhLabel": "Agent 形状覆盖",
+      "enLabel": "Agent-shaped matrix",
+      "value": "105 points",
+      "zhNote": "7 种负载 × 5 并发 × 3 引擎",
+      "enNote": "7 shapes × 5 concurrency levels × 3 engines"
+    },
+    {
+      "zhLabel": "ShareGPT 高并发 RPS",
+      "enLabel": "ShareGPT high-load RPS",
+      "value": "4.52 req/s",
+      "zhNote": "4 卡 TP4 · C32",
+      "enNote": "4-card TP4 · C32"
+    }
+  ],
+  "overview": {
+    "heading": {
+      "zh": "工作负载不同，结论分别看",
+      "en": "Interpret each workload separately"
+    },
+    "intro": {
+      "zh": "单卡固定长度测试中，短/中输入的吞吐峰值由引擎实现与可用 KV 预算共同影响；长输入下 vLLM 与 MindIE 接近。4 卡 TP4 的 Agent 形状矩阵和 ShareGPT 回放中，vLLM 的高并发吞吐领先，但这属于特定软件版本和配置的观测。",
+      "en": "In the single-card fixed-length study, short and mid-input throughput reflects both engine implementation and available KV budget; vLLM and MindIE are close on long inputs. In the 4-card TP4 Agent-shaped and ShareGPT studies, vLLM leads high-concurrency throughput, within the tested software versions and configuration."
+    },
+    "note": {
+      "zh": "单卡 MindIE 的 KV 预算比另外两种引擎多约 15%；不把小于该差距的吞吐变化判作引擎胜负。三部分测试使用不同卡数、负载和工具，不能合并成一个排行榜。",
+      "en": "Single-card MindIE had about 15% more KV budget than the other two engines; throughput differences within that band are not treated as engine wins. The three studies use different card counts, workloads, and tools and must not be combined into one ranking."
+    }
+  },
+  "blocks": [
+    {
+      "id": "synthetic",
+      "label": {
+        "zh": "合成固定长度",
+        "en": "Synthetic fixed length"
+      },
+      "heading": {
+        "zh": "短、中负载与长输入的吞吐排序不同",
+        "en": "Throughput ordering changes with prompt shape"
+      },
+      "intro": {
+        "zh": "单卡 TP1，8K 上下文，三类固定输入/输出长度，每种形状并发 1/4/16/32/64。每个引擎与负载形状分别 sweep；C64 数字用于展示高压点。",
+        "en": "Single-card TP1, 8K context, and three fixed input/output shapes at concurrency 1/4/16/32/64. Each engine and shape was swept separately; C64 values show the high-load point."
+      },
+      "chart": {
+        "title": {
+          "zh": "单卡 C64 总输出吞吐",
+          "en": "Single-card aggregate output throughput at C64"
+        },
+        "hint": {
+          "zh": "固定输入 / 输出形状；MindIE 可用 KV 预算较高约 15%。",
+          "en": "Fixed input/output shapes; MindIE had about 15% more available KV budget."
+        },
+        "labels": {
+          "zh": [
+            "Chat · 128/64",
+            "Mid · 512/256",
+            "Long · 2048/512"
+          ],
+          "en": [
+            "Chat · 128/64",
+            "Mid · 512/256",
+            "Long · 2048/512"
+          ]
+        },
+        "series": [
+          {
+            "zh": "vLLM-Ascend",
+            "en": "vLLM-Ascend",
+            "values": [
+              865,
+              781,
+              361
+            ],
+            "color": "blue"
+          },
+          {
+            "zh": "MindIE",
+            "en": "MindIE",
+            "values": [
+              935,
+              1004,
+              354
+            ],
+            "color": "green"
+          },
+          {
+            "zh": "SGLang-CANN",
+            "en": "SGLang-CANN",
+            "values": [
+              264,
+              260,
+              175
+            ],
+            "color": "orange"
+          }
+        ],
+        "yTitle": {
+          "zh": "tok/s",
+          "en": "tok/s"
+        }
+      },
+      "table": {
+        "headers": {
+          "zh": [
+            "负载形状",
+            "吞吐 · vLLM",
+            "吞吐 · MindIE",
+            "吞吐 · SGLang",
+            "TTFT P50 · vLLM / MindIE / SGLang",
+            "TPOT · vLLM / MindIE / SGLang"
+          ],
+          "en": [
+            "Workload shape",
+            "vLLM throughput",
+            "MindIE throughput",
+            "SGLang throughput",
+            "TTFT P50 · vLLM / MindIE / SGLang",
+            "TPOT · vLLM / MindIE / SGLang"
+          ]
+        },
+        "rows": [
+          [
+            "Chat · 128/64",
+            "865 tok/s",
+            "935 tok/s",
+            "264 tok/s",
+            "519 / 308 / 899 ms",
+            "64 / 57 / 229 ms"
+          ],
+          [
+            "Mid · 512/256",
+            "781 tok/s",
+            "1,004 tok/s",
+            "260 tok/s",
+            "678 / 992 / 1,974 ms",
+            "76 / 59 / 235 ms"
+          ],
+          [
+            "Long · 2048/512",
+            "361 tok/s",
+            "354 tok/s",
+            "175 tok/s",
+            "46.3 / 59.8 / 91.8 s",
+            "88 / 52 / 167 ms"
+          ]
+        ]
+      },
+      "notes": [
+        {
+          "zh": "MindIE 与 vLLM 在 Chat 的差距为 8%、Long 为 2%，均落入 KV 预算不对称范围；不据此宣布胜负。Long C64 的 TTFT 达数十秒，低延迟需求应看更低并发测点。",
+          "en": "MindIE differs from vLLM by 8% on Chat and 2% on Long, both within the KV-budget asymmetry; neither is treated as a decisive win. Long-shape C64 TTFT reaches tens of seconds, so latency-sensitive use should inspect lower-concurrency points."
+        }
+      ]
+    },
+    {
+      "id": "agent",
+      "label": {
+        "zh": "Agent 形状回放",
+        "en": "Agent-shaped replay"
+      },
+      "heading": {
+        "zh": "Agent 负载放大了不同引擎的解码差距",
+        "en": "Agent-shaped traffic widens the decode-throughput gap"
+      },
+      "intro": {
+        "zh": "4 卡 TP4，同一 BF16 权重，7 种固定形状 × 5 档并发 × 3 引擎，共 105 个测点。Agent-warm 模拟系统提示与工具说明前缀缓存；不执行真实工具动作。",
+        "en": "Four-card TP4 with the same BF16 checkpoint: seven fixed shapes × five concurrency levels × three engines, for 105 points. Agent-warm represents cached system/tool-description prefixes; it does not execute real tool actions."
+      },
+      "chart": {
+        "title": {
+          "zh": "Agent 形状 · C32 请求速率",
+          "en": "Request rate at C32 for Agent-shaped traffic"
+        },
+        "hint": {
+          "zh": "每种负载形状独立测试，不能将各点视作同一请求长度曲线。",
+          "en": "Each workload shape is tested separately; points do not share one request-length profile."
+        },
+        "labels": {
+          "zh": [
+            "Chat cold",
+            "Chat warm",
+            "Chat hot",
+            "Mid",
+            "Agent cold",
+            "Agent warm",
+            "Long"
+          ],
+          "en": [
+            "Chat cold",
+            "Chat warm",
+            "Chat hot",
+            "Mid",
+            "Agent cold",
+            "Agent warm",
+            "Long"
+          ]
+        },
+        "series": [
+          {
+            "zh": "vLLM-Ascend",
+            "en": "vLLM-Ascend",
+            "values": [
+              21.13,
+              13.35,
+              13.51,
+              6.07,
+              10.54,
+              7.26,
+              2.29
+            ],
+            "color": "blue"
+          },
+          {
+            "zh": "MindIE",
+            "en": "MindIE",
+            "values": [
+              15.98,
+              12.17,
+              9.24,
+              4.3,
+              8.24,
+              4.9,
+              1.54
+            ],
+            "color": "green"
+          },
+          {
+            "zh": "SGLang-CANN",
+            "en": "SGLang-CANN",
+            "values": [
+              4.24,
+              2.95,
+              3.01,
+              1.7,
+              4.37,
+              3.1,
+              0.9
+            ],
+            "color": "orange"
+          }
+        ],
+        "yTitle": {
+          "zh": "req/s",
+          "en": "req/s"
+        }
+      },
+      "table": {
+        "headers": {
+          "zh": [
+            "形状",
+            "vLLM RPS",
+            "MindIE RPS",
+            "SGLang RPS",
+            "vLLM TPOT",
+            "MindIE TPOT",
+            "SGLang TPOT"
+          ],
+          "en": [
+            "Shape",
+            "vLLM RPS",
+            "MindIE RPS",
+            "SGLang RPS",
+            "vLLM TPOT",
+            "MindIE TPOT",
+            "SGLang TPOT"
+          ]
+        },
+        "rows": [
+          [
+            "Chat cold",
+            "21.13",
+            "15.98",
+            "4.24",
+            "16.8 ms",
+            "26.8 ms",
+            "104.2 ms"
+          ],
+          [
+            "Chat warm · prefix 512",
+            "13.35",
+            "12.17",
+            "2.95",
+            "29.5 ms",
+            "30.2 ms",
+            "154.2 ms"
+          ],
+          [
+            "Chat hot · prefix 1024",
+            "13.51",
+            "9.24",
+            "3.01",
+            "30.0 ms",
+            "37.0 ms",
+            "154.6 ms"
+          ],
+          [
+            "Agent warm · prefix 1792",
+            "7.26",
+            "4.90",
+            "3.10",
+            "70 ms",
+            "112 ms",
+            "243 ms"
+          ],
+          [
+            "Long · 2048/512",
+            "2.29",
+            "—",
+            "—",
+            "—",
+            "—",
+            "—"
+          ]
+        ]
+      },
+      "notes": [
+        {
+          "zh": "报告覆盖 chat/mid/agent/long 七类形状；表中列出核心点。vLLM 在 7/7 个形状的 RPS 领先，SGLang 的高并发 TPOT 较高。该结论只描述所测 2026 年 5 月版本，不代表当前版本表现。",
+          "en": "The source matrix covered seven chat/mid/Agent/long shapes; the table shows representative points. vLLM led RPS in all seven shapes, while SGLang had higher high-concurrency TPOT. This describes the May 2026 versions tested, not current releases."
+        }
+      ]
+    },
+    {
+      "id": "sharegpt",
+      "label": {
+        "zh": "ShareGPT 真实对话",
+        "en": "ShareGPT conversations"
+      },
+      "heading": {
+        "zh": "真实提示词回放保持了同一吞吐排序",
+        "en": "The real-prompt replay retained the same throughput ordering"
+      },
+      "intro": {
+        "zh": "同一 4 卡 TP4 部署回放固定抽样的 500 条 ShareGPT V3 prompt，5 档并发。只比较此 ShareGPT 窗口，不与合成长度测试拼接。",
+        "en": "A fixed sample of 500 ShareGPT V3 prompts was replayed on the same 4-card TP4 setup at five concurrency levels. These results are specific to this ShareGPT window and are not pooled with synthetic-length tests."
+      },
+      "chart": {
+        "title": {
+          "zh": "ShareGPT · C32 请求速率",
+          "en": "ShareGPT request rate at C32"
+        },
+        "hint": {
+          "zh": "相同 500 条 prompt；固定抽样种子。",
+          "en": "Same 500 prompts with a fixed sample seed."
+        },
+        "labels": {
+          "zh": [
+            "vLLM-Ascend",
+            "MindIE",
+            "SGLang-CANN"
+          ],
+          "en": [
+            "vLLM-Ascend",
+            "MindIE",
+            "SGLang-CANN"
+          ]
+        },
+        "series": [
+          {
+            "zh": "RPS",
+            "en": "RPS",
+            "values": [
+              4.52,
+              3.31,
+              1.7
+            ],
+            "color": "blue"
+          }
+        ],
+        "yTitle": {
+          "zh": "req/s",
+          "en": "req/s"
+        }
+      },
+      "table": {
+        "headers": {
+          "zh": [
+            "指标 · C32",
+            "vLLM-Ascend",
+            "MindIE",
+            "SGLang-CANN"
+          ],
+          "en": [
+            "Metric · C32",
+            "vLLM-Ascend",
+            "MindIE",
+            "SGLang-CANN"
+          ]
+        },
+        "rows": [
+          [
+            "RPS",
+            "4.52",
+            "3.31",
+            "1.70"
+          ],
+          [
+            "输出吞吐",
+            "1,233 tok/s",
+            "—",
+            "—"
+          ],
+          [
+            "TTFT P50",
+            "326 ms",
+            "311 ms",
+            "—"
+          ],
+          [
+            "TTFT P95",
+            "550 ms",
+            "2,260 ms",
+            "4,789 ms"
+          ],
+          [
+            "TPOT P50",
+            "23.6 ms",
+            "30.0 ms",
+            "58.8 ms"
+          ],
+          [
+            "E2E P50",
+            "6.06 s",
+            "8.31 s",
+            "15.83 s"
+          ]
+        ]
+      },
+      "notes": [
+        {
+          "zh": "真实数据集测试与固定长度合成测试的输入、输出分布不同；吞吐数字只在本报告的 ShareGPT 配置下成立。",
+          "en": "The real-dataset test has a different input/output distribution from fixed-length synthetic tests; throughput values apply only to this ShareGPT configuration."
+        }
+      ]
+    }
+  ],
+  "meta": [
+    {
+      "zh": "模型权重",
+      "en": "Checkpoint",
+      "value": "Qwen3-8B · BF16"
+    },
+    {
+      "zh": "单卡测试",
+      "en": "Single-card study",
+      "value": "1 × Ascend 910B4 · TP1 · 8K context"
+    },
+    {
+      "zh": "多卡测试",
+      "en": "Multi-card study",
+      "value": "4 × Ascend 910B4 · TP4 · 8K context"
+    },
+    {
+      "zh": "引擎版本",
+      "en": "Engine versions",
+      "value": "vLLM-Ascend 0.18.0rc1 · MindIE 2.1.RC1 · SGLang-CANN 8.5"
+    },
+    {
+      "zh": "测试工具",
+      "en": "Load tools",
+      "value": "EvalScope perf 1.7 · AI-Perf 0.7 · ShareGPT client"
+    }
+  ],
+  "methodIntro": {
+    "zh": "报告合并三次同权重、同设备族的独立 benchmark 阶段。合成矩阵以固定长度请求测扩展；Agent 形状矩阵以缓存前缀和不同上下文长度模拟服务流量；ShareGPT 阶段使用真实公开对话提示词。",
+    "en": "This report consolidates three benchmark phases using the same checkpoint and hardware family. The synthetic matrix uses fixed-length requests; the Agent-shaped matrix models cached prefixes and context lengths; the ShareGPT phase uses public conversational prompts."
+  },
+  "methodNotes": [
+    {
+      "zh": "MindIE 单卡 KV 预算比其他引擎多约 15%，小幅吞吐差异不作胜负结论。各阶段硬件卡数、请求形状、请求量与客户端工具不同，结果不跨阶段直接排名。",
+      "en": "MindIE had about 15% more KV budget in the single-card study, so small throughput differences are not treated as wins. Card count, request shape, request volume, and client tooling differ by phase; results are not ranked across phases."
+    },
+    {
+      "zh": "早期报告将 910B4 的单卡 32 GB 测试与 4 卡 TP4 测试分开记录。机器名、服务地址、挂载路径等部署识别信息不纳入本报告。",
+      "en": "The source studies recorded the 32 GB single-card and 4-card TP4 setups separately. Hostnames, service addresses, and mount paths are omitted."
+    }
+  ]
+}

@@ -1,0 +1,329 @@
+{
+  "title": "Qwen3-32B · PD disaggregation on A100",
+  "breadcrumb": "Qwen3-32B · PD disaggregation",
+  "kicker": "SERVING ARCHITECTURE BENCHMARK · SLO GOODPUT",
+  "lede": {
+    "zh": "在 8×A100-80GB、Qwen3-32B BF16 上，以逐请求双门 SLO 达标率比较多副本聚合与 Prefill / Decode 分离。结果显示：并发 128 以下聚合更稳，160 以上 PD 分离反超；结论绑定 16 s TTFT / 60 ms TPOT 判据。",
+    "en": "On 8× A100-80GB with Qwen3-32B BF16, this report compares aggregated replicas with Prefill/Decode disaggregation using a per-request dual-gate SLO pass rate. Aggregation is stronger through C128; PD disaggregation leads at C160 and above under the tested 16 s TTFT / 60 ms TPOT limits."
+  },
+  "chips": [
+    "Qwen3-32B · BF16",
+    "8 × A100 · 80 GB",
+    "vLLM 0.20.0 V1 · NIXL Connector · router",
+    "ISL 4K / OSL 1K · closed loop",
+    "Measured 2026-07-18"
+  ],
+  "snapshot": {
+    "zh": "双门 SLO 达标率 · 3 次中位数 · 静态 P/D 配比",
+    "en": "Dual-gate SLO pass rate · median of 3 · fixed P/D ratios"
+  },
+  "sections": [
+    {
+      "id": "slo",
+      "zh": "双门 SLO 扫描",
+      "en": "Dual-gate SLO sweep"
+    },
+    {
+      "id": "ratio",
+      "zh": "P/D 配比",
+      "en": "P/D ratios"
+    },
+    {
+      "id": "method",
+      "zh": "方法与边界",
+      "en": "Method & limits"
+    }
+  ],
+  "stats": [
+    {
+      "zhLabel": "观测 crossover 区间",
+      "enLabel": "Observed crossover interval",
+      "value": "C128–160",
+      "zhNote": "离散并发点之间估计",
+      "enNote": "Inferred between measured points"
+    },
+    {
+      "zhLabel": "PD · C160",
+      "enLabel": "PD · C160",
+      "value": "70%",
+      "zhNote": "聚合为 32%",
+      "enNote": "32% for aggregation"
+    },
+    {
+      "zhLabel": "PD · C192",
+      "enLabel": "PD · C192",
+      "value": "69%",
+      "zhNote": "聚合降至 1%",
+      "enNote": "Aggregation falls to 1%"
+    }
+  ],
+  "overview": {
+    "heading": {
+      "zh": "负载门槛决定架构收益",
+      "en": "Load level determines which layout performs better"
+    },
+    "intro": {
+      "zh": "在较低并发，聚合服务用更多实例承担 Prefill，双门 SLO 达标率更高；高并发时共置 Prefill 对 Decode 的干扰使 TPOT 越线，PD 分离隔离 Decode 后更能守住 SLO。",
+      "en": "At lower concurrency, aggregated serving has more instances available for Prefill and achieves a higher dual-gate SLO pass rate. At high load, colocated Prefill interferes with Decode and pushes TPOT beyond the limit; PD separation protects Decode and preserves more SLO-compliant requests."
+    },
+    "note": {
+      "zh": "这是 SLO-goodput 研究，不是裸吞吐峰值比较。Crossover 位于离散测点之间；结论只适用于当前模型、硬件、软件版本、流量长度和 16 s / 60 ms SLO。",
+      "en": "This is an SLO-goodput study, not a raw-throughput peak comparison. The crossover lies between measured concurrency points; conclusions apply only to the tested model, hardware, software, request lengths, and 16 s / 60 ms SLO."
+    }
+  },
+  "blocks": [
+    {
+      "id": "slo",
+      "label": {
+        "zh": "SLO 达标率",
+        "en": "SLO 达标率"
+      },
+      "heading": {
+        "zh": "高并发时 PD 分离守住 SLO，低于 crossover 时多副本更好",
+        "en": "PD disaggregation preserves SLOs at high load; replicas win below the crossover"
+      },
+      "intro": {
+        "zh": "8×A100 上比较 4 个 TP2 聚合副本与 2P2D 分离部署。纵轴是逐请求同时满足 TTFT ≤16 s、TPOT ≤60 ms 的比例；每档三次运行取中位数。",
+        "en": "On 8× A100, four TP2 aggregated replicas are compared with a 2P2D disaggregated layout. The metric is the share of requests meeting both TTFT ≤16 s and TPOT ≤60 ms; each concurrency point is the median of three runs."
+      },
+      "chart": {
+        "title": {
+          "zh": "双门 SLO 达标率",
+          "en": "Dual-gate SLO pass rate"
+        },
+        "hint": {
+          "zh": "并发仅测 96/128/160/192；交叉点约在 128 与 160 之间。",
+          "en": "Only C96/C128/C160/C192 were measured; the crossover is between C128 and C160."
+        },
+        "labels": {
+          "zh": [
+            "C96",
+            "C128",
+            "C160",
+            "C192"
+          ],
+          "en": [
+            "C96",
+            "C128",
+            "C160",
+            "C192"
+          ]
+        },
+        "series": [
+          {
+            "zh": "多副本聚合",
+            "en": "Aggregated replicas",
+            "values": [
+              100,
+              79,
+              32,
+              1
+            ],
+            "color": "blue"
+          },
+          {
+            "zh": "PD 分离",
+            "en": "PD disaggregation",
+            "values": [
+              59,
+              61,
+              70,
+              69
+            ],
+            "color": "green"
+          }
+        ],
+        "yTitle": {
+          "zh": "% SLO pass",
+          "en": "% SLO pass"
+        }
+      },
+      "table": {
+        "headers": {
+          "zh": [
+            "并发",
+            "聚合 SLO 达标率",
+            "PD SLO 达标率",
+            "聚合 TPOT 达标率",
+            "PD TPOT 达标率"
+          ],
+          "en": [
+            "Concurrency",
+            "Aggregated SLO pass",
+            "PD SLO pass",
+            "Aggregated TPOT pass",
+            "PD TPOT pass"
+          ]
+        },
+        "rows": [
+          [
+            "C96",
+            "100%",
+            "59%",
+            "100%",
+            "100%"
+          ],
+          [
+            "C128",
+            "79%",
+            "61%",
+            "79%",
+            "100%"
+          ],
+          [
+            "C160",
+            "32%",
+            "70%",
+            "32%",
+            "70%"
+          ],
+          [
+            "C192",
+            "1%",
+            "69%",
+            "19%",
+            "81%"
+          ]
+        ]
+      },
+      "notes": [
+        {
+          "zh": "C128 两种部署均为 61% 左右，但 C160 时 PD 为 70%、聚合为 32%；C192 时聚合仅 1%，PD 为 69%。因此 crossover 是基于离散测点的区间判断，不是精确阈值。",
+          "en": "At C128 both layouts are near 60%, but at C160 PD reaches 70% versus 32% for aggregation; at C192 aggregation falls to 1% while PD remains at 69%. The crossover is an interval inferred from discrete points, not an exact threshold."
+        }
+      ]
+    },
+    {
+      "id": "ratio",
+      "label": {
+        "zh": "Prefill / Decode 配比",
+        "en": "Prefill / Decode 配比"
+      },
+      "heading": {
+        "zh": "2P2D 是本次固定配比扫描中最均衡的方案",
+        "en": "2P2D is the most balanced option in this fixed-ratio sweep"
+      },
+      "intro": {
+        "zh": "在 C160 下分别扫描同构 2P2D、3P1D，以及 TP1 prefill + TP2 decode 的异构配置。",
+        "en": "At C160, the study sweeps homogeneous 2P2D and 3P1D layouts plus a heterogeneous TP1-prefill/TP2-decode layout."
+      },
+      "chart": {
+        "title": {
+          "zh": "C160 双门达标率",
+          "en": "Dual-gate SLO pass rate at C160"
+        },
+        "hint": {
+          "zh": "3P1D 的单个 decode 实例成为瓶颈；TP1 prefill 在该模型上 TTFT 过慢。",
+          "en": "One decode instance bottlenecks 3P1D; TP1 prefill is too slow for this model."
+        },
+        "labels": {
+          "zh": [
+            "2P2D",
+            "3P1D",
+            "4P TP1 + 2D TP2"
+          ],
+          "en": [
+            "2P2D",
+            "3P1D",
+            "4P TP1 + 2D TP2"
+          ]
+        },
+        "series": [
+          {
+            "zh": "双门达标率",
+            "en": "Dual-gate pass rate",
+            "values": [
+              70,
+              0,
+              31
+            ],
+            "color": "blue"
+          }
+        ],
+        "yTitle": {
+          "zh": "% SLO pass",
+          "en": "% SLO pass"
+        }
+      },
+      "table": {
+        "headers": {
+          "zh": [
+            "配置",
+            "双门达标率",
+            "TTFT 达标率",
+            "TPOT 达标率",
+            "观测结论"
+          ],
+          "en": [
+            "Layout",
+            "Dual-gate pass",
+            "TTFT pass",
+            "TPOT pass",
+            "Observed result"
+          ]
+        },
+        "rows": [
+          [
+            "2P2D · TP2 each",
+            "70%",
+            "70%",
+            "70%",
+            "最均衡"
+          ],
+          [
+            "3P1D · TP2 each",
+            "0%",
+            "100%",
+            "0%",
+            "decode 过载"
+          ],
+          [
+            "4P TP1 + 2D TP2",
+            "31%",
+            "31%",
+            "100%",
+            "prefill TTFT 过慢"
+          ]
+        ]
+      },
+      "notes": [
+        {
+          "zh": "结论限定于 8×A100、Qwen3-32B TP2 和本次静态配比；动态调度、更大模型和其他 SLO 未测试。",
+          "en": "This result is limited to 8× A100, Qwen3-32B TP2, and the tested static ratios; dynamic scheduling, larger models, and other SLOs were not tested."
+        }
+      ]
+    }
+  ],
+  "meta": [
+    {
+      "zh": "模型",
+      "en": "Model",
+      "value": "Qwen3-32B · BF16"
+    },
+    {
+      "zh": "GPU 拓扑",
+      "en": "GPU layouts",
+      "value": "8 × A100 · 4 aggregated TP2 replicas vs 2P2D TP2"
+    },
+    {
+      "zh": "SLO",
+      "en": "SLO",
+      "value": "TTFT ≤ 16 s · TPOT ≤ 60 ms"
+    },
+    {
+      "zh": "统计",
+      "en": "Statistics",
+      "value": "Three runs per point · median"
+    }
+  ],
+  "methodIntro": {
+    "zh": "每个并发档清理并验证设备空闲后运行三次；结果使用逐请求是否同时满足 TTFT、TPOT 双门槛的比例。测试档为 C96/128/160/192。",
+    "en": "Each concurrency run was preceded by a clean-device check and repeated three times. The result is the share of requests meeting both TTFT and TPOT thresholds. Tested points were C96/128/160/192"
+  },
+  "methodNotes": [
+    {
+      "zh": "低并发端到端时延和原始 token 吞吐未用于本报告的主结论。SLO 改变时，架构 crossover 也可能改变。",
+      "en": "Low-load end-to-end latency and raw token throughput are not the primary claims here. Changing the SLO can change the architecture crossover."
+    }
+  ]
+}

@@ -1,0 +1,525 @@
+{
+  "title": "Qwen3.6-27B W8A8 · Ascend 910B4 · Topology & MTP",
+  "breadcrumb": "Qwen3.6-27B W8A8",
+  "kicker": "SERVING BENCHMARK · TOPOLOGY / MTP",
+  "lede": {
+    "zh": "Qwen3.6-27B W8A8 在 8 张 Ascend 910B4 上的拓扑、MTP 与多模态服务实验。干净复测显示 MTP k=3 的收益随并发反转：C1 提升 63%，C64 下降 17%。",
+    "en": "Topology, MTP, and multimodal serving measurements for Qwen3.6-27B W8A8 on eight Ascend 910B4 accelerators. A clean retest shows MTP k=3 changes from a 63% gain at C1 to a 17% loss at C64."
+  },
+  "chips": [
+    "8 × Ascend 910B4 · 32 GB",
+    "W8A8",
+    "vLLM-Ascend 0.18.0rc1",
+    "TP / DP · MTP · image-text",
+    "Measured 2026-07"
+  ],
+  "snapshot": {
+    "zh": "并行布局 · MTP 投机解码 · 调度器 · 图文负载",
+    "en": "Parallel layout · MTP speculative decoding · scheduler · image-text workload"
+  },
+  "sections": [
+    {
+      "id": "topology",
+      "zh": "并行布局",
+      "en": "Parallel layout"
+    },
+    {
+      "id": "mtp",
+      "zh": "MTP 投机解码",
+      "en": "MTP decoding"
+    },
+    {
+      "id": "multimodal",
+      "zh": "图文负载",
+      "en": "Image-text workload"
+    },
+    {
+      "id": "method",
+      "zh": "方法与边界",
+      "en": "Method & limits"
+    }
+  ],
+  "stats": [
+    {
+      "zhLabel": "推荐吞吐布局",
+      "enLabel": "Throughput-oriented layout",
+      "value": "TP4×2",
+      "zhNote": "峰值总吞吐 713 tok/s",
+      "enNote": "Peak aggregate throughput 713 tok/s"
+    },
+    {
+      "zhLabel": "MTP k=3 · C1",
+      "enLabel": "MTP k=3 · C1",
+      "value": "+63%",
+      "zhNote": "20.4 → 33.2 tok/s · 干净复测",
+      "enNote": "20.4 → 33.2 tok/s · clean retest"
+    },
+    {
+      "zhLabel": "MTP k=3 · C64",
+      "enLabel": "MTP k=3 · C64",
+      "value": "−17%",
+      "zhNote": "565.0 → 467.4 tok/s",
+      "enNote": "565.0 → 467.4 tok/s"
+    }
+  ],
+  "overview": {
+    "heading": {
+      "zh": "部署结论依赖负载区间",
+      "en": "Deployment choice depends on the workload region"
+    },
+    "intro": {
+      "zh": "TP4×2 在本轮 8K 固定负载的总吞吐测试中领先；TP8×1 的单用户 TPOT 最低。MTP k=3 适合低并发延迟场景，但不能直接外推到高并发。",
+      "en": "TP4×2 leads the aggregate-throughput test in this 8K fixed-workload phase; TP8×1 has the lowest single-user TPOT. MTP k=3 benefits low-concurrency latency, but that result does not extend to high concurrency."
+    },
+    "note": {
+      "zh": "实验使用 910B4 32 GB 卡，低于该 W8A8 权重官方目标硬件 Atlas 800T A3 的单卡显存。推荐结论限定于本次硬件、软件和负载。",
+      "en": "The experiment used 32 GB 910B4 accelerators, with less memory per card than the official Atlas 800T A3 target for this W8A8 checkpoint. Recommendations are limited to the measured hardware, software, and workloads."
+    }
+  },
+  "blocks": [
+    {
+      "id": "topology",
+      "label": {
+        "zh": "拓扑选择",
+        "en": "Topology selection"
+      },
+      "heading": {
+        "zh": "TP4×2 提高总吞吐，TP8×1 保持单用户低延迟",
+        "en": "TP4×2 raises aggregate throughput; TP8×1 minimizes single-user latency"
+      },
+      "intro": {
+        "zh": "阶段 A1 对比 TP8×1、TP4×2、TP2×4 与并发档位。TP4×2 的峰值总吞吐为 713 tok/s；TP8×1 单用户 TPOT 为 30 ms。TP2×4 的裸峰值接近，但 TPOT 为 80–179 ms，在本实验的紧 TPOT goodput 判据下不合格。",
+        "en": "Phase A1 tested TP8×1, TP4×2, and TP2×4 across concurrency levels. TP4×2 reached 713 tok/s aggregate throughput; TP8×1 measured 30 ms single-user TPOT. TP2×4 approached the raw peak but measured 80–179 ms TPOT and failed the experiment’s stricter TPOT goodput criterion."
+      },
+      "notes": [
+        {
+          "zh": "不同 TP 布局是配置选择结果，不构成同一条并发曲线。",
+          "en": "The TP layouts are configuration choices, not points on one concurrency curve."
+        },
+        {
+          "zh": "TP4×2 的冠军布局经过三次确认，结果约 713 / 706 tok/s；单轮测量可能出现约 20% 时间漂移。",
+          "en": "The TP4×2 lead was confirmed across three runs at about 713 / 706 tok/s; single-run measurements showed time drift of roughly 20%."
+        }
+      ],
+      "chart": {
+        "title": {
+          "zh": "拓扑阶段关键吞吐与延迟读数",
+          "en": "Key throughput and latency readings from topology phase"
+        },
+        "hint": {
+          "zh": "吞吐和 TPOT 使用不同单位，分开显示，不进行尺度换算。",
+          "en": "Throughput and TPOT use different units and are shown as separate measurements."
+        },
+        "labels": {
+          "zh": [
+            "TP4×2 · aggregate peak",
+            "TP8×1 · single-user TPOT",
+            "TP2×4 · aggregate peak approx."
+          ],
+          "en": [
+            "TP4×2 · aggregate peak",
+            "TP8×1 · single-user TPOT",
+            "TP2×4 · aggregate peak approx."
+          ]
+        },
+        "series": [
+          {
+            "zh": "测量值",
+            "en": "Measured value",
+            "values": [
+              713,
+              30,
+              703
+            ],
+            "color": "blue"
+          }
+        ],
+        "yTitle": {
+          "zh": "原始读数（单位见标签）",
+          "en": "Raw reading (unit is specified per label)"
+        },
+        "type": "bar"
+      },
+      "table": {
+        "headers": {
+          "zh": [
+            "布局",
+            "关键结果",
+            "解释"
+          ],
+          "en": [
+            "Layout",
+            "Key result",
+            "Interpretation"
+          ]
+        },
+        "rows": [
+          [
+            "TP4×2",
+            "713 tok/s · peak aggregate",
+            "Highest aggregate throughput; regular-SLO goodput also leads"
+          ],
+          [
+            "TP8×1",
+            "30 ms · single-user TPOT",
+            "Lowest single-user latency in the topology phase"
+          ],
+          [
+            "TP2×4",
+            "≈703 tok/s raw peak · TPOT 80–179 ms",
+            "Fails the tested tight-TPOT goodput criterion"
+          ]
+        ]
+      }
+    },
+    {
+      "id": "mtp",
+      "label": {
+        "zh": "MTP 对照",
+        "en": "MTP comparison"
+      },
+      "heading": {
+        "zh": "k=3 的收益在并发 32–64 间反转",
+        "en": "The k=3 gain reverses between concurrency 32 and 64"
+      },
+      "intro": {
+        "zh": "使用同一会话的干净复测，比较关闭 MTP、k=1 和 k=3。单用户吞吐提升明显；到 C64，k=3 已低于关闭 MTP 的基线。高并发 C96 时差距扩大。",
+        "en": "A clean same-session retest compared MTP off, k=1, and k=3. Single-user throughput improves substantially; by C64, k=3 is below the MTP-off baseline, with a larger gap at C96."
+      },
+      "notes": [
+        {
+          "zh": "k=3 接受长度在各档约 2.58–2.74；接受长度稳定并不代表高并发下吞吐仍有收益。",
+          "en": "Accepted draft length stays around 2.58–2.74 across these points; stable acceptance length does not guarantee a throughput gain at high concurrency."
+        },
+        {
+          "zh": "k=1 在 C64/C96 与基线接近，属于更稳妥的中间选择；k=2 因 ACL 图捕获尺寸约束不可部署。",
+          "en": "k=1 stays near baseline at C64/C96 and is the more balanced option in these measurements. k=2 could not be deployed because of an ACL graph-capture shape constraint."
+        }
+      ],
+      "chart": {
+        "title": {
+          "zh": "输出吞吐随并发变化 · 干净复测",
+          "en": "Output throughput by concurrency · clean retest"
+        },
+        "hint": {
+          "zh": "悬停数据点可查看并发档位与吞吐。",
+          "en": "Hover a point to inspect concurrency and throughput."
+        },
+        "labels": {
+          "zh": [
+            "C1",
+            "C16",
+            "C32",
+            "C64",
+            "C96"
+          ],
+          "en": [
+            "C1",
+            "C16",
+            "C32",
+            "C64",
+            "C96"
+          ]
+        },
+        "series": [
+          {
+            "zh": "MTP 关闭",
+            "en": "MTP off",
+            "values": [
+              20.4,
+              225.7,
+              382.4,
+              565.0,
+              700.5
+            ],
+            "color": "blue"
+          },
+          {
+            "zh": "MTP k=1",
+            "en": "MTP k=1",
+            "values": [
+              27.3,
+              285.6,
+              411.9,
+              583.6,
+              710.5
+            ],
+            "color": "muted"
+          },
+          {
+            "zh": "MTP k=3",
+            "en": "MTP k=3",
+            "values": [
+              33.2,
+              327.0,
+              455.0,
+              467.4,
+              487.4
+            ],
+            "color": "accent"
+          }
+        ],
+        "yTitle": {
+          "zh": "输出吞吐（tok/s）",
+          "en": "Output throughput (tok/s)"
+        },
+        "type": "line",
+        "xTitle": {
+          "zh": "并发",
+          "en": "Concurrency"
+        }
+      },
+      "table": {
+        "headers": {
+          "zh": [
+            "并发",
+            "MTP 关闭 tok/s",
+            "k=1 tok/s",
+            "k=3 tok/s",
+            "k=3 接受长度"
+          ],
+          "en": [
+            "Concurrency",
+            "MTP off tok/s",
+            "k=1 tok/s",
+            "k=3 tok/s",
+            "k=3 accepted length"
+          ]
+        },
+        "rows": [
+          [
+            "C1",
+            "20.4",
+            "27.3",
+            "33.2",
+            "2.58"
+          ],
+          [
+            "C16",
+            "225.7",
+            "285.6",
+            "327.0",
+            "2.68"
+          ],
+          [
+            "C32",
+            "382.4",
+            "411.9",
+            "455.0",
+            "2.72"
+          ],
+          [
+            "C64",
+            "565.0",
+            "583.6",
+            "467.4",
+            "2.72"
+          ],
+          [
+            "C96",
+            "700.5",
+            "710.5",
+            "487.4",
+            "2.74"
+          ]
+        ]
+      }
+    },
+    {
+      "id": "multimodal",
+      "label": {
+        "zh": "图文负载",
+        "en": "Image-text workload"
+      },
+      "heading": {
+        "zh": "图文输入增加预填充成本，需要独立容量规划",
+        "en": "Image-text inputs add prefill cost and need separate capacity planning"
+      },
+      "intro": {
+        "zh": "同一推荐配方下，VisionArena 图文负载相对纯文本的 TTFT 约为 2 倍；输出吞吐约为单用户的 0.86 倍、高并发的 0.49 倍。",
+        "en": "With the selected recipe, VisionArena image-text workloads measured about 2× the TTFT of text-only requests; output throughput was about 0.86× at single user and 0.49× at high concurrency."
+      },
+      "notes": [
+        {
+          "zh": "这组比例是不同输入模态之间的负载差异，不是可用于所有图片尺寸的固定折损系数。",
+          "en": "These ratios describe the measured modality workloads and are not universal penalties for every image size."
+        },
+        {
+          "zh": "视觉编码和多模态 prefill 会占用额外计算资源；线上容量应按图文请求占比单独核算。",
+          "en": "Vision encoding and multimodal prefill consume additional compute; production capacity should account for the image-text request mix."
+        }
+      ],
+      "chart": {
+        "title": {
+          "zh": "相对纯文本的图文输出吞吐",
+          "en": "Image-text output throughput relative to text-only"
+        },
+        "hint": {
+          "zh": "纯文本归一化为 1.0；仅表示本次实验所测工作点。",
+          "en": "Text-only is normalized to 1.0; values represent only the measured points."
+        },
+        "labels": {
+          "zh": [
+            "单用户",
+            "高并发"
+          ],
+          "en": [
+            "Single user",
+            "High concurrency"
+          ]
+        },
+        "series": [
+          {
+            "zh": "图文 / 纯文本",
+            "en": "Image-text / text",
+            "values": [
+              0.86,
+              0.49
+            ],
+            "color": "blue"
+          }
+        ],
+        "yTitle": {
+          "zh": "吞吐比（纯文本 = 1.0）",
+          "en": "Throughput ratio (text-only = 1.0)"
+        },
+        "type": "bar"
+      },
+      "table": {
+        "headers": {
+          "zh": [
+            "测量项",
+            "图文相对纯文本",
+            "边界"
+          ],
+          "en": [
+            "Metric",
+            "Image-text relative to text",
+            "Limit"
+          ]
+        },
+        "rows": [
+          [
+            "TTFT",
+            "约 2×",
+            "由视觉预填充引入；依赖图像负载"
+          ],
+          [
+            "输出吞吐 · 单用户",
+            "约 0.86×",
+            "本实验测得点"
+          ],
+          [
+            "输出吞吐 · 高并发",
+            "约 0.49×",
+            "本实验测得点"
+          ]
+        ]
+      }
+    },
+    {
+      "id": "method",
+      "label": {
+        "zh": "方法与边界",
+        "en": "Method & limits"
+      },
+      "heading": {
+        "zh": "分阶段筛选并复测决策点",
+        "en": "Staged screening with decision-point retests"
+      },
+      "intro": {
+        "zh": "实验采用 OFAT 分阶段设计：先选并行布局，再测 MTP，随后检查 async 调度和图文模态。TP4×2 冠军点做三次确认；干净 MTP 数据取代此前单轮数字。",
+        "en": "The experiment used staged OFAT screening: select the parallel layout, test MTP, then check async scheduling and image-text workloads. The TP4×2 lead received three confirmation runs; clean MTP retests supersede earlier single-run figures."
+      },
+      "notes": [
+        {
+          "zh": "async-scheduling 开关未观察到显著差异，结论限于本次环境和负载。",
+          "en": "No material difference was observed for the async-scheduling toggle in this environment and workload."
+        },
+        {
+          "zh": "本实验未做长上下文精度验证；不能据此宣称 256K 任务精度通过。",
+          "en": "Long-context accuracy was not validated; this report does not establish accuracy at 256K."
+        },
+        {
+          "zh": "对外发布已隐藏节点地址、命名空间、私有镜像地址、权重挂载路径和集群内部信息。",
+          "en": "Node addresses, namespaces, private image references, model mount paths, and internal cluster details have been omitted from this public report."
+        }
+      ],
+      "table": {
+        "headers": {
+          "zh": [
+            "项目",
+            "已测内容",
+            "解读限制"
+          ],
+          "en": [
+            "Item",
+            "Measured",
+            "Interpretation limit"
+          ]
+        },
+        "rows": [
+          [
+            "拓扑",
+            "TP8×1 / TP4×2 / TP2×4",
+            "独立实验阶段"
+          ],
+          [
+            "MTP",
+            "off / k=1 / k=3；C1–C96",
+            "k=2 无可用部署结果"
+          ],
+          [
+            "调度",
+            "async on/off",
+            "未见显著影响"
+          ],
+          [
+            "模态",
+            "文本与真实图文请求",
+            "未做长上下文准确率评估"
+          ]
+        ]
+      }
+    }
+  ],
+  "meta": [
+    {
+      "zh": "实验日期",
+      "en": "Test date",
+      "value": "2026-07-22–23"
+    },
+    {
+      "zh": "硬件",
+      "en": "Hardware",
+      "value": "8 × Ascend 910B4 · 32 GB"
+    },
+    {
+      "zh": "权重精度",
+      "en": "Checkpoint precision",
+      "value": "W8A8"
+    },
+    {
+      "zh": "推理栈",
+      "en": "Serving stack",
+      "value": "vLLM-Ascend 0.18.0rc1"
+    },
+    {
+      "zh": "配置范围",
+      "en": "Configuration scope",
+      "value": "TP8×1 / TP4×2 / TP2×4 · MTP off / k=1 / k=3"
+    }
+  ],
+  "methodIntro": [
+    {
+      "zh": "测试分多个阶段执行，未把拓扑、MTP、调度器和模态混成一个完整组合网格。报告中的吞吐均为总输出吞吐，除非明确标注单用户指标。",
+      "en": "Testing ran in phases rather than as a full factorial grid across topology, MTP, scheduler, and modality. Throughput values are aggregate output throughput unless explicitly labeled as single-user metrics."
+    }
+  ],
+  "methodNotes": [
+    {
+      "zh": "TP4×2 决策点经三次确认。MTP 曲线采用同一会话复测数值，减轻时间漂移影响。",
+      "en": "The TP4×2 decision point was confirmed three times. MTP curves use same-session retest values to reduce the effect of time drift."
+    }
+  ]
+}

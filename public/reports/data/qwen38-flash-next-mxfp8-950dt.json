@@ -1,0 +1,520 @@
+{
+  "title": "Qwen3.8-Flash-Next MXFP8 · Ascend 950DT",
+  "breadcrumb": "Qwen3.8-Flash-Next",
+  "kicker": "SERVING PERFORMANCE BENCHMARK · W8A8-MXFP8",
+  "lede": {
+    "zh": "这份报告记录 Qwen3.8-Flash-Next MXFP8-MTP 在 8×Ascend 950DT 上的固定长度、真实 coding 消息回放、图文请求与长上下文检索结果。最终 17 个测点全部完成；本地源码与算子适配是测试环境的一部分。",
+    "en": "This report measures Qwen3.8-Flash-Next MXFP8-MTP on 8×Ascend 950DT across fixed-length requests, coding-trace replay, image-text traffic, and long-context retrieval. All 17 final points completed; local source and operator adaptations are part of the tested stack."
+  },
+  "chips": [
+    "8 × Ascend 950DT · 96 GB",
+    "W8A8-MXFP8",
+    "TP8 + EP · DP1",
+    "MTP3 · vLLM-Ascend 0.30.0rc2 + local adaptation",
+    "Measured 2026-10-20"
+  ],
+  "snapshot": {
+    "zh": "17 个正式测点 · 固定长度 / Agent 回放 / 图文 / 256K 与 512K",
+    "en": "17 measured points · fixed length / Agent replay / image-text / 256K and 512K"
+  },
+  "sections": [
+    {
+      "id": "fixed",
+      "zh": "固定长度吞吐",
+      "en": "Fixed-length serving"
+    },
+    {
+      "id": "agent",
+      "zh": "Coding 消息回放",
+      "en": "Coding-trace replay"
+    },
+    {
+      "id": "multimodal",
+      "zh": "图文请求",
+      "en": "Image-text requests"
+    },
+    {
+      "id": "context",
+      "zh": "长上下文",
+      "en": "Long context"
+    },
+    {
+      "id": "method",
+      "zh": "方法与边界",
+      "en": "Method & limits"
+    }
+  ],
+  "stats": [
+    {
+      "zhLabel": "固定长度总吞吐",
+      "enLabel": "Fixed-length output throughput",
+      "value": "225.1 tok/s",
+      "zhNote": "8K 输入 / 512 输出 · C8",
+      "enNote": "8K input / 512 output · C8"
+    },
+    {
+      "zhLabel": "Agent 回放",
+      "enLabel": "Agent replay",
+      "value": "437 / 437",
+      "zhNote": "C8 轮次完成 · 0 错误",
+      "enNote": "C8 turns completed · 0 errors"
+    },
+    {
+      "zhLabel": "512K 检索探测",
+      "enLabel": "512K retrieval probe",
+      "value": "3 / 3",
+      "zhNote": "512K YaRN 检索 · 小样本",
+      "enNote": "512K YaRN retrieval · small sample"
+    }
+  ],
+  "overview": {
+    "heading": {
+      "zh": "性能结论按负载类型分别读取",
+      "en": "Read each result in its workload context"
+    },
+    "intro": {
+      "zh": "在固定 512 输出的合成文本负载下，C8 提高聚合输出吞吐，同时抬高 TTFT 和 TPOT。真实 coding 消息回放 C8 完成 437 轮，聚合吞吐 116.2 tok/s；它衡量的是服务行为，不是 coding 任务成功率。图文与长上下文数据独立测量。",
+      "en": "For synthetic text with a fixed 512-token output, C8 raises aggregate output throughput while increasing TTFT and TPOT. At C8, coding-trace replay completed 437 turns at 116.2 tok/s aggregate; this measures serving behavior, not coding task success. Image-text and long-context results are separate workloads."
+    },
+    "note": {
+      "zh": "最终批次使用 8,192 max-num-batched-tokens 和 QSA960 切分适配。8192 与历史 4096 配置的三次独立启动对照同时改变两个因素，不能归因于单一改动。长上下文仅是检索探测，512K 的 n=8 不支持尾延迟结论。",
+      "en": "The final batch uses an 8,192 max-num-batched-tokens setting and a QSA960 splitting adaptation. The three-start comparison with the historical 4,096 configuration changes two factors together, so the effect cannot be attributed to one change. Long-context results are retrieval probes; n=8 at 512K does not support tail-latency claims."
+    }
+  },
+  "blocks": [
+    {
+      "id": "fixed",
+      "label": {
+        "zh": "固定长度",
+        "en": "Fixed length"
+      },
+      "heading": {
+        "zh": "并发提高聚合吞吐，也增加单请求等待",
+        "en": "Concurrency raises aggregate throughput and per-request latency"
+      },
+      "intro": {
+        "zh": "每点 128 请求，错误为 0；固定输出 512 token。吞吐为整批输出 token / 测量墙钟时间，单请求 decode 速率不与之混用。",
+        "en": "Each point has 128 requests and zero errors, with 512 output tokens. Aggregate throughput is output tokens divided by measurement wall time; it is distinct from per-request decode rate."
+      },
+      "chart": {
+        "title": {
+          "zh": "固定 512 输出的总输出吞吐",
+          "en": "Aggregate output throughput at 512 output tokens"
+        },
+        "hint": {
+          "zh": "按输入长度分组；悬停查看各并发测点。",
+          "en": "Grouped by input length; hover over points for concurrency results."
+        },
+        "labels": {
+          "zh": [
+            "C1",
+            "C8"
+          ],
+          "en": [
+            "C1",
+            "C8"
+          ]
+        },
+        "series": [
+          {
+            "zh": "8K 输入",
+            "en": "8K input",
+            "values": [
+              60.869416880330824,
+              225.1178869801954
+            ],
+            "color": "blue"
+          },
+          {
+            "zh": "32K 输入",
+            "en": "32K input",
+            "values": [
+              49.52732572495586,
+              128.8489068519546
+            ],
+            "color": "green"
+          }
+        ],
+        "yTitle": {
+          "zh": "总输出吞吐 (tok/s)",
+          "en": "Aggregate output throughput (tok/s)"
+        }
+      },
+      "table": {
+        "headers": {
+          "zh": [
+            "测点",
+            "实际输入 / 输出",
+            "成功 / 尝试",
+            "TTFT 均值 (s)",
+            "TTFT P95 (s)",
+            "TPOT 均值 (ms)",
+            "TPOT P95 (ms)",
+            "总输出 (tok/s)"
+          ],
+          "en": [
+            "Point",
+            "Actual input / output",
+            "Success / attempted",
+            "TTFT mean (s)",
+            "TTFT P95 (s)",
+            "TPOT mean (ms)",
+            "TPOT P95 (ms)",
+            "Aggregate output (tok/s)"
+          ]
+        },
+        "rows": [
+          [
+            "8K / 512 · C1",
+            "8,192 / 512",
+            "128/128",
+            "0.78",
+            "0.82",
+            "14.9",
+            "15.9",
+            "60.9"
+          ],
+          [
+            "8K / 512 · C8",
+            "8,192 / 512",
+            "128/128",
+            "1.62",
+            "2.61",
+            "32.3",
+            "36.9",
+            "225.1"
+          ],
+          [
+            "32K / 512 · C1",
+            "32,256 / 512",
+            "128/128",
+            "2.59",
+            "2.63",
+            "15.1",
+            "16.2",
+            "49.5"
+          ],
+          [
+            "32K / 512 · C8",
+            "32,256 / 512",
+            "128/128",
+            "4.42",
+            "9.26",
+            "53.2",
+            "61.2",
+            "128.8"
+          ]
+        ]
+      },
+      "notes": [
+        {
+          "zh": "C8 总吞吐高于 C1，但 TTFT 与 TPOT 同时上升；这代表聚合容量与单请求响应之间的取舍。",
+          "en": "C8 increases aggregate throughput over C1 while both TTFT and TPOT rise, showing the trade-off between aggregate capacity and per-request response."
+        }
+      ]
+    },
+    {
+      "id": "agent",
+      "label": {
+        "zh": "Coding 消息回放",
+        "en": "Coding-trace replay"
+      },
+      "heading": {
+        "zh": "C8 回放吞吐升高，单轮延迟也明显增加",
+        "en": "C8 increases replay throughput and turn latency"
+      },
+      "intro": {
+        "zh": "回放 16 个公开 coding 会话轨迹，按真实消息顺序将模型回复写入下一轮上下文；工具和环境消息使用录制内容，不执行新生成的工具动作。",
+        "en": "Sixteen public coding-session traces were replayed in message order, with model responses carried into subsequent turns. Tool and environment messages were replayed; generated tool actions were not executed."
+      },
+      "chart": {
+        "title": {
+          "zh": "Agent 回放聚合输出吞吐",
+          "en": "Aggregate output throughput during Agent replay"
+        },
+        "hint": {
+          "zh": "服务吞吐指标，不代表任务成功率。",
+          "en": "Serving throughput only; this is not a task success score."
+        },
+        "labels": {
+          "zh": [
+            "C1",
+            "C8"
+          ],
+          "en": [
+            "C1",
+            "C8"
+          ]
+        },
+        "series": [
+          {
+            "zh": "总输出吞吐",
+            "en": "Aggregate output throughput",
+            "values": [
+              49.737168170413476,
+              116.22014396578591
+            ],
+            "color": "blue"
+          }
+        ],
+        "yTitle": {
+          "zh": "tok/s",
+          "en": "tok/s"
+        }
+      },
+      "table": {
+        "headers": {
+          "zh": [
+            "并发",
+            "成功 / 尝试",
+            "TTFT 均值 / P95 (s)",
+            "TPOT 均值 / P95 (ms)",
+            "总输出 tok/s",
+            "单请求 decode tok/s"
+          ],
+          "en": [
+            "Concurrency",
+            "Success / attempted",
+            "TTFT mean / P95 (s)",
+            "TPOT mean / P95 (ms)",
+            "Aggregate tok/s",
+            "Per-request decode tok/s"
+          ]
+        },
+        "rows": [
+          [
+            "C1",
+            "437/437",
+            "0.596 / 0.877",
+            "12.9 / 15.6",
+            "49.7",
+            "78.3"
+          ],
+          [
+            "C8",
+            "437/437",
+            "1.148 / 2.382",
+            "48.9 / 77.1",
+            "116.2",
+            "23.4"
+          ]
+        ]
+      },
+      "notes": [
+        {
+          "zh": "C1/C8 各 437 轮完成、错误为 0。分别有 9/3 条回复触及 512 token 上限；不据此声称任务完成或答案质量。",
+          "en": "All 437 turns completed at C1 and C8 with zero request errors. Nine and three responses respectively reached the 512-token cap; this does not establish task completion or answer quality."
+        }
+      ]
+    },
+    {
+      "id": "multimodal",
+      "label": {
+        "zh": "图文请求",
+        "en": "Image-text"
+      },
+      "heading": {
+        "zh": "图文输入按图像 token 桶分别报告",
+        "en": "Image-text results are separated by image-token bucket"
+      },
+      "intro": {
+        "zh": "两档图像 token 桶分别在 C1 与 C8 测量，每点 128 个固定 512 输出请求。处理器图像缓存热、解码器前缀缓存冷；不能与纯文本结果直接比较。",
+        "en": "Two image-token buckets were measured at C1 and C8, with 128 fixed 512-token outputs per point. The processor image cache was warm and decoder prefix cache cold; these results are not directly comparable to text-only points."
+      },
+      "table": {
+        "headers": {
+          "zh": [
+            "图像桶 / 并发",
+            "成功 / 尝试",
+            "TTFT 均值 / P95 (s)",
+            "TPOT 均值 / P95 (ms)",
+            "总输出 tok/s"
+          ],
+          "en": [
+            "Image bucket / concurrency",
+            "Success / attempted",
+            "TTFT mean / P95 (s)",
+            "TPOT mean / P95 (ms)",
+            "Aggregate output tok/s"
+          ]
+        },
+        "rows": [
+          [
+            "Low · C1",
+            "128/128",
+            "0.603 / 0.688",
+            "13.9 / 15.2",
+            "66.3"
+          ],
+          [
+            "Low · C8",
+            "128/128",
+            "1.018 / 1.407",
+            "31.9 / 36.7",
+            "232.5"
+          ],
+          [
+            "High · C1",
+            "128/128",
+            "0.649 / 0.730",
+            "14.9 / 16.3",
+            "61.8"
+          ],
+          [
+            "High · C8",
+            "128/128",
+            "1.096 / 1.688",
+            "33.2 / 37.5",
+            "223.1"
+          ]
+        ]
+      },
+      "notes": [
+        {
+          "zh": "ChartQA 与 DocVQA 各 128 条固定公开子集的准确性结果属于单独质量检查，不作为性能分数；不是完整榜单评测。",
+          "en": "Accuracy checks on fixed public subsets of 128 ChartQA and 128 DocVQA items are separate from performance measurements and are not full benchmark leaderboard evaluations."
+        }
+      ]
+    },
+    {
+      "id": "context",
+      "label": {
+        "zh": "长上下文",
+        "en": "Long context"
+      },
+      "heading": {
+        "zh": "256K 与 512K 检索点均完成，样本量较小",
+        "en": "256K and 512K retrieval probes completed with small samples"
+      },
+      "intro": {
+        "zh": "用 coding 文本中的合成检索键探测上下文窗口；这不是 Agent 历史长度或任务能力测试。输出约 20 token，C1。",
+        "en": "Synthetic retrieval keys embedded in coding text were used to probe context windows. These are not Agent-history or task-capability tests. Each C1 point generated about 20 tokens."
+      },
+      "table": {
+        "headers": {
+          "zh": [
+            "测试窗口",
+            "实际输入 token",
+            "请求完成",
+            "TTFT 均值 (s)",
+            "TPOT 均值 (ms)",
+            "结果"
+          ],
+          "en": [
+            "Context window",
+            "Actual input tokens",
+            "Requests completed",
+            "Mean TTFT (s)",
+            "Mean TPOT (ms)",
+            "Result"
+          ]
+        },
+        "rows": [
+          [
+            "Native 128K · C1",
+            "130,560",
+            "8/8",
+            "11.537",
+            "12.21",
+            "Retrieval probe"
+          ],
+          [
+            "Native 128K · C2",
+            "130,560",
+            "8/8",
+            "18.419",
+            "187.78",
+            "Retrieval probe"
+          ],
+          [
+            "Native 128K · C4",
+            "130,560",
+            "8/8",
+            "35.085",
+            "187.56",
+            "Retrieval probe"
+          ],
+          [
+            "Native 128K · C8",
+            "130,560",
+            "8/8",
+            "51.519",
+            "188.09",
+            "Retrieval probe"
+          ],
+          [
+            "32K / 2,048 · C1",
+            "32,256",
+            "8/8",
+            "2.591",
+            "13.86",
+            "Fixed-length decode"
+          ],
+          [
+            "Native 256K",
+            "261,632",
+            "8/8",
+            "26.785",
+            "8.96",
+            "Retrieval key found"
+          ],
+          [
+            "YaRN 512K",
+            "523,776",
+            "3/3",
+            "69.368",
+            "3.62",
+            "Retrieval key found"
+          ]
+        ]
+      },
+      "notes": [
+        {
+          "zh": "128K、256K 与 512K 为检索探测，512K 使用独立 YaRN 扩窗配置；512K 本轮仅 3 个有效请求。1M 仅完成两条后被停止，第三条取消，不纳入已完成性能点。",
+          "en": "The 128K, 256K, and 512K points are retrieval probes; 512K uses a separate YaRN extended-window configuration and has only three valid requests in this run. The 1M run was stopped after two requests and a third was cancelled, so it is excluded."
+        }
+      ]
+    }
+  ],
+  "meta": [
+    {
+      "zh": "权重格式",
+      "en": "Checkpoint format",
+      "value": "MXFP8 · MTP3"
+    },
+    {
+      "zh": "硬件拓扑",
+      "en": "Hardware topology",
+      "value": "8 × Ascend 950DT · TP8 + EP · DP1"
+    },
+    {
+      "zh": "软件栈",
+      "en": "Software stack",
+      "value": "vLLM-Ascend 0.30.0rc2 · local source/operator adaptation"
+    },
+    {
+      "zh": "测试范围",
+      "en": "Measurement scope",
+      "value": "17 completed points · text, replay, image-text, context"
+    },
+    {
+      "zh": "压测工具口径",
+      "en": "Load method",
+      "value": "Fixed-length requests and sequential multi-turn trace replay"
+    }
+  ],
+  "methodIntro": {
+    "zh": "结果来自最终有效测试批次。服务配置、场景窗口和缓存状态分别记录；历史失效批次和不完整 1M 测点不并入正式结果。",
+    "en": "Results use the final valid measurement batches. Serving configuration, workload windows, and cache states are reported separately; invalid historical batches and the incomplete 1M point are excluded."
+  },
+  "methodNotes": [
+    {
+      "zh": "固定文本与图文正式点每点 n=128；Agent 每个并发档 437 轮；长上下文和 32K/2048 探测仅 n=3–8。分位数仅在 n≥128 时展示，低样本点不推断尾延迟。",
+      "en": "Fixed-text and image-text points use n=128 each; Agent replay has 437 turns per concurrency level; long-context and 32K/2048 probes use n=3–8. Percentiles are shown only for n≥128; no tail-latency claims are made from small samples."
+    },
+    {
+      "zh": "TPOT 为首包后解码阶段的请求平均间隔口径，不是单 token ITL。MTP 流式包可能含多个 token。报告未提供跨模型、跨权重或跨硬件归一化比较。",
+      "en": "TPOT is a request-level average interval over the decode phase after the first packet, not per-token ITL. An MTP stream packet can contain multiple tokens. This report does not normalize results across models, checkpoints, or hardware."
+    }
+  ]
+}

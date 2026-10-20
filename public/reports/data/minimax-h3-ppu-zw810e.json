@@ -1,0 +1,368 @@
+{
+  "title": "MiniMax-H3 · PPU ZW810E · Video generation",
+  "breadcrumb": "MiniMax-H3",
+  "kicker": "VIDEO GENERATION BENCHMARK · BF16",
+  "lede": {
+    "zh": "MiniMax-H3 在 4 张 PPU ZW810E 上完成 T2VA 与 Ref2VA。每类任务各有 10 个有效串行测量；T2VA 中位耗时 443.20 秒，Ref2VA 为 755.05 秒。",
+    "en": "MiniMax-H3 T2VA and Ref2VA generation on four PPU ZW810E accelerators, with ten valid serial measurements per task. Median times were 443.20 s for T2VA and 755.05 s for Ref2VA."
+  },
+  "chips": [
+    "4 × PPU ZW810E · 96 GB",
+    "BF16",
+    "SGLang 0.5.18 + PPU adaptation",
+    "TP2 × Ulysses2",
+    "Measured 2026-09"
+  ],
+  "snapshot": {
+    "zh": "T2VA / Ref2VA · 1344×768 · 124 帧 · 50 步 · n=10",
+    "en": "T2VA / Ref2VA · 1344×768 · 124 frames · 50 steps · n=10"
+  },
+  "sections": [
+    {
+      "id": "videoGeneration",
+      "zh": "生成耗时",
+      "en": "Generation time"
+    },
+    {
+      "id": "breakdown",
+      "zh": "阶段拆解",
+      "en": "Phase breakdown"
+    },
+    {
+      "id": "method",
+      "zh": "方法与边界",
+      "en": "Method & limits"
+    }
+  ],
+  "stats": [
+    {
+      "zhLabel": "T2VA 中位耗时",
+      "enLabel": "T2VA median time",
+      "value": "443.20 s",
+      "zhNote": "10 次有效测量",
+      "enNote": "10 valid measurements"
+    },
+    {
+      "zhLabel": "Ref2VA 中位耗时",
+      "enLabel": "Ref2VA median time",
+      "value": "755.05 s",
+      "zhNote": "10 次有效测量",
+      "enNote": "10 valid measurements"
+    },
+    {
+      "zhLabel": "输出格式校验",
+      "enLabel": "Output format validation",
+      "value": "20 / 20",
+      "zhNote": "两类任务均 10/10 合规",
+      "enNote": "10/10 valid for both tasks"
+    }
+  ],
+  "overview": {
+    "heading": {
+      "zh": "参考条件主要增加逐步去噪时间",
+      "en": "Reference conditioning primarily increases denoising time"
+    },
+    "intro": {
+      "zh": "Ref2VA 比 T2VA 多 311.85 秒；阶段计时中去噪增加 269.63 秒。参考素材编码约 3.7 秒，并非总差值的主要来源。",
+      "en": "Ref2VA takes 311.85 s longer than T2VA; phase timings show 269.63 s of additional denoising. Reference-media encoding takes about 3.7 s and is not the main source of the difference."
+    },
+    "note": {
+      "zh": "这是同一硬件与引擎配置下两种任务的自测，不是跨模型权重对比。",
+      "en": "These are two workloads measured on the same hardware and engine configuration, not a comparison across model checkpoints."
+    }
+  },
+  "blocks": [
+    {
+      "id": "videoGeneration",
+      "label": {
+        "zh": "任务耗时",
+        "en": "Task timings"
+      },
+      "heading": {
+        "zh": "Ref2VA 中位耗时为 T2VA 的 1.70 倍",
+        "en": "Ref2VA median time is 1.70× T2VA"
+      },
+      "intro": {
+        "zh": "两类任务均使用 1344×768、5 秒、124 帧、24 fps、50 步、BF16，串行并发为 1。各有 10 个有效样本。",
+        "en": "Both tasks used 1344×768, 5 seconds, 124 frames, 24 fps, 50 steps, BF16, and serial concurrency 1. Each has ten valid samples."
+      },
+      "notes": [
+        {
+          "zh": "T2VA 范围 443.20–443.22 秒；Ref2VA 范围 755.03–755.08 秒。",
+          "en": "T2VA range was 443.20–443.22 s; Ref2VA range was 755.03–755.08 s."
+        },
+        {
+          "zh": "样本量 n=10，不报告尾部分位数；极小范围只表示该次启动内测量稳定。",
+          "en": "At n=10, tail percentiles are omitted; the narrow range describes this startup only."
+        }
+      ],
+      "chart": {
+        "title": {
+          "zh": "视频生成任务中位耗时",
+          "en": "Median time by video task"
+        },
+        "hint": {
+          "zh": "每类任务 n=10；越低越快。",
+          "en": "n=10 per task; lower is faster."
+        },
+        "labels": {
+          "zh": [
+            "T2VA",
+            "Ref2VA"
+          ],
+          "en": [
+            "T2VA",
+            "Ref2VA"
+          ]
+        },
+        "series": [
+          {
+            "zh": "中位耗时",
+            "en": "Median time",
+            "values": [
+              443.2,
+              755.05
+            ],
+            "color": "blue"
+          }
+        ],
+        "yTitle": {
+          "zh": "秒",
+          "en": "Seconds"
+        },
+        "type": "bar"
+      },
+      "table": {
+        "headers": {
+          "zh": [
+            "任务",
+            "中位数",
+            "均值",
+            "最小–最大",
+            "样本"
+          ],
+          "en": [
+            "Task",
+            "Median",
+            "Mean",
+            "Min–max",
+            "Samples"
+          ]
+        },
+        "rows": [
+          [
+            "T2VA",
+            "443.20 s",
+            "443.21 s",
+            "443.20–443.22 s",
+            "10"
+          ],
+          [
+            "Ref2VA",
+            "755.05 s",
+            "755.05 s",
+            "755.03–755.08 s",
+            "10"
+          ]
+        ]
+      }
+    },
+    {
+      "id": "breakdown",
+      "label": {
+        "zh": "阶段拆解",
+        "en": "Phase breakdown"
+      },
+      "heading": {
+        "zh": "额外耗时主要出现在去噪循环",
+        "en": "Most additional time is spent in denoising"
+      },
+      "intro": {
+        "zh": "T2VA 去噪 384.47 秒，Ref2VA 去噪 654.10 秒；平均单步分别为 7.85 与 13.35 秒。",
+        "en": "T2VA denoising took 384.47 s and Ref2VA 654.10 s; mean step times were 7.85 s and 13.35 s respectively."
+      },
+      "notes": [
+        {
+          "zh": "Ref2VA 比 T2VA 去噪多 269.63 秒；素材编码合计约 3.7 秒。",
+          "en": "Ref2VA adds 269.63 s of denoising over T2VA; media encoding totals about 3.7 s."
+        },
+        {
+          "zh": "不得把约 312 秒的端到端差值都归因于参考素材编码。",
+          "en": "Do not attribute the roughly 312 s end-to-end difference to reference encoding."
+        }
+      ],
+      "chart": {
+        "title": {
+          "zh": "去噪阶段耗时",
+          "en": "Denoising phase time"
+        },
+        "hint": {
+          "zh": "服务端阶段计时。",
+          "en": "Server-side phase timing."
+        },
+        "labels": {
+          "zh": [
+            "T2VA",
+            "Ref2VA"
+          ],
+          "en": [
+            "T2VA",
+            "Ref2VA"
+          ]
+        },
+        "series": [
+          {
+            "zh": "去噪耗时",
+            "en": "Denoising time",
+            "values": [
+              384.47,
+              654.1
+            ],
+            "color": "blue"
+          }
+        ],
+        "yTitle": {
+          "zh": "秒",
+          "en": "Seconds"
+        },
+        "type": "bar"
+      },
+      "table": {
+        "headers": {
+          "zh": [
+            "任务",
+            "去噪",
+            "每步均值",
+            "去噪外"
+          ],
+          "en": [
+            "Task",
+            "Denoising",
+            "Mean per step",
+            "Outside denoising"
+          ]
+        },
+        "rows": [
+          [
+            "T2VA",
+            "384.47 s",
+            "7.85 s",
+            "约 58.7 s"
+          ],
+          [
+            "Ref2VA",
+            "654.10 s",
+            "13.35 s",
+            "约 38.6 s"
+          ]
+        ]
+      }
+    },
+    {
+      "id": "method",
+      "label": {
+        "zh": "方法与边界",
+        "en": "Method & limits"
+      },
+      "heading": {
+        "zh": "结果绑定到补丁版本与单次启动环境",
+        "en": "Results are tied to the patched version and one startup"
+      },
+      "intro": {
+        "zh": "运行使用 SGLang 0.5.18 与 PPU 适配补丁，4 卡，TP2×Ulysses2。每种任务丢弃 1 条 warmup 后记录 10 个有效串行样本。",
+        "en": "The run used SGLang 0.5.18 with PPU adaptation patches, four cards, TP2×Ulysses2. Ten valid serial samples were collected per task after one warmup was discarded."
+      },
+      "notes": [
+        {
+          "zh": "跨启动复现未做；该次启动内的窄范围不能替代重复启动测试。",
+          "en": "Cross-startup reproducibility was not tested; a narrow range within one startup is not a substitute."
+        },
+        {
+          "zh": "音频参考编码路径有额外补丁，未在其他平台交叉验证。",
+          "en": "The audio-reference encoding path uses an additional patch that was not cross-validated on another platform."
+        },
+        {
+          "zh": "内部节点、私有镜像及集群路径已脱敏。",
+          "en": "Internal node, private image, and cluster path details are redacted."
+        }
+      ],
+      "table": {
+        "headers": {
+          "zh": [
+            "配置项",
+            "设置"
+          ],
+          "en": [
+            "Configuration",
+            "Setting"
+          ]
+        },
+        "rows": [
+          [
+            "硬件",
+            "4 × PPU ZW810E · 96 GB"
+          ],
+          [
+            "并行布局",
+            "TP2 × Ulysses2"
+          ],
+          [
+            "任务规格",
+            "1344×768 · 5 s · 124 frames · 24 fps · 50 steps"
+          ],
+          [
+            "采样",
+            "T2VA n=10 · Ref2VA n=10"
+          ],
+          [
+            "引擎",
+            "SGLang 0.5.18 + PPU patches"
+          ]
+        ]
+      }
+    }
+  ],
+  "meta": [
+    {
+      "zh": "实验日期",
+      "en": "Test date",
+      "value": "2026-09-02–03"
+    },
+    {
+      "zh": "硬件",
+      "en": "Hardware",
+      "value": "4 × PPU ZW810E · 96 GB"
+    },
+    {
+      "zh": "精度",
+      "en": "Precision",
+      "value": "BF16"
+    },
+    {
+      "zh": "引擎",
+      "en": "Engine",
+      "value": "SGLang 0.5.18 + PPU adaptation patches"
+    },
+    {
+      "zh": "任务",
+      "en": "Tasks",
+      "value": "MiniMax-H3 T2VA / Ref2VA"
+    }
+  ],
+  "methodIntro": [
+    {
+      "zh": "分别展示 T2VA 与 Ref2VA 的任务耗时和去噪阶段耗时，避免将素材编码耗时误归因到主循环。",
+      "en": "T2VA and Ref2VA end-to-end and denoising times are shown separately to avoid attributing media encoding to the main loop."
+    }
+  ],
+  "methodNotes": [
+    {
+      "zh": "视频生成耗时不使用 tok/s 表示。",
+      "en": "Video generation time is reported in seconds, not tok/s."
+    },
+    {
+      "zh": "公开版本删除集群内部标识和私有路径。",
+      "en": "Internal cluster identifiers and private paths are removed from the public version."
+    }
+  ]
+}

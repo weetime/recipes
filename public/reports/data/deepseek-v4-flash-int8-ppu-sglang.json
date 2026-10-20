@@ -1,0 +1,393 @@
+{
+  "title": "DeepSeek-V4-Flash INT8 · PPU ZW810E",
+  "breadcrumb": "DeepSeek-V4-Flash INT8",
+  "kicker": "SERVING PERFORMANCE BENCHMARK · SHAREGPT",
+  "lede": {
+    "zh": "DeepSeek-V4-Flash-INT8 在 8 张 PPU ZW810E 上以 SGLang 服务，用 ShareGPT 对话负载扫描并发。输出 256 档每点三次取中位数，输出 1,024 档为单次观测。",
+    "en": "DeepSeek-V4-Flash INT8 was served with SGLang on eight PPU ZW810E accelerators under ShareGPT traffic. Each 256-output point reports the median of three runs; 1,024-output points are single-run observations."
+  },
+  "chips": [
+    "8 × PPU ZW810E",
+    "DeepSeek-V4-Flash · W8A8 INT8",
+    "SGLang 0.5.12",
+    "TP8 · attention CP8",
+    "Measured 2026-07"
+  ],
+  "snapshot": {
+    "zh": "ShareGPT · 输出 256 三次重复 · 输出 1,024 单次",
+    "en": "ShareGPT · output 256 repeated 3× · output 1,024 single run"
+  },
+  "sections": [
+    {
+      "id": "out256",
+      "zh": "输出 256 并发扫描",
+      "en": "Output-256 concurrency sweep"
+    },
+    {
+      "id": "out1024",
+      "zh": "输出 1,024 长输出",
+      "en": "Output-1,024 long output"
+    },
+    {
+      "id": "method",
+      "zh": "方法与边界",
+      "en": "Method & limits"
+    }
+  ],
+  "stats": [
+    {
+      "zhLabel": "观测峰值输出吞吐",
+      "enLabel": "Observed peak output throughput",
+      "value": "568 tok/s",
+      "zhNote": "输出 256 · C32 · 三次中位数",
+      "enNote": "Output 256 · C32 · median of 3 runs"
+    },
+    {
+      "zhLabel": "C32 TTFT P50",
+      "enLabel": "C32 TTFT P50",
+      "value": "566 ms",
+      "zhNote": "输出 256",
+      "enNote": "Output 256"
+    },
+    {
+      "zhLabel": "基准运行错误",
+      "enLabel": "Benchmark run errors",
+      "value": "0 / 22",
+      "zhNote": "原始报告记录",
+      "enNote": "As recorded in source report"
+    }
+  ],
+  "overview": {
+    "heading": {
+      "zh": "吞吐平台对应服务并发上限",
+      "en": "The throughput plateau coincides with the configured concurrency cap"
+    },
+    "intro": {
+      "zh": "输出 256 档总吞吐从 C1 的约 44 tok/s 增长到 C32 的 568 tok/s；C64 为 560 tok/s，同时 TTFT P50 从 C32 的 566 ms 增至约 14.4 秒。该服务配置的 max-running-requests 为 32，因此不能把 C32 平台解释成硬件算力饱和。",
+      "en": "Aggregate throughput for output-256 rises from about 44 tok/s at C1 to 568 tok/s at C32; C64 measures 560 tok/s while TTFT P50 increases from 566 ms to about 14.4 seconds. The service was configured with max-running-requests=32, so the C32 plateau is not evidence of hardware saturation."
+    },
+    "note": {
+      "zh": "固定 seed 与重复 prompt 会形成热缓存口径；输出 1,024 点没有重复。设备利用率与 KV/队列内部指标未采集，无法据此解释硬件利用率或冷态表现。",
+      "en": "A fixed seed and repeated prompts produce a warm-cache measurement. Output-1,024 points were not repeated. Device utilization and internal KV/queue metrics were not collected, so hardware utilization and cold-cache behavior cannot be inferred."
+    }
+  },
+  "blocks": [
+    {
+      "id": "out256",
+      "label": {
+        "zh": "输出 256",
+        "en": "Output 256"
+      },
+      "heading": {
+        "zh": "C32 是配置限制下的吞吐平台",
+        "en": "C32 is the throughput plateau under the configured cap"
+      },
+      "intro": {
+        "zh": "ShareGPT V3，输出上限 256，C1/4/8/16/32/64，每点 3 次取中位数。C32 是服务端并发上限。",
+        "en": "ShareGPT V3 with a 256-token output cap at C1/4/8/16/32/64; each point is the median of three runs. C32 is the server concurrency cap."
+      },
+      "chart": {
+        "title": {
+          "zh": "输出吞吐与并发",
+          "en": "Output throughput by concurrency"
+        },
+        "hint": {
+          "zh": "超过 C32 后吞吐没有继续提高；C64 延迟显著增加。",
+          "en": "Throughput does not improve beyond C32, while latency rises sharply at C64."
+        },
+        "labels": {
+          "zh": [
+            "C1",
+            "C4",
+            "C8",
+            "C16",
+            "C32",
+            "C64"
+          ],
+          "en": [
+            "C1",
+            "C4",
+            "C8",
+            "C16",
+            "C32",
+            "C64"
+          ]
+        },
+        "series": [
+          {
+            "zh": "输出吞吐",
+            "en": "Output throughput",
+            "values": [
+              43.78,
+              142.29,
+              242.19,
+              388.4,
+              567.55,
+              559.88
+            ],
+            "color": "blue"
+          }
+        ],
+        "yTitle": {
+          "zh": "tok/s",
+          "en": "tok/s"
+        }
+      },
+      "table": {
+        "headers": {
+          "zh": [
+            "并发",
+            "重复次数",
+            "输出吞吐",
+            "TTFT P50",
+            "TTFT P99",
+            "ITL P50",
+            "E2E P50",
+            "错误率"
+          ],
+          "en": [
+            "Concurrency",
+            "Repeats",
+            "Output tok/s",
+            "TTFT P50",
+            "TTFT P99",
+            "ITL P50",
+            "E2E P50",
+            "Error rate"
+          ]
+        },
+        "rows": [
+          [
+            "C1",
+            "3",
+            "44",
+            "362 ms",
+            "481 ms",
+            "21.6 ms",
+            "5.81 s",
+            "0.00%"
+          ],
+          [
+            "C4",
+            "3",
+            "142",
+            "396 ms",
+            "764 ms",
+            "25.4 ms",
+            "6.85 s",
+            "0.00%"
+          ],
+          [
+            "C8",
+            "3",
+            "242",
+            "425 ms",
+            "1111 ms",
+            "30.4 ms",
+            "8.17 s",
+            "0.00%"
+          ],
+          [
+            "C16",
+            "3",
+            "388",
+            "524 ms",
+            "1129 ms",
+            "38.8 ms",
+            "10.35 s",
+            "0.00%"
+          ],
+          [
+            "C32",
+            "3",
+            "568",
+            "566 ms",
+            "1987 ms",
+            "53.0 ms",
+            "14.01 s",
+            "0.00%"
+          ],
+          [
+            "C64",
+            "3",
+            "560",
+            "14396 ms",
+            "16229 ms",
+            "55.0 ms",
+            "27.85 s",
+            "0.00%"
+          ]
+        ]
+      },
+      "notes": [
+        {
+          "zh": "C64 TTFT P50 约 14.4 秒，主要是并发超过服务端 max-running-requests 后的等待；服务端 cap 与负载发生混杂。",
+          "en": "C64 TTFT P50 is about 14.4 seconds, consistent with waiting beyond max-running-requests; the configured cap is confounded with the offered load."
+        }
+      ]
+    },
+    {
+      "id": "out1024",
+      "label": {
+        "zh": "输出 1,024",
+        "en": "Output 1,024"
+      },
+      "heading": {
+        "zh": "长输出提供更高聚合吞吐，样本为单次",
+        "en": "Longer outputs reach higher aggregate throughput, from single runs"
+      },
+      "intro": {
+        "zh": "输出上限 1,024 的 C4/8/16/32 结果各为单次执行，与输出 256 的三次中位数分开列出。",
+        "en": "C4/8/16/32 with a 1,024-token output cap were each run once and are reported separately from the three-run output-256 medians."
+      },
+      "chart": {
+        "title": {
+          "zh": "输出 1,024 · 单次观测吞吐",
+          "en": "Output-1,024 throughput · single run"
+        },
+        "hint": {
+          "zh": "每个并发点 n=1，不作重复性或尾延迟结论。",
+          "en": "n=1 per concurrency point; no repeatability or tail-latency claims."
+        },
+        "labels": {
+          "zh": [
+            "C4",
+            "C8",
+            "C16",
+            "C32"
+          ],
+          "en": [
+            "C4",
+            "C8",
+            "C16",
+            "C32"
+          ]
+        },
+        "series": [
+          {
+            "zh": "输出吞吐",
+            "en": "Output throughput",
+            "values": [
+              149.24,
+              257.73,
+              447.54,
+              666.55
+            ],
+            "color": "green"
+          }
+        ],
+        "yTitle": {
+          "zh": "tok/s",
+          "en": "tok/s"
+        }
+      },
+      "table": {
+        "headers": {
+          "zh": [
+            "并发",
+            "重复次数",
+            "输出吞吐",
+            "TTFT P50",
+            "ITL P50",
+            "E2E P50",
+            "错误率"
+          ],
+          "en": [
+            "Concurrency",
+            "Repeats",
+            "Output tok/s",
+            "TTFT P50",
+            "ITL P50",
+            "E2E P50",
+            "Error rate"
+          ]
+        },
+        "rows": [
+          [
+            "C4",
+            "1",
+            "149",
+            "414 ms",
+            "24.6 ms",
+            "21.98 s",
+            "0.00%"
+          ],
+          [
+            "C8",
+            "1",
+            "258",
+            "427 ms",
+            "27.0 ms",
+            "25.44 s",
+            "0.00%"
+          ],
+          [
+            "C16",
+            "1",
+            "448",
+            "459 ms",
+            "32.0 ms",
+            "27.27 s",
+            "0.00%"
+          ],
+          [
+            "C32",
+            "1",
+            "667",
+            "758 ms",
+            "37.5 ms",
+            "32.51 s",
+            "0.00%"
+          ]
+        ]
+      },
+      "notes": [
+        {
+          "zh": "长输出档单次执行，只用于观察该次测量；不与 256 输出档作直接排名。",
+          "en": "The long-output points are single-run observations and are not directly ranked against the output-256 profile."
+        }
+      ]
+    }
+  ],
+  "meta": [
+    {
+      "zh": "模型量化",
+      "en": "Checkpoint quantization",
+      "value": "W8A8 INT8"
+    },
+    {
+      "zh": "硬件拓扑",
+      "en": "Hardware topology",
+      "value": "8 × PPU ZW810E · TP8 · attention CP8"
+    },
+    {
+      "zh": "软件栈",
+      "en": "Software stack",
+      "value": "SGLang 0.5.12 · PPU adaptation"
+    },
+    {
+      "zh": "负载",
+      "en": "Workload",
+      "value": "ShareGPT V3 · fixed seed · streaming"
+    },
+    {
+      "zh": "服务限制",
+      "en": "Serving cap",
+      "value": "max-running-requests=32"
+    }
+  ],
+  "methodIntro": {
+    "zh": "主测使用 EvalScope perf 的 ShareGPT 对话请求，输出长度分别限制为 256 与 1,024。主矩阵按长度和重复次数分开报告。",
+    "en": "The main test used EvalScope perf with ShareGPT conversational prompts and output caps of 256 or 1,024 tokens. Matrices are separated by output length and repeat count."
+  },
+  "methodNotes": [
+    {
+      "zh": "输出 256：每个点三次取中位数，六档并发。输出 1,024：四档并发各单次。共 22 次测量、0 错误。TTFT/ITL/E2E 为客户端统计。",
+      "en": "Output 256: median of three runs at six concurrency levels. Output 1,024: one run at each of four levels. The source records 22 runs and zero errors. TTFT/ITL/E2E are client-side measurements."
+    },
+    {
+      "zh": "固定 prompt 与 seed 使重复请求可能命中前缀缓存。结果属于当前 SGLang/PPU 配置，不能外推为硬件峰值、冷缓存容量或生产 SLO。",
+      "en": "Fixed prompts and seed can produce prefix-cache hits across repetitions. Results apply to this SGLang/PPU configuration and do not establish hardware peak, cold-cache capacity, or a production SLO."
+    }
+  ]
+}
