@@ -17,6 +17,7 @@ meta:
     b300: verified
     mi300x: verified
     mi355x: verified
+    ascend_910c: supported
 
 model:
   model_id: "MiniMaxAI/MiniMax-M3"
@@ -133,6 +134,7 @@ variants:
     # On AMD, 8x MI350X/MI355X fits comfortably.
     vram_minimum_gb: 1025
     description: "Native BF16 checkpoint — multi-node TP recommended for long-context headroom"
+    supported_hardware: [h200, b200, b300, mi300x, mi355x]
     hardware_overrides:
       h200:
         # After ~1 TB of BF16 weights, 8x H200 has ~3.5 GiB/GPU left for KV;
@@ -148,6 +150,7 @@ variants:
     # comfortably, ~4 GPUs for weights alone on Blackwell (B200/B300) or AMD MI350X/MI355X (gfx950)).
     vram_minimum_gb: 513
     description: "NVIDIA-quantized MXFP8 weights — Blackwell (B200/B300) for native MX tensor cores, and AMD CDNA4 (MI350X/MI355X, gfx950) for native MXFP8 Matrix Cores."
+    supported_hardware: [h100, h200, b200, b300, mi300x, mi355x]
     extra_args:
       - "--attention_config.indexer_kv_dtype"
       - "fp8"
@@ -209,6 +212,7 @@ variants:
     precision: nvfp4
     vram_minimum_gb: 257
     description: "NVIDIA-quantized NVFP4 weights (ModelOpt) for Blackwell (B200/B300) — native FP4 tensor cores, ~half the VRAM of MXFP8."
+    supported_hardware: [b200, b300]
     extra_args:
       - "--trust-remote-code"
       - "--kv-cache-dtype"
@@ -248,6 +252,52 @@ variants:
           - "data"
           - "--mm-encoder-attn-backend"
           - "ROCM_AITER_FA"
+  ascend_w8a8:
+    model_id: "Eco-Tech/MiniMax-M3-w8a8-0626"
+    precision: int8
+    label: "W8A8 (Ascend A3)"
+    vram_minimum_gb: 440
+    min_vllm_version: "0.23.0"
+    supported_hardware: [ascend_910c]
+    description: "Official ModelSlim W8A8 checkpoint for one Atlas 800I A3 node; TP4×DP4 on 16 NPUs, 133K context."
+    hardware_overrides:
+      ascend_910c:
+        docker_image: "quay.io/ascend/vllm-ascend:v0.23.0-a3"
+        extra_env:
+          VLLM_USE_V2_MODEL_RUNNER: "1"
+          HCCL_OP_EXPANSION_MODE: "AIV"
+          PYTORCH_NPU_ALLOC_CONF: "expandable_segments:True"
+    extra_args:
+      - "--trust-remote-code"
+      - "--quantization"
+      - "ascend"
+      - "--served-model-name"
+      - "minimax-m3"
+      - "--max-model-len"
+      - "133000"
+      - "--data-parallel-size"
+      - "4"
+      - "--api-server-count"
+      - "1"
+      - "--enable-expert-parallel"
+      - "--max-num-batched-tokens"
+      - "32768"
+      - "--long-prefill-token-threshold"
+      - "4096"
+      - "--max-num-seqs"
+      - "32"
+      - "--distributed-executor-backend"
+      - "mp"
+      - "--gpu-memory-utilization"
+      - "0.92"
+      - "--limit-mm-per-prompt"
+      - '{"image":1,"video":0}'
+      - "--enable-chunked-prefill"
+      - "--enable-prefix-caching"
+      - "--compilation-config"
+      - '{"cudagraph_mode":"FULL_DECODE_ONLY"}'
+      - "--additional-config"
+      - '{"enable_cpu_binding":true,"enable_flashcomm1":true,"ascend_compilation_config":{"fuse_norm_quant":false},"multistream_overlap_shared_expert":true,"enable_shared_expert_dp":true,"weight_nz_mode":2}'
 
 compatible_strategies:
   - single_node_tp
@@ -276,6 +326,9 @@ hardware_overrides:
       VLLM_ROCM_USE_AITER_FUSION_SHARED_EXPERTS: "1"
 
 strategy_overrides:
+  single_node_tep:
+    tp:
+      ascend_910c: 4
   pd_cluster:
     hardware_overrides:
       blackwell:
@@ -286,6 +339,24 @@ strategy_overrides:
           - "true"
           - "--attention_config.indexer_kv_dtype"
           - "fp8"
+
+strategy_hardware:
+  single_node_tp:
+    ascend_910c: unsupported
+  single_node_tep:
+    ascend_910c: supported
+  single_node_dep:
+    ascend_910c: unsupported
+  multi_node_tp:
+    ascend_910c: unsupported
+  multi_node_tp_pp:
+    ascend_910c: unsupported
+  multi_node_tep:
+    ascend_910c: unsupported
+  multi_node_dep:
+    ascend_910c: unsupported
+  pd_cluster:
+    ascend_910c: unsupported
 
 guide: |
   ## Overview

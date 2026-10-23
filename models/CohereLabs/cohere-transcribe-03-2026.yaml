@@ -1,0 +1,113 @@
+meta:
+  title: "Cohere Transcribe"
+  slug: "cohere-transcribe"
+  provider: "Cohere"
+  description: "2B multilingual Conformer ASR model supporting 14 languages, with a separate Arabic-tuned checkpoint."
+  date_added: 2026-10-21
+  date_updated: 2026-10-21
+  difficulty: intermediate
+  tasks:
+    - multimodal
+  related_recipes:
+    - "Qwen/Qwen3-ASR-1.7B"
+  hardware:
+    ascend_910b: supported
+
+model:
+  model_id: "CohereLabs/cohere-transcribe-03-2026"
+  min_vllm_version: "0.23.0"
+  architecture: dense
+  parameter_count: "2B"
+  active_parameters: "2B"
+  base_args:
+    - "--trust-remote-code"
+    - "--served-model-name"
+    - "cohere-transcribe"
+    - "--dtype"
+    - "bfloat16"
+    - "--enforce-eager"
+    - "--block-size"
+    - "128"
+  base_env:
+    ASCEND_RT_VISIBLE_DEVICES: "0"
+    HF_HUB_OFFLINE: "1"
+    TRANSFORMERS_OFFLINE: "1"
+
+dependencies:
+  - command: "pip install librosa"
+    brand: Huawei
+    note: "Install librosa when building a custom vLLM-Ascend runtime image; the official tutorial lists it as an audio-serving dependency."
+
+features: {}
+opt_in_features: []
+
+variants:
+  default:
+    precision: bf16
+    vram_minimum_gb: 8
+    description: "03-2026 base multilingual checkpoint; upstream documents BF16 serving on one Atlas A2 64 GB NPU."
+    supported_hardware: [ascend_910b]
+    tp:
+      ascend_910b: 1
+    hardware_overrides:
+      ascend_910b:
+        docker_image: "quay.io/ascend/vllm-ascend:v0.23.0"
+  arabic_07_2026:
+    model_id: "CohereLabs/cohere-transcribe-arabic-07-2026"
+    precision: bf16
+    label: "Arabic fine-tuned (07-2026)"
+    vram_minimum_gb: 8
+    description: "Arabic-tuned checkpoint. The upstream guide reports lower WER than the base model on its Common Voice Arabic evaluation."
+    supported_hardware: [ascend_910b]
+    tp:
+      ascend_910b: 1
+    hardware_overrides:
+      ascend_910b:
+        docker_image: "quay.io/ascend/vllm-ascend:v0.23.0"
+
+compatible_strategies:
+  - single_node_tp
+
+strategy_overrides: {}
+hardware_overrides: {}
+
+guide: |
+  ## Overview
+
+  Cohere Transcribe is a 2B Conformer encoder-decoder ASR family supporting 14
+  languages. The default checkpoint is the multilingual `03-2026` model. The
+  `arabic_07_2026` variant is an Arabic fine-tune. Both use BF16 and the
+  upstream Atlas A2 single-NPU serving profile.
+
+  Hugging Face currently requires accepting the model repository conditions
+  before downloading either checkpoint. The recipe therefore expects the
+  weights to be available locally before use; the offline environment settings
+  prevent runtime downloads after startup.
+
+  ## vLLM-Ascend support
+
+  The upstream tutorial documents the A2 inference product with
+  `quay.io/ascend/vllm-ascend:v0.23.0`, TP1, eager execution, and block size
+  128. It states Cohere Transcribe support is provided through the upstream
+  `cohere_asr` model implementation and that 950DT support is planned for a
+  later stage. This recipe records upstream documentation, not local E2E
+  validation.
+
+  The model repository contains custom modeling code, so the launch command
+  enables `--trust-remote-code`. For offline serving, download the checkpoint
+  before setting `HF_HUB_OFFLINE=1` and `TRANSFORMERS_OFFLINE=1`. If building a
+  custom image, install `librosa` in that image.
+
+  ## Upstream evaluation notes
+
+  The vLLM-Ascend guide reports 9.06% WER / 2.96% CER for the base model and
+  5.28% WER / 1.27% CER for the Arabic-tuned model on the same 100 Common Voice
+  Arabic samples. These are upstream-reported evaluation results, not results
+  produced by this recipe. The larger 10,471-sample Arabic evaluation is only
+  reported for the tuned model.
+
+  ## References
+
+  - [Multilingual model card](https://huggingface.co/CohereLabs/cohere-transcribe-03-2026)
+  - [Arabic model card](https://huggingface.co/CohereLabs/cohere-transcribe-arabic-07-2026)
+  - [vLLM-Ascend Cohere Transcribe tutorial](https://docs.vllm.ai/projects/ascend/zh-cn/latest/tutorials/models/Cohere-Transcribe.html)

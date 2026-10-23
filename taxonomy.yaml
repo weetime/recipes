@@ -335,6 +335,19 @@ hardware_profiles:
     restricted: true
 
   # ── Huawei Ascend NPU ──
+  # Atlas 300I DUO contains two Ascend 310-series devices. Cards ship with
+  # either 48 GB or 96 GB total, so use the conservative capacity for fit hints.
+  atlas_300i_duo:
+    brand: Huawei
+    generation: ascend
+    display_name: "Atlas 300I DUO"
+    description: "Huawei Atlas 300I DUO · 2× Ascend 310-series processors · 48 GB baseline (48/96 GB SKUs) · vLLM Ascend"
+    gpu_count: 2
+    vram_gb: 48
+    multi_node: false
+    scalable: false
+    restricted: true
+
   # `restricted: true` keeps these out of the picker unless a recipe declares
   # them in `meta.hardware` — Ascend runs via the vllm-ascend plugin (separate
   # install: CANN + torch-npu), only on recipes validated against the

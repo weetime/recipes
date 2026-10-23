@@ -10,10 +10,13 @@ meta:
     - multimodal
   performance_headline: "Accurate multilingual ASR, including singing voice; single-GPU serving"
   related_recipes: []
+  hardware:
+    ascend_910b: supported
+    atlas_300i_duo: supported
 
 model:
   model_id: "Qwen/Qwen3-ASR-1.7B"
-  min_vllm_version: "0.16.0"
+  min_vllm_version: "0.19.0"
   architecture: dense
   parameter_count: "2.3B"
   active_parameters: "2.3B"
@@ -34,6 +37,41 @@ variants:
     precision: bf16
     vram_minimum_gb: 4
     description: "Full precision BF16 — fits on a single mid-range GPU"
+    supported_hardware: [ascend_910b, atlas_300i_duo]
+    min_vllm_version: "0.19.0"
+    tp:
+      ascend_910b: 1
+      atlas_300i_duo: 1
+    hardware_overrides:
+      ascend_910b:
+        docker_image: "quay.io/ascend/vllm-ascend:v0.23.0"
+        extra_env:
+          VLLM_USE_MODELSCOPE: "True"
+        extra_args:
+          - "--served-model-name"
+          - "qwen3-asr"
+          - "--max-model-len"
+          - "4096"
+          - "--gpu-memory-utilization"
+          - "0.9"
+          - "--enforce-eager"
+      atlas_300i_duo:
+        docker_image: "quay.io/ascend/vllm-ascend:v0.23.0-310p"
+        extra_env:
+          VLLM_USE_MODELSCOPE: "True"
+        extra_args:
+          - "--served-model-name"
+          - "qwen3-asr"
+          - "--max-model-len"
+          - "4096"
+          - "--gpu-memory-utilization"
+          - "0.9"
+          - "--dtype"
+          - "float16"
+          - "--additional-config"
+          - '{"ascend_compilation_config":{"fuse_norm_quant":false,"enable_npu_graph_ex":false}}'
+          - "--compilation-config"
+          - '{"cudagraph_mode":"FULL_DECODE_ONLY","cudagraph_capture_sizes":[1,4]}'
 
 compatible_strategies:
   - single_node_tp
@@ -74,6 +112,35 @@ guide: |
 
   ```bash
   vllm serve Qwen/Qwen3-ASR-1.7B
+  ```
+
+  ## Ascend (vLLM-Ascend)
+
+  Upstream documents single-NPU BF16 serving on Atlas A2 and Atlas 300I DUO.
+  Both profiles use TP1 and a conservative 4,096-token limit. The 300I DUO
+  command uses FP16 and disables unsupported NPU graph extensions. This is
+  upstream documented support, not a local end-to-end validation.
+
+  ```bash
+  # Atlas A2: quay.io/ascend/vllm-ascend:v0.23.0
+  export VLLM_USE_MODELSCOPE=True
+  vllm serve Qwen/Qwen3-ASR-1.7B \\
+    --served-model-name qwen3-asr \\
+    --tensor-parallel-size 1 \\
+    --max-model-len 4096 \\
+    --gpu-memory-utilization 0.9 \\
+    --enforce-eager
+
+  # Atlas 300I DUO: quay.io/ascend/vllm-ascend:v0.23.0-310p
+  export VLLM_USE_MODELSCOPE=True
+  vllm serve Qwen/Qwen3-ASR-1.7B \\
+    --served-model-name qwen3-asr \\
+    --tensor-parallel-size 1 \\
+    --max-model-len 4096 \\
+    --gpu-memory-utilization 0.9 \\
+    --dtype float16 \\
+    --additional-config '{"ascend_compilation_config":{"fuse_norm_quant":false,"enable_npu_graph_ex":false}}' \\
+    --compilation-config '{"cudagraph_mode":"FULL_DECODE_ONLY","cudagraph_capture_sizes":[1,4]}'
   ```
 
   ## Client Usage
@@ -147,9 +214,9 @@ guide: |
   ## Troubleshooting
 
   - Make sure `vllm[audio]` extras are installed or audio requests will fail.
-  - Use the nightly wheel until Qwen3-ASR support lands in the stable release.
 
   ## References
 
   - [Model card](https://huggingface.co/Qwen/Qwen3-ASR-1.7B)
+  - [vLLM-Ascend Qwen3-ASR tutorial](https://docs.vllm.ai/projects/ascend/zh-cn/latest/tutorials/models/Qwen3-ASR-1.7B.html)
   - [vLLM audio support](https://docs.vllm.ai/en/latest/features/multimodal_inputs.html)

@@ -27,6 +27,7 @@ meta:
     mi350x: verified
     mi355x: verified
     dgx_station_gb300: verified
+    ascend_910c: supported
 
 model:
   model_id: "deepseek-ai/DeepSeek-V4.1-Flash"
@@ -111,6 +112,7 @@ features:
 opt_in_features:
   - spec_decoding
   - text_only
+  - encoder_parallel
 
 variants:
   default:
@@ -167,6 +169,53 @@ variants:
           - "--compilation-config"
           - '{"cudagraph_capture_sizes":[1,2,4,6,8,12,16,18,24,32,40,48,64,96,128]}'
 
+  ascend_w8a8:
+    model_id: "Eco-Tech/DeepSeek-V4.1-Flash-w8a8"
+    precision: int8
+    label: "W8A8 (Ascend A3)"
+    vram_minimum_gb: 552
+    description: "Ascend ModelScope checkpoint with W8A8 weights and INT8 Engram storage."
+    min_vllm_version: "0.30.0rc2"
+    supported_hardware: [ascend_910c]
+    tp: 4
+    extra_args:
+      - "--data-parallel-size"
+      - "4"
+      - "--enable-expert-parallel"
+      - "--max-model-len"
+      - "150000"
+      - "--max-num-batched-tokens"
+      - "8192"
+      - "--served-model-name"
+      - "dsv41"
+      - "--gpu-memory-utilization"
+      - "0.9"
+      - "--max-num-seqs"
+      - "32"
+      - "--safetensors-load-strategy"
+      - "lazy"
+      - "--quantization"
+      - "ascend"
+      - "--block-size"
+      - "128"
+      - "--compilation-config"
+      - '{"cudagraph_mode":"FULL_DECODE_ONLY"}'
+      - "--async-scheduling"
+      - "--engram-config"
+      - '{"cpu_offload":true,"dp_shared_memory":true}'
+      - "--additional-config"
+      - '{"ascend_compilation_config":{"enable_npugraph_ex":true,"enable_static_kernel":false},"enable_cpu_binding":true,"enable_fused_mc2":1,"enable_dsa_cp":true,"enable_flashcomm1":true,"enable_shared_expert_dp":true}'
+    extra_env:
+      VLLM_USE_MODELSCOPE: "True"
+      VLLM_USE_V2_MODEL_RUNNER: "0"
+      VLLM_ENGINE_READY_TIMEOUT_S: "36000"
+      PYTORCH_NPU_ALLOC_CONF: "expandable_segments:True"
+      HCCL_BUFFSIZE: "1024"
+      HCCL_OP_EXPANSION_MODE: "AIV"
+    hardware_overrides:
+      ascend_910c:
+        docker_image: "quay.io/ascend/vllm-ascend:v0.30.0rc2-a3"
+
 compatible_strategies:
   - single_node_tp
   - single_node_tep
@@ -184,8 +233,18 @@ strategy_hardware:
   # Single GPU; only TP1 is measured.
   single_node_tep:
     dgx_station_gb300: unsupported
+    ascend_910c: unsupported
   single_node_dep:
     dgx_station_gb300: unsupported
+    ascend_910c: unsupported
+  multi_node_tp:
+    ascend_910c: unsupported
+  multi_node_tep:
+    ascend_910c: unsupported
+  multi_node_dep:
+    ascend_910c: unsupported
+  pd_cluster:
+    ascend_910c: unsupported
 
 hardware_overrides:
   amd:
@@ -560,6 +619,15 @@ guide: |
 
   ## Prerequisites
 
+  ## Ascend A3 W8A8
+
+  vLLM-Ascend documents a dedicated ModelScope checkpoint,
+  `Eco-Tech/DeepSeek-V4.1-Flash-w8a8`, on one Atlas 800I A3 server. The mapped
+  profile uses the v0.30.0rc2 A3 image, DP4/TP4, W8A8 quantization, lazy weight
+  loading and CPU-offloaded Engram tables. The recipe explicitly selects Model
+  Runner V1, which the upstream guide currently requires. This is upstream
+  documentation support, not an independent hardware run.
+
   - An image (vLLM 0.30.0+); no pip wheel serves this architecture, so the Install block
     only offers Docker. On NVIDIA that is `vllm/vllm-openai:nightly`: the architecture
     landed on `main` in [vllm-project/vllm#56228](https://github.com/vllm-project/vllm/pull/56228),
@@ -840,6 +908,8 @@ guide: |
   These results cover this text-only configuration, not the builder's larger tier/chunk defaults or other variants.
 
   ## References
+
+  - [DeepSeek-V4.1-Flash on vLLM-Ascend](https://docs.vllm.ai/projects/ascend/zh-cn/latest/tutorials/models/DeepSeek-V4.1-Flash.html)
 
   - [Model card](https://huggingface.co/deepseek-ai/DeepSeek-V4.1-Flash)
   - [Technical report](https://huggingface.co/deepseek-ai/DeepSeek-V4.1-Flash/blob/main/DeepSeek_V41_Tech_Report.pdf)

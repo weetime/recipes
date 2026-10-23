@@ -384,10 +384,9 @@ export function CommandBuilder({ recipe, strategies, taxonomy }) {
 
   // ── Omni tasks ── resolved from the recipe (catalog lookup); declared up here
   // because both the omni and non-omni return paths reference these hooks.
-  const omniTasks = useMemo(() => resolveOmniTasks(recipe), [recipe]);
-
   // ── State ──
   const [variant, setVariant] = useState(searchParams.get("variant") || "default");
+  const omniTasks = useMemo(() => resolveOmniTasks(recipe, variant), [recipe, variant]);
   const [frontend, setFrontend] = useState(() =>
     resolveFrontend(recipe, searchParams.get("frontend") || undefined, taxonomy)
   );
@@ -2940,6 +2939,41 @@ export function CommandBuilder({ recipe, strategies, taxonomy }) {
             </div>
           </details>
         </div>
+
+        {engine === "vllm" && dockerMeta.isAscend && (
+          <section className="border border-vllm-blue/30 bg-vllm-blue/[0.06] px-4 py-3.5" aria-label={t("command.ascendRuntimeTitle")}>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <div className="text-[10px] font-semibold uppercase tracking-[0.16em] text-vllm-blue">
+                  {t("command.ascendRuntimeTitle")}
+                </div>
+                <p className="mt-1 text-sm font-medium">
+                  vLLM <span className="text-muted-foreground">+</span> vLLM-Ascend plugin
+                </p>
+              </div>
+              <span className="border border-vllm-blue/25 px-2 py-1 font-mono text-[10px] text-muted-foreground">
+                {hwProfile?.display_name || hwId}
+              </span>
+            </div>
+            <div className="mt-3 grid gap-3 border-t border-vllm-blue/15 pt-3 sm:grid-cols-2">
+              <div className="min-w-0">
+                <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{t("command.checkpoint")}</div>
+                <div className="mt-1 truncate font-mono text-xs" title={variantModelId || recipe.model?.model_id}>
+                  {variantModelId || recipe.model?.model_id || "—"}
+                </div>
+              </div>
+              <div className="min-w-0">
+                <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{t("command.ascendImage")}</div>
+                <div className="mt-1 break-all font-mono text-xs" title={dockerMeta.image || ""}>
+                  {dockerMeta.image || t("command.imageNotPinned")}
+                </div>
+              </div>
+            </div>
+            <p className="mt-3 text-[11px] leading-relaxed text-muted-foreground">
+              {t("command.ascendRuntimeHint")}
+            </p>
+          </section>
+        )}
 
         {/* ── Install (tabs: pip / docker — mirrors the command-card mode toggle
           so switching from either place keeps them in sync). */}

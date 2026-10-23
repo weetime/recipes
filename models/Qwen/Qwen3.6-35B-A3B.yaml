@@ -24,6 +24,9 @@ meta:
     rtx_5090: verified
     arc_pro_b60: verified
     arc_pro_b70: verified
+    ascend_910b: supported
+    ascend_910c: supported
+    atlas_300i_duo: supported
 
 model:
   model_id: "Qwen/Qwen3.6-35B-A3B"
@@ -99,6 +102,7 @@ opt_in_features:
   - spec_decoding
   - text_only
   - long_context
+  - encoder_parallel
 
 variants:
   default:
@@ -127,6 +131,7 @@ variants:
     min_vllm_version: "0.28.0"
     docker_image: "vllm/vllm-openai:v0.28.0"
     description: "NVIDIA ModelOpt NVFP4 checkpoint for Blackwell GPUs, including DGX Spark"
+    supported_hardware: [dgx_spark_gb10, dgx_station_gb300, rtx_pro_6000, rtx_5090]
     hardware_overrides:
       dgx_spark_gb10:
         extra_args:
@@ -231,6 +236,7 @@ variants:
     label: "NVFP4 (RedHat)"
     vram_minimum_gb: 21
     description: "RedHatAI compressed-tensors NVFP4 quantization for Blackwell GPUs"
+    supported_hardware: [dgx_spark_gb10, dgx_station_gb300, rtx_pro_6000, rtx_5090]
     extra_args:
       - "--kv-cache-dtype"
       - "fp8"
@@ -254,6 +260,69 @@ variants:
     extra_args:
       - "--kv-cache-dtype"
       - "fp8"
+  ascend_w8a8:
+    model_id: "Eco-Tech/Qwen3.6-35B-A3B-w8a8"
+    precision: int8
+    label: "W8A8 (Ascend)"
+    vram_minimum_gb: 40
+    description: "ModelScope Ascend W8A8 checkpoint; documented on Atlas A2/A3 and Atlas 300I DUO."
+    min_vllm_version: "0.18.0rc1"
+    supported_hardware: [ascend_910b, ascend_910c, atlas_300i_duo]
+    tp: 2
+    extra_args:
+      - "--quantization"
+      - "ascend"
+      - "--served-model-name"
+      - "qwen3.6"
+      - "--max-num-seqs"
+      - "128"
+      - "--max-model-len"
+      - "262144"
+      - "--gpu-memory-utilization"
+      - "0.90"
+      - "--additional-config"
+      - '{"enable_cpu_binding":true,"multistream_overlap_shared_expert":true}'
+      - "--compilation-config"
+      - '{"cudagraph_mode":"FULL_DECODE_ONLY"}'
+    extra_env:
+      VLLM_USE_MODELSCOPE: "True"
+    hardware_overrides:
+      ascend_910b:
+        docker_image: "quay.io/ascend/vllm-ascend:v0.23.0"
+        extra_args:
+          - "--enable-expert-parallel"
+          - "--max-num-batched-tokens"
+          - "16384"
+          - "--enable-prefix-caching"
+        extra_env:
+          HCCL_BUFFSIZE: "1024"
+          HCCL_OP_EXPANSION_MODE: "AIV"
+          PYTORCH_NPU_ALLOC_CONF: "expandable_segments:True"
+      ascend_910c:
+        docker_image: "quay.io/ascend/vllm-ascend:v0.23.0-a3"
+        extra_args:
+          - "--enable-expert-parallel"
+          - "--max-num-batched-tokens"
+          - "16384"
+          - "--enable-prefix-caching"
+        extra_env:
+          HCCL_BUFFSIZE: "1024"
+          HCCL_OP_EXPANSION_MODE: "AIV"
+          PYTORCH_NPU_ALLOC_CONF: "expandable_segments:True"
+      atlas_300i_duo:
+        docker_image: "quay.io/ascend/vllm-ascend:v0.23.0-310p"
+        extra_args:
+          - "--dtype"
+          - "float16"
+          - "--max-num-seqs"
+          - "16"
+          - "--max-model-len"
+          - "20480"
+          - "--no-enable-prefix-caching"
+          - "--compilation-config"
+          - '{"cudagraph_mode":"FULL_DECODE_ONLY","cudagraph_capture_sizes":[1,8]}'
+          - "--additional-config"
+          - '{"ascend_compilation_config":{"enable_npugraph_ex":false}}'
 
 compatible_strategies:
   - single_node_tp
@@ -275,6 +344,16 @@ hardware_overrides:
 
 strategy_overrides: {}
 
+strategy_hardware:
+  single_node_tep:
+    ascend_910b: unsupported
+    ascend_910c: unsupported
+    atlas_300i_duo: unsupported
+  single_node_dep:
+    ascend_910b: unsupported
+    ascend_910c: unsupported
+    atlas_300i_duo: unsupported
+
 guide: |
   ## Overview
 
@@ -292,6 +371,15 @@ guide: |
   - **Hardware (BF16):** 1x H200, 2x H100, 4x Intel Arc Pro B60 / B70
   - **Hardware (FP8):** single H100/H200 or 1x MI300X/MI325X/MI355X
   - **Hardware (NVFP4):** NVIDIA Blackwell GPUs, including DGX Spark (GB10)
+
+  ## Ascend W8A8
+
+  The vLLM-Ascend guide documents the ModelScope checkpoint
+  `Eco-Tech/Qwen3.6-35B-A3B-w8a8` for Atlas A2/A3 and Atlas 300I DUO. The
+  W8A8 variant uses TP2 + expert parallelism. On Atlas A2/A3 it follows the
+  documented 262K context profile; on Atlas 300I DUO it selects FP16 execution,
+  disables prefix caching and caps the context at 20,480 tokens. These are
+  upstream-documented configurations, not local validation results.
 
   ## NVFP4 on Blackwell
 
@@ -377,6 +465,7 @@ guide: |
   ## References
 
   - [Qwen3.6-35B-A3B on Hugging Face](https://huggingface.co/Qwen/Qwen3.6-35B-A3B)
+  - [Qwen3.6-35B-A3B on vLLM-Ascend](https://docs.vllm.ai/projects/ascend/zh-cn/latest/tutorials/models/Qwen3.6-35B-A3B.html)
   - [FP8 checkpoint](https://huggingface.co/Qwen/Qwen3.6-35B-A3B-FP8)
   - [NVIDIA NVFP4 checkpoint](https://huggingface.co/nvidia/Qwen3.6-35B-A3B-NVFP4)
   - [Qwen3.5 recipe (sibling 397B-A17B flagship)](../Qwen3.5-397B-A17B)

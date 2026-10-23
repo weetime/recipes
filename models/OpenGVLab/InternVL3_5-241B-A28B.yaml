@@ -1,0 +1,152 @@
+meta:
+  title: "InternVL3.5-241B-A28B"
+  slug: "internvl3.5-241b-a28b"
+  provider: "InternVL (OpenGVLab)"
+  description: "241B vision-language MoE with 28B active parameters, with an upstream documented Ascend A3 W8A8 serving configuration."
+  date_added: 2026-10-21
+  date_updated: 2026-10-21
+  difficulty: advanced
+  tasks:
+    - multimodal
+  hardware:
+    ascend_910c: supported
+
+model:
+  model_id: "OpenGVLab/InternVL3_5-241B-A28B"
+  min_vllm_version: "0.20.2"
+  default_frontend: rust
+  architecture: moe
+  parameter_count: "240.7B"
+  active_parameters: "28B"
+  context_length: 40960
+  base_args:
+    - "--trust-remote-code"
+  base_env: {}
+
+dependencies:
+  - command: "pip install vllm-ascend"
+    brand: Huawei
+    note: "Use the vLLM-Ascend runtime image matching the selected Atlas generation; the upstream InternVL3.5 tutorial uses the A3 image."
+
+features:
+  text_only:
+    description: "Skip the vision encoder for text-only requests."
+    args:
+      - "--language-model-only"
+  encoder_parallel:
+    description: "Run the vision encoder in data-parallel mode."
+    args:
+      - "--mm-encoder-tp-mode"
+      - "data"
+
+opt_in_features:
+  - text_only
+  - encoder_parallel
+
+variants:
+  default:
+    precision: bf16
+    vram_minimum_gb: 482
+    description: "Hugging Face BF16 checkpoint for standard vLLM runtimes."
+  ascend_w8a8:
+    model_id: "Eco-Tech/InternVL3_5-241B-A28B-w8a8"
+    precision: int8
+    label: "W8A8 (Ascend A3)"
+    vram_minimum_gb: 260
+    description: "ModelSlim W8A8 checkpoint documented for Atlas 800 A3. This profile uses TP4+DP2 as in the upstream example."
+    supported_hardware: [ascend_910c]
+    tp: 4
+    min_vllm_version: "0.20.2"
+    extra_args:
+      - "--served-model-name"
+      - "internvl3_5"
+      - "--max-model-len"
+      - "40960"
+      - "--max-num-batched-tokens"
+      - "4096"
+      - "--max-num-seqs"
+      - "70"
+      - "--gpu-memory-utilization"
+      - "0.9"
+      - "--compilation-config"
+      - '{"cudagraph_mode":"FULL_DECODE_ONLY"}'
+      - "--additional-config"
+      - '{"enable_weight_nz_layout":true,"enable_cpu_binding":true,"enable_fused_mc2":1}'
+      - "--mm-processor-cache-gb"
+      - "0"
+      - "--enable-chunked-prefill"
+      - "--enable-expert-parallel"
+      - "--safetensors-load-strategy"
+      - "prefetch"
+      - "--data-parallel-size"
+      - "2"
+    extra_env:
+      VLLM_USE_MODELSCOPE: "True"
+      PYTORCH_NPU_ALLOC_CONF: "expandable_segments:True"
+      TASK_QUEUE_ENABLE: "1"
+      HCCL_OP_EXPANSION_MODE: "AIV"
+      OMP_PROC_BIND: "false"
+      OMP_NUM_THREADS: "1"
+      VLLM_USE_V1: "1"
+      HCCL_BUFFSIZE: "1536"
+    hardware_overrides:
+      ascend_910c:
+        docker_image: "quay.io/ascend/vllm-ascend:v0.23.0-a3"
+
+compatible_strategies:
+  - single_node_tp
+
+strategy_overrides:
+  single_node_tp:
+    tp:
+      ascend_910c: 4
+
+hardware_overrides: {}
+
+guide: |
+  ## Overview
+
+  `InternVL3_5-241B-A28B` is a multimodal MoE model with 240.7B total and 28B
+  active parameters. The upstream vLLM-Ascend tutorial documents the ModelScope
+  W8A8 checkpoint on one Atlas 800 A3 node. Its sample command uses TP4+DP2,
+  expert parallelism, 40,960 context, and 4,096 batched tokens. This is
+  documented upstream support, not a local end-to-end validation.
+
+  ## Ascend A3 serving
+
+  Use `Eco-Tech/InternVL3_5-241B-A28B-w8a8` and
+  `quay.io/ascend/vllm-ascend:v0.23.0-a3`. The sample configuration sets a
+  70-sequence limit and loads safetensors with prefetch. Adjust concurrency and
+  batch limits for the target workload and available KV cache.
+
+  ```bash
+  export VLLM_USE_MODELSCOPE=True
+  export PYTORCH_NPU_ALLOC_CONF=expandable_segments:True
+  export TASK_QUEUE_ENABLE=1
+  export HCCL_OP_EXPANSION_MODE=AIV
+  export OMP_PROC_BIND=false
+  export OMP_NUM_THREADS=1
+  export VLLM_USE_V1=1
+  export HCCL_BUFFSIZE=1536
+  vllm serve Eco-Tech/InternVL3_5-241B-A28B-w8a8 \\
+    --trust-remote-code \\
+    --served-model-name internvl3_5 \\
+    --tensor-parallel-size 4 \\
+    --data-parallel-size 2 \\
+    --enable-expert-parallel \\
+    --max-model-len 40960 \\
+    --max-num-batched-tokens 4096 \\
+    --max-num-seqs 70 \\
+    --gpu-memory-utilization 0.9 \\
+    --compilation-config '{"cudagraph_mode":"FULL_DECODE_ONLY"}' \\
+    --additional-config '{"enable_weight_nz_layout":true,"enable_cpu_binding":true,"enable_fused_mc2":1}' \\
+    --mm-processor-cache-gb 0 \\
+    --enable-chunked-prefill \\
+    --safetensors-load-strategy prefetch
+  ```
+
+  ## References
+
+  - [Hugging Face model card](https://huggingface.co/OpenGVLab/InternVL3_5-241B-A28B)
+  - [vLLM-Ascend InternVL3.5 tutorial](https://docs.vllm.ai/projects/ascend/zh-cn/latest/tutorials/models/InternVL3.5.html)
+  - [Ascend W8A8 checkpoint](https://www.modelscope.cn/models/Eco-Tech/InternVL3_5-241B-A28B-w8a8)

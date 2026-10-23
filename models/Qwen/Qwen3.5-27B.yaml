@@ -15,9 +15,8 @@ meta:
     - "Qwen/Qwen3.5-35B-A3B"
     - "Qwen/Qwen3.5-9B"
   hardware:
-    ascend_910b: verified
-    ascend_910c: verified
-    ascend_910b4: verified
+    ascend_910b: supported
+    ascend_910c: supported
     arc_pro_b60: verified
     arc_pro_b70: verified
 
@@ -51,10 +50,23 @@ features:
       - "--reasoning-parser"
       - "qwen3"
   spec_decoding:
-    description: "Multi-token prediction speculative decoding for lower latency"
-    args:
-      - "--speculative-config"
-      - '{"method":"mtp","num_speculative_tokens":1}'
+    description: "Multi-token prediction speculative decoding for standard vLLM and vLLM-Ascend."
+    default_mode: mtp
+    modes:
+      mtp:
+        label: "MTP"
+        description: "Native MTP decoding on standard vLLM runtimes."
+        variants: [default, fp8, gptq_int4]
+        args:
+          - "--speculative-config"
+          - '{"method":"mtp","num_speculative_tokens":1}'
+      ascend_mtp:
+        label: "MTP (Ascend)"
+        description: "Qwen3.5 MTP mode documented for vLLM-Ascend."
+        variants: [ascend_w8a8_mtp]
+        args:
+          - "--speculative-config"
+          - '{"method":"qwen3_5_mtp","num_speculative_tokens":3,"enforce_eager":true}'
   text_only:
     description: "Skip loading the vision encoder for text-only workloads — frees VRAM for KV cache. Mutually exclusive with encoder_parallel."
     args:
@@ -77,6 +89,7 @@ features:
 opt_in_features:
   - spec_decoding
   - text_only
+  - encoder_parallel
   - long_context
 
 variants:
@@ -94,6 +107,46 @@ variants:
     precision: int4
     vram_minimum_gb: 17
     description: "GPTQ Int4 checkpoint — fits on a single 24 GB GPU"
+  ascend_w8a8_mtp:
+    model_id: "Eco-Tech/Qwen3.5-27B-w8a8-mtp"
+    precision: int8
+    label: "W8A8 (Ascend)"
+    vram_minimum_gb: 33
+    description: "ModelScope W8A8 checkpoint with the Qwen3.5 MTP head; upstream documents Atlas A2/A3 deployment."
+    supported_hardware: [ascend_910b, ascend_910c]
+    tp: 2
+    min_vllm_version: "0.23.0rc1"
+    default_modes:
+      spec_decoding: ascend_mtp
+    extra_args:
+      - "--data-parallel-size"
+      - "1"
+      - "--quantization"
+      - "ascend"
+      - "--served-model-name"
+      - "qwen3.5"
+      - "--max-num-seqs"
+      - "32"
+      - "--max-model-len"
+      - "133000"
+      - "--max-num-batched-tokens"
+      - "16384"
+      - "--gpu-memory-utilization"
+      - "0.90"
+      - "--no-enable-prefix-caching"
+      - "--compilation-config"
+      - '{"cudagraph_mode":"FULL_DECODE_ONLY"}'
+      - "--additional-config"
+      - '{"enable_cpu_binding":true}'
+    extra_env:
+      VLLM_USE_MODELSCOPE: "True"
+      HCCL_BUFFSIZE: "512"
+      PYTORCH_NPU_ALLOC_CONF: "expandable_segments:True"
+    hardware_overrides:
+      ascend_910b:
+        docker_image: "quay.io/ascend/vllm-ascend:v0.23.0"
+      ascend_910c:
+        docker_image: "quay.io/ascend/vllm-ascend:v0.23.0-a3"
 
 compatible_strategies:
   - single_node_tp
@@ -121,6 +174,32 @@ guide: |
   - **Hardware (BF16):** 1x H200, 2x H100, 4x Intel Arc Pro B60, 2x Intel Arc Pro B70
   - **Hardware (FP8):** single 40 GB GPU (H100/H200/L40S)
   - **Hardware (Int4):** single 24 GB GPU
+
+  ### Ascend (vLLM-Ascend)
+
+  Upstream vLLM-Ascend documents the `Eco-Tech/Qwen3.5-27B-w8a8-mtp` checkpoint
+  on Atlas 800 A2 and A3 nodes. This recipe follows its TP2, 32-sequence, 133K
+  context profile and selects the matching A2/A3 image. This is upstream
+  documented support, not a local end-to-end validation.
+
+  ```bash
+  export VLLM_USE_MODELSCOPE=True
+  export HCCL_BUFFSIZE=512
+  export PYTORCH_NPU_ALLOC_CONF=expandable_segments:True
+  vllm serve Eco-Tech/Qwen3.5-27B-w8a8-mtp \\
+    --tensor-parallel-size 2 \\
+    --data-parallel-size 1 \\
+    --quantization ascend \\
+    --served-model-name qwen3.5 \\
+    --max-num-seqs 32 \\
+    --max-model-len 133000 \\
+    --max-num-batched-tokens 16384 \\
+    --gpu-memory-utilization 0.90 \\
+    --no-enable-prefix-caching \\
+    --speculative-config '{"method":"qwen3_5_mtp","num_speculative_tokens":3,"enforce_eager":true}' \\
+    --compilation-config '{"cudagraph_mode":"FULL_DECODE_ONLY"}' \\
+    --additional-config '{"enable_cpu_binding":true}'
+  ```
 
   ### Install vLLM
 
@@ -213,6 +292,7 @@ guide: |
   ## References
 
   - [Model card](https://huggingface.co/Qwen/Qwen3.5-27B)
+  - [vLLM-Ascend Qwen3.5-27B and Qwen3.6-27B tutorial](https://docs.vllm.ai/projects/ascend/zh-cn/latest/tutorials/models/Qwen3.5-27B-Qwen3.6-27B.html)
   - [FP8 checkpoint](https://huggingface.co/Qwen/Qwen3.5-27B-FP8)
   - [GPTQ-Int4 checkpoint](https://huggingface.co/Qwen/Qwen3.5-27B-GPTQ-Int4)
   - [Qwen3.5-397B-A17B recipe](../Qwen3.5-397B-A17B)

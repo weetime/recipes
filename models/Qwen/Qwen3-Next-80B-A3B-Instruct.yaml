@@ -15,6 +15,8 @@ meta:
     mi300x: verified
     mi325x: verified
     mi355x: verified
+    ascend_910b: supported
+    ascend_910c: supported
 
 model:
   model_id: "Qwen/Qwen3-Next-80B-A3B-Instruct"
@@ -57,7 +59,33 @@ variants:
   default:
     precision: bf16
     vram_minimum_gb: 192
-    description: "Full precision BF16 — fits on 4x H200/H20/A100/A800"
+    description: "Full precision BF16. Ascend uses the upstream TP4 / 32K profile; the A2/A3 paths use vLLM-Ascend's experimental Triton kernels."
+    tp:
+      ascend_910b: 4
+      ascend_910c: 4
+    hardware_overrides:
+      ascend_910b:
+        docker_image: "quay.io/ascend/vllm-ascend:v0.23.0"
+        extra_args:
+          - "--max-model-len"
+          - "32768"
+          - "--gpu-memory-utilization"
+          - "0.8"
+          - "--max-num-batched-tokens"
+          - "4096"
+          - "--compilation-config"
+          - '{"cudagraph_mode":"FULL_DECODE_ONLY"}'
+      ascend_910c:
+        docker_image: "quay.io/ascend/vllm-ascend:v0.23.0-a3"
+        extra_args:
+          - "--max-model-len"
+          - "32768"
+          - "--gpu-memory-utilization"
+          - "0.8"
+          - "--max-num-batched-tokens"
+          - "4096"
+          - "--compilation-config"
+          - '{"cudagraph_mode":"FULL_DECODE_ONLY"}'
   fp8:
     model_id: "Qwen/Qwen3-Next-80B-A3B-Instruct-FP8"
     precision: fp8
@@ -138,6 +166,16 @@ guide: |
   - A highly sparse Mixture-of-Experts (MoE) structure
   - Training-stability-friendly optimizations
   - A multi-token prediction mechanism for faster inference
+
+  ## Ascend
+
+  vLLM-Ascend documents Qwen3-Next from v0.10.2rc1 and reports stable support
+  from v0.16.0. The current A2/A3 image examples use v0.23.0 and v0.23.0-a3.
+  The default hardware profile pins the upstream TP4 launch settings: 32K
+  maximum model length, 4,096 batched tokens, 0.8 memory utilization, and
+  decode-only graph capture. The backend currently uses experimental Triton
+  Ascend kernels, so behavior and performance may change across releases. This
+  is documented support, not a local end-to-end verification.
 
   ## Prerequisites
 

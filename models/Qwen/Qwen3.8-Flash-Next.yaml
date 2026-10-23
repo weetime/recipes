@@ -18,7 +18,9 @@ meta:
     gb300: verified
     mi355x: verified
     rtx_pro_6000_4x: verified
+    rtx_pro_5000_4x: verified
     dgx_station_gb300: verified
+    ascend_910c: supported
 
 model:
   model_id: "Qwen/Qwen3.8-Flash-Next"
@@ -50,10 +52,21 @@ dependencies: []
 features:
   tool_calling:
     description: "Enable automatic tool choice with the Qwen3 Coder parser"
-    args:
-      - "--enable-auto-tool-choice"
-      - "--tool-call-parser"
-      - "qwen3_coder"
+    default_mode: qwen3_coder
+    modes:
+      qwen3_coder:
+        variants: [default, fp8, bf16]
+        args:
+          - "--enable-auto-tool-choice"
+          - "--tool-call-parser"
+          - "qwen3_coder"
+      qwen3_xml:
+        label: "Qwen3 XML (Ascend)"
+        variants: [ascend_w8a8_mtp]
+        args:
+          - "--enable-auto-tool-choice"
+          - "--tool-call-parser"
+          - "qwen3_xml"
   reasoning:
     description: "Extract thinking output with the Qwen3 reasoning parser"
     args:
@@ -61,9 +74,21 @@ features:
       - "qwen3"
   spec_decoding:
     description: "Use the checkpoint's Multi-Token Prediction module for faster decoding"
-    args:
-      - "--speculative-config"
-      - '{"method":"mtp","num_speculative_tokens":3}'
+    default_mode: mtp
+    modes:
+      mtp:
+        description: "Native MTP decoding on the CUDA/ROCm checkpoints."
+        variants: [default, fp8, bf16]
+        args:
+          - "--speculative-config"
+          - '{"method":"mtp","num_speculative_tokens":3}'
+      ascend_mtp:
+        label: "MTP (Ascend)"
+        description: "Qwen3.5 MTP implementation used by the Ascend A3 checkpoint."
+        variants: [ascend_w8a8_mtp]
+        args:
+          - "--speculative-config"
+          - '{"method":"qwen3_5_mtp","num_speculative_tokens":3,"enforce_eager":true}'
   text_only:
     description: "Skip the vision encoder for text-only workloads and leave more memory for KV cache"
     args:
@@ -92,6 +117,7 @@ variants:
     precision: nvfp4
     vram_minimum_gb: 130
     description: "Inferact quantized NVFP4 weights with per-layer embeddings in nvfp4 too"
+    supported_hardware: [gb200, gb300, dgx_station_gb300, rtx_pro_6000_4x, rtx_pro_5000_4x]
     hardware_overrides:
       dgx_station_gb300:
         extra_args:
@@ -119,6 +145,10 @@ variants:
           - "--enable-prefix-caching"
           - "--moe-backend"
           - "marlin"
+      rtx_pro_5000_4x:
+        extra_args:
+          - "--max-num-seqs"
+          - "16"
   fp8:
     model_id: "Qwen/Qwen3.8-Flash-Next-FP8"
     precision: fp8
@@ -154,6 +184,53 @@ variants:
     precision: bf16
     vram_minimum_gb: 423
     description: "Official BF16 checkpoint"
+  ascend_w8a8_mtp:
+    model_id: "Eco-Tech/Qwen3.8-Flash-Next-w8a8-mtp"
+    precision: int8
+    label: "W8A8 (Ascend A3)"
+    vram_minimum_gb: 190
+    description: "ModelScope W8A8-MTP checkpoint documented for one Atlas 800 A3 node."
+    min_vllm_version: "0.26.0rc"
+    supported_hardware: [ascend_910c]
+    tp: 8
+    default_modes:
+      tool_calling: qwen3_xml
+      spec_decoding: ascend_mtp
+    extra_args:
+      - "--distributed-executor-backend"
+      - "mp"
+      - "--data-parallel-size"
+      - "1"
+      - "--data-parallel-size-local"
+      - "1"
+      - "--data-parallel-start-rank"
+      - "0"
+      - "--enable-expert-parallel"
+      - "--served-model-name"
+      - "qwen3.8-flash-next"
+      - "--quantization"
+      - "ascend"
+      - "--max-model-len"
+      - "135168"
+      - "--max-num-seqs"
+      - "8"
+      - "--max-num-batched-tokens"
+      - "4096"
+      - "--gpu-memory-utilization"
+      - "0.93"
+      - "--mamba-cache-mode"
+      - "align"
+      - "--compilation-config"
+      - '{"cudagraph_capture_sizes":[4,8,12,16,20,24,28,32],"cudagraph_mode":"FULL_DECODE_ONLY"}'
+      - "--additional-config"
+      - '{"enable_cpu_binding":true,"ascend_compilation_config":{"fuse_norm_quant":false}}'
+    extra_env:
+      VLLM_USE_MODELSCOPE: "True"
+      VLLM_ASCEND_ENABLE_QSA_LIGHTNING_INDEXER: "1"
+      VLLM_ASCEND_ENABLE_QSA_E3V: "1"
+    hardware_overrides:
+      ascend_910c:
+        docker_image: "quay.io/ascend/vllm-ascend:qwen3.8-next-a3"
 
 # TP+EP is the default deployment; it benchmarks consistently faster than
 # plain TP for this model, which stays offered as an alternative.
@@ -189,6 +266,12 @@ hardware_overrides:
 strategy_overrides:
   single_node_tp:
     tp: 4
+  single_node_tep:
+    tp:
+      ascend_910c: 8
+strategy_hardware:
+  single_node_dep:
+    ascend_910c: unsupported
 
 guide: |
   ## Overview
@@ -214,6 +297,17 @@ guide: |
   On GB300, TEP4 is the recommended full-tray configuration. On an 8x H200 node,
   use TEP8 for the official FP8 checkpoint; plain TP8 is incompatible with its
   128-wide quantization blocks.
+
+  ## Ascend A3 W8A8-MTP
+
+  The vLLM-Ascend tutorial documents a separate ModelScope checkpoint,
+  `Eco-Tech/Qwen3.8-Flash-Next-w8a8-mtp`, on one Atlas 800 A3 node with the
+  dedicated `quay.io/ascend/vllm-ascend:qwen3.8-next-a3` image. This is an
+  upstream-documented mapping, not a local hardware run. The promoted checkpoint
+  route exposes only the A3 profile, uses TP8 + EP with DP1, enables the QSA
+  kernels and aligned Mamba cache, and caps the served context at 135,168 tokens.
+  APC is still experimental for this model; validate memory against your actual
+  context length and concurrency before enabling it in production.
 
   ## Prerequisites
 
@@ -427,5 +521,6 @@ guide: |
 
   - [Qwen3.8-Flash-Next model card](https://huggingface.co/Qwen/Qwen3.8-Flash-Next)
   - [Qwen3.8-Flash-Next FP8 checkpoint](https://huggingface.co/Qwen/Qwen3.8-Flash-Next-FP8)
+  - [Qwen3.8-Flash-Next on vLLM-Ascend](https://docs.vllm.ai/projects/ascend/zh-cn/latest/tutorials/models/Qwen3.8-Flash-Next.html)
   - [Qwen3.8-Flash-Next: A New Architecture, Towards Ultimate Cost-Efficiency](https://qwen.ai/blog?id=qwen3.8-flash-next)
   - [Qwen3-Next recipe](../Qwen3-Next-80B-A3B-Instruct)

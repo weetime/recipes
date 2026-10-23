@@ -1,0 +1,88 @@
+meta:
+  title: "Qwen3-Embedding-4B"
+  slug: "qwen3-embedding-4b"
+  provider: "Qwen"
+  description: "4B dense text embedding model for retrieval and semantic ranking."
+  date_added: 2026-10-21
+  date_updated: 2026-10-21
+  difficulty: intermediate
+  tasks:
+    - embedding
+  hardware:
+    ascend_910b: supported
+    ascend_910c: supported
+    ascend_950dt: supported
+    ascend_950pr: supported
+
+model:
+  model_id: "Qwen/Qwen3-Embedding-4B"
+  min_vllm_version: "0.9.2rc1"
+  architecture: dense
+  parameter_count: "4B"
+  active_parameters: "4B"
+  context_length: 32768
+  base_args:
+    - "--runner"
+    - "pooling"
+    - "--max-model-len"
+    - "1024"
+  base_env: {}
+
+dependencies:
+  - command: "pip install vllm-ascend"
+    brand: Huawei
+    note: "Upstream vLLM-Ascend documents this model family on Atlas A2/A3 and Ascend 950DT/950PR. The catalog status is documented support, not local E2E verification."
+
+features: {}
+opt_in_features: []
+
+variants:
+  default:
+    precision: bf16
+    vram_minimum_gb: 8
+    description: "BF16 pooling runner; max model length is capped at 1,024 as in the upstream Ascend recipe."
+    supported_hardware: [ascend_910b, ascend_910c, ascend_950dt, ascend_950pr]
+    hardware_overrides:
+      ascend_910b:
+        docker_image: "quay.io/ascend/vllm-ascend:v0.23.0"
+      ascend_910c:
+        docker_image: "quay.io/ascend/vllm-ascend:v0.23.0-a3"
+      ascend_950dt:
+        docker_image: "quay.io/ascend/vllm-ascend:v0.23.0-a5"
+      ascend_950pr:
+        docker_image: "quay.io/ascend/vllm-ascend:v0.23.0-a5"
+
+compatible_strategies:
+  - single_node_tp
+
+strategy_overrides:
+  single_node_tp:
+    tp: 1
+
+hardware_overrides: {}
+
+guide: |
+  ## Overview
+
+  `Qwen3-Embedding-4B` supports text embedding and retrieval. The vLLM-Ascend tutorial demonstrates the
+  pooling runner with a conservative 1,024-token maximum sequence length. That
+  limit is especially important on Atlas 300I DUO, where the attention mask can
+  consume memory quadratically. This recipe records the documented support for
+  A2/A3 and Ascend 950DT/950PR; it has not been locally E2E-tested on those NPUs.
+
+  ## Ascend runtime
+
+  Use the hardware-specific image selected by the recipe: v0.23.0 for A2,
+  v0.23.0-a3 for A3, and v0.23.0-a5 for 950DT/950PR. Confirm host driver and
+  CANN compatibility before deployment. Atlas 300I DUO is documented upstream
+  but does not yet have a hardware profile in this catalog.
+
+  ## API
+
+  The model exposes the OpenAI-compatible `/v1/embeddings` endpoint through
+  `--runner pooling`.
+
+  ## References
+
+  - [Model card](https://huggingface.co/Qwen/Qwen3-Embedding-4B)
+  - [vLLM-Ascend Qwen3-Embedding tutorial](https://docs.vllm.ai/projects/ascend/zh-cn/latest/tutorials/models/Qwen3-Embedding.html)

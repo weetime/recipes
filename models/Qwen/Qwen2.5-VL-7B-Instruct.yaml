@@ -69,6 +69,10 @@ variants:
     precision: fp8
     vram_minimum_gb: 9
     description: "RedHatAI FP8 (E4M3) with dynamic per-token activation quantization"
+    # The pinned vLLM recipe only declares this checkpoint for Trillium.
+    # Keep the checkpoint eligibility boundary until other backends are
+    # independently verified for this exact dynamic FP8 checkpoint.
+    supported_hardware: [trillium]
     extra_args:
       - "--kv-cache-dtype"
       - "fp8"

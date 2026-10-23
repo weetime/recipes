@@ -1,0 +1,93 @@
+meta:
+  title: "SigLIP2 Base Patch16 224"
+  slug: "siglip2-base-patch16-224"
+  provider: "Google"
+  description: "SigLIP2 vision-language embedding model for image-text similarity and multimodal retrieval; text and image inputs are embedded in separate requests."
+  date_added: 2026-10-21
+  date_updated: 2026-10-21
+  difficulty: intermediate
+  tasks:
+    - embedding
+    - multimodal
+  hardware:
+    atlas_300i_duo: supported
+
+model:
+  model_id: "google/siglip2-base-patch16-224"
+  architecture: dense
+  parameter_count: "0.4B"
+  active_parameters: "0.4B"
+  context_length: 64
+  base_args:
+    - "--runner"
+    - "pooling"
+    - "--chat-template"
+    - "template_basic.jinja"
+    - "--limit-mm-per-prompt"
+    - '{"image":1}'
+    - "--compilation-config"
+    - '{"cudagraph_capture_sizes":[64,32]}'
+    - "--additional-config"
+    - '{"ascend_compilation_config":{"enable_npugraph_ex":false}}'
+    - "--dtype"
+    - "float16"
+    - "--max-model-len"
+    - "64"
+  base_env: {}
+
+dependencies:
+  - command: "pip install vllm-ascend"
+    brand: Huawei
+    note: "Atlas 300I DUO requires the vLLM-Ascend plugin; the documented image contains the matching runtime."
+
+features: {}
+opt_in_features: []
+
+variants:
+  default:
+    precision: fp16
+    vram_minimum_gb: 2
+    description: "FP16 pooling model. Uses one Atlas 300I DUO device; the online recipe does not use tensor parallelism."
+    supported_hardware: [atlas_300i_duo]
+    hardware_overrides:
+      atlas_300i_duo:
+        docker_image: "quay.io/ascend/vllm-ascend:v0.23.0-310p"
+
+compatible_strategies:
+  - single_node_tp
+
+strategy_overrides:
+  single_node_tp:
+    tp: 1
+
+hardware_overrides: {}
+
+guide: |
+  ## Overview
+
+  [SigLIP2 Base Patch16 224](https://huggingface.co/google/siglip2-base-patch16-224)
+  is a contrastive vision-language embedding model, not a text generator. It
+  returns embeddings for image-text similarity, zero-shot classification, and
+  multimodal retrieval. Embed text and images in separate requests.
+
+  ## Hardware and runtime
+
+  This recipe follows the vLLM-Ascend tutorial for one Atlas 300I DUO card. The
+  tutorial uses the official `v0.23.0-310p` image and one exposed NPU device;
+  tensor parallelism and multi-node prefill/decode disaggregation are not
+  supported for this model path. The Atlas 300I DUO is sold in 48 GB and 96 GB
+  memory configurations; the catalog profile uses the conservative 48 GB fit
+  hint. This is upstream-documented support, not a local hardware verification.
+
+  ## Serving notes
+
+  The command builder sets `--runner pooling`, limits text length to 64 tokens,
+  and allows one image per request. `template_basic.jinja` is required when an
+  image is passed through the `/v1/embeddings` `messages` field. The template is
+  provided by the vLLM runtime image.
+
+  ## References
+
+  - [Hugging Face model](https://huggingface.co/google/siglip2-base-patch16-224)
+  - [vLLM-Ascend SigLIP2 deployment and evaluation guide](https://docs.vllm.ai/projects/ascend/zh-cn/latest/tutorials/models/SigLIP2.html)
+  - [Atlas 300I DUO specifications](https://support.huawei.com/enterprise/en/doc/EDOC1100285916?section=j00e)

@@ -19,8 +19,6 @@ meta:
     mi325x: verified
     mi350x: verified
     mi355x: verified
-    ascend_910b: verified
-    ascend_910c: verified
     ascend_950dt: verified
 
 model:
@@ -112,6 +110,7 @@ variants:
     model_id: "nvidia/Qwen3.5-397B-A17B-NVFP4"
     precision: nvfp4
     vram_minimum_gb: 238
+    supported_hardware: [gb200]
     extra_args:
       - "--kv-cache-dtype"
       - "fp8"

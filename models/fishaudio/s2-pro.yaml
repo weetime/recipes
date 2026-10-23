@@ -4,7 +4,7 @@ meta:
   provider: "Fish Audio"
   description: "Fish Audio's dual-AR text-to-speech model served via vLLM-Omni, producing 44.1 kHz mono audio with optional voice cloning, through the OpenAI /v1/audio/speech API."
   date_added: 2026-06-17
-  date_updated: 2026-06-15
+  date_updated: 2026-10-23
   difficulty: intermediate
   tasks:
     - omni

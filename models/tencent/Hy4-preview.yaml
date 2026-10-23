@@ -18,6 +18,7 @@ meta:
     b300: verified
     mi325x: verified
     mi355x: verified
+    ascend_910c: supported
 
 model:
   model_id: "tencent/Hy4-preview"
@@ -65,6 +66,7 @@ variants:
     precision: bf16
     vram_minimum_gb: 1848
     description: "Full precision BF16 — 16xB200 or 8xB300 minimum for weights + KV cache"
+    supported_hardware: [b200, b300]
     hardware_overrides:
       amd:
         extra_args:
@@ -75,6 +77,41 @@ variants:
     precision: mxfp8
     vram_minimum_gb: 924
     description: "MXFP8-quantized instruct checkpoint (tencent/Hy4-preview-FP8) — fits a single 8xB200 / 8xB300 node with wide headroom. Verified AMD path on 8xMI355X and 8xMI325X."
+    supported_hardware: [arch:sm100, arch:sm103, arch:gfx942, arch:gfx950]
+  ascend_w8a8:
+    model_id: "Eco-Tech/Hy4-preview-w8a8"
+    precision: int8
+    label: "W8A8 (Ascend A3 experimental)"
+    vram_minimum_gb: 762
+    min_vllm_version: "0.23.0"
+    supported_hardware: [ascend_910c]
+    description: "Experimental vLLM-Ascend A3-only W8A8 checkpoint, documented at TP16 on one 16-NPU node; the single-node tutorial caps context at 512 tokens."
+    hardware_overrides:
+      ascend_910c:
+        docker_image: "quay.io/ascend/vllm-ascend:hy4-a3"
+    extra_args:
+      - "--served-model-name"
+      - "hy4"
+      - "--max-num-seqs"
+      - "8"
+      - "--max-model-len"
+      - "512"
+      - "--max-num-batched-tokens"
+      - "512"
+      - "--quantization"
+      - "ascend"
+      - "--gpu-memory-utilization"
+      - "0.92"
+      - "--seed"
+      - "1024"
+      - "--compilation-config"
+      - '{"cudagraph_mode":"FULL_DECODE_ONLY"}'
+      - "--additional-config"
+      - '{"enable_mlapo":true,"enable_fused_mc2":1,"ascend_compilation_config":{"enable_npugraph_ex":true}}'
+    extra_env:
+      HCCL_BUFFSIZE: "128"
+      PYTORCH_NPU_ALLOC_CONF: "expandable_segments:True"
+      VLLM_LOGGING_LEVEL: "INFO"
 
 compatible_strategies:
   - single_node_tp
@@ -104,6 +141,12 @@ hardware_overrides:
       - "8192"
 
 strategy_overrides:
+  single_node_tep:
+    hardware_overrides:
+      ascend_910c:
+        extra_args:
+          - "--tensor-parallel-size"
+          - "16"
   single_node_tp:
     hardware_overrides:
       # gfx942 stores the MXFP8 checkpoint as BF16. The shared AMD window
@@ -126,6 +169,18 @@ strategy_overrides:
           VLLM_ROCM_USE_AITER_RMSNORM: "1"
           VLLM_ROCM_USE_AITER_LINEAR: "1"
           VLLM_ROCM_QUICK_REDUCE_QUANTIZATION: "INT4"
+
+strategy_hardware:
+  single_node_tp:
+    ascend_910c: unsupported
+  single_node_dep:
+    ascend_910c: unsupported
+  multi_node_tp:
+    ascend_910c: unsupported
+  multi_node_tep:
+    ascend_910c: unsupported
+  multi_node_dep:
+    ascend_910c: unsupported
 
 guide: |
   # Hy4-preview Usage Guide

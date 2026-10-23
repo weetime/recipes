@@ -208,12 +208,14 @@ export const OMNI_TASKS = {
  *   - extra_args        appended to the rendered `vllm serve --omni` command
  *   - curl              static curl override (otherwise the built-in renderer
  *                       interpolates host/port/modelId into a sample request)
+ *   - curl_by_variant   custom curl samples keyed by recipe variant; supports
+ *                       `{{model_id}}` so the selected checkpoint stays in sync
  *   - benchmark         static benchmark command override for non-LLM endpoints
  *
  * Returns: [{ id, key, label, endpoint, method, modelId?, vramMinimumGb?,
  *             description?, axes?, extraArgs?, hardwareOverrides?, benchmark?, example }]
  */
-export function resolveOmniTasks(recipe) {
+export function resolveOmniTasks(recipe, variantKey = "default") {
   const decl = recipe?.omni?.tasks;
   if (!Array.isArray(decl) || decl.length === 0) return [];
   const out = [];
@@ -223,7 +225,7 @@ export function resolveOmniTasks(recipe) {
     const base = OMNI_TASKS[id];
     if (!base) continue;
     const override = typeof t === "string" ? {} : t;
-    const customCurl = override.curl;
+    const customCurl = override.curl_by_variant?.[variantKey] || override.curl;
     out.push({
       id,
       key: override.key || id,
@@ -237,7 +239,9 @@ export function resolveOmniTasks(recipe) {
       extraArgs: override.extra_args || [],
       hardwareOverrides: override.hardware_overrides || {},
       benchmark: override.benchmark,
-      example: customCurl ? () => customCurl : base.example,
+      example: customCurl
+        ? ({ modelId } = {}) => customCurl.replaceAll("{{model_id}}", modelId || "")
+        : base.example,
     });
   }
   return out;

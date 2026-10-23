@@ -1,0 +1,110 @@
+meta:
+  title: "Qwen3-Omni-30B-A3B-Thinking"
+  slug: "qwen3-omni-30b-a3b-thinking"
+  provider: "Qwen"
+  description: "30B/3B active multimodal MoE model for audio, video, and text input with text reasoning output; documented for vLLM-Ascend Atlas A2 and A3."
+  date_added: 2026-10-21
+  date_updated: 2026-10-21
+  difficulty: advanced
+  tasks:
+    - multimodal
+    - text
+  related_recipes:
+    - "Qwen/Qwen3-VL-30B-A3B-Instruct"
+    - "Qwen/Qwen3-Next-80B-A3B-Instruct"
+  hardware:
+    ascend_910b: supported
+    ascend_910c: supported
+
+model:
+  model_id: "Qwen/Qwen3-Omni-30B-A3B-Thinking"
+  min_vllm_version: "0.12.0rc1"
+  architecture: moe
+  parameter_count: "30B"
+  active_parameters: "3B"
+  context_length: 40960
+  base_args:
+    - "--trust-remote-code"
+    - "--served-model-name"
+    - "qwen3-omni"
+    - "--max-num-seqs"
+    - "100"
+    - "--max-model-len"
+    - "40960"
+    - "--max-num-batched-tokens"
+    - "16384"
+    - "--enable-expert-parallel"
+    - "--distributed-executor-backend"
+    - "mp"
+    - "--no-enable-prefix-caching"
+    - "--compilation-config"
+    - '{"cudagraph_mode":"FULL_DECODE_ONLY"}'
+    - "--gpu-memory-utilization"
+    - "0.95"
+    - "--additional-config"
+    - '{"weight_nz_mode": 2}'
+  base_env:
+    HCCL_BUFFSIZE: "1024"
+    PYTORCH_NPU_ALLOC_CONF: "expandable_segments:True"
+
+features: {}
+opt_in_features: []
+
+variants:
+  default:
+    precision: bf16
+    vram_minimum_gb: 64
+    description: "Canonical BF16 Hugging Face checkpoint; upstream recommends 1–2 Atlas A3 NPUs or 2–4 Atlas A2 NPUs."
+    supported_hardware: [ascend_910b, ascend_910c]
+    tp:
+      ascend_910b: 4
+      ascend_910c: 4
+    hardware_overrides:
+      ascend_910b:
+        docker_image: "quay.io/ascend/vllm-ascend:v0.23.0"
+        extra_env:
+          ASCEND_RT_VISIBLE_DEVICES: "0,1,2,3"
+      ascend_910c:
+        docker_image: "quay.io/ascend/vllm-ascend:v0.23.0"
+        extra_env:
+          ASCEND_RT_VISIBLE_DEVICES: "0,1,2,3"
+          HCCL_OP_EXPANSION_MODE: "AIV"
+
+compatible_strategies:
+  - single_node_tp
+  - single_node_tep
+
+strategy_overrides: {}
+hardware_overrides: {}
+
+guide: |
+  ## Overview
+
+  Qwen3-Omni-30B-A3B-Thinking accepts audio, video, and text inputs and returns
+  text with reasoning. This recipe uses the canonical BF16 Hugging Face model
+  ID. Upstream also documents a W8A8 checkpoint, but it must be produced from
+  BF16 weights with msmodelslim and is therefore not represented as a directly
+  downloadable variant here.
+
+  ## vLLM-Ascend support
+
+  The upstream tutorial first lists support in vLLM-Ascend 0.12.0rc1 and states
+  that its v0.22.1rc and later versions run stably. The current example uses
+  `quay.io/ascend/vllm-ascend:v0.23.0` on both Atlas A2 (910B) and A3 (910C).
+  This is upstream-documented support, not a local end-to-end validation.
+
+  Hardware recommendations in the upstream guide are 2–4 Atlas A2 NPUs or 1–2
+  Atlas A3 NPUs for BF16. Its example command uses TP4 and expert parallelism;
+  adjust the number of visible NPU chips and TP to the actual deployment.
+  `HCCL_OP_EXPANSION_MODE=AIV` is required on A3 and is not needed on A2.
+  Prefix caching is disabled because the upstream guide says its effectiveness
+  on Ascend has not been sufficiently validated.
+
+  Audio requests require `qwen_omni_utils`, `modelscope`, and `ffmpeg` in the
+  runtime environment. For A3, the upstream guide also recommends setting
+  `HCCL_OP_EXPANSION_MODE=AIV` to avoid collective communication failures.
+
+  ## References
+
+  - [Hugging Face model card](https://huggingface.co/Qwen/Qwen3-Omni-30B-A3B-Thinking)
+  - [vLLM-Ascend model tutorial](https://docs.vllm.ai/projects/ascend/zh-cn/latest/tutorials/models/Qwen3-Omni-30B-A3B-Thinking.html)

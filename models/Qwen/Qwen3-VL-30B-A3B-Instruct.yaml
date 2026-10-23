@@ -14,6 +14,8 @@ meta:
     - "Qwen/Qwen3-VL-235B-A22B-Instruct"
   hardware:
     xeon6: verified
+    ascend_910b: supported
+    ascend_910c: supported
 
 model:
   model_id: "Qwen/Qwen3-VL-30B-A3B-Instruct"
@@ -29,6 +31,9 @@ dependencies:
   - note: "Recommended for offline multimodal inference (image/video pre-processing helpers)"
     command: "uv pip install qwen-vl-utils==0.0.14"
     optional: true
+  - command: "pip install vllm-ascend"
+    brand: Huawei
+    note: "The upstream tutorial documents BF16 on Atlas A2/A3 from vLLM-Ascend 0.13.0; local Ascend end-to-end verification has not been performed for this recipe."
 
 features:
   text_only:
@@ -51,6 +56,13 @@ variants:
     description: "Full precision BF16"
     supported_hardware:
       - xeon6
+      - ascend_910b
+      - ascend_910c
+    hardware_overrides:
+      ascend_910b:
+        docker_image: "quay.io/ascend/vllm-ascend:v0.23.0"
+      ascend_910c:
+        docker_image: "quay.io/ascend/vllm-ascend:v0.23.0-a3"
 
 compatible_strategies:
   - single_node_tp
@@ -74,6 +86,12 @@ guide: |
 
   Qwen3-VL-30B-A3B-Instruct is a multimodal Qwen3-VL MoE model. Intel Xeon 6
   CPU serving was validated with BF16.
+
+  The upstream vLLM-Ascend tutorial also documents BF16 serving on Atlas 800I
+  A2 (910B) and Atlas 800 A3 (910C), using vLLM-Ascend 0.13.0 or later. This is
+  documented platform support; the recipe's local verification status remains
+  limited to Xeon 6. Its W8A8-MXFP8 950DT checkpoint is hosted on ModelScope and
+  is not exposed as a selectable HF checkpoint variant in this catalog.
 
   ## Prerequisites
 
@@ -137,3 +155,4 @@ guide: |
 
   - [Model card](https://huggingface.co/Qwen/Qwen3-VL-30B-A3B-Instruct)
   - [vLLM CPU installation](https://docs.vllm.ai/en/latest/getting_started/installation/cpu/)
+  - [vLLM-Ascend Qwen3-VL-30B-A3B-Instruct tutorial](https://docs.vllm.ai/projects/ascend/zh-cn/latest/tutorials/models/Qwen3-VL-30B-A3B-Instruct.html)

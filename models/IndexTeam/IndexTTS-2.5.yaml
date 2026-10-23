@@ -36,7 +36,7 @@ omni:
       label: "Text → Speech"
       model_id: "IndexTeam/IndexTTS-2.5"
       endpoint: "/v1/audio/speech"
-      description: "Multilingual voice cloning with native speed and emotion controls (22.05 kHz mono WAV)"
+      description: "Requires a voice uploaded through /v1/audio/voices (see guide); multilingual synthesis with speed and emotion controls (22.05 kHz mono WAV)"
       curl: |
         curl -X POST http://localhost:8092/v1/audio/speech \
           -H "Content-Type: application/json" \

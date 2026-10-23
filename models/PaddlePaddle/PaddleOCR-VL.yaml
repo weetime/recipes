@@ -9,6 +9,8 @@ meta:
   tasks:
     - multimodal
   related_recipes: []
+  hardware:
+    ascend_910b: supported
 
 model:
   model_id: "PaddlePaddle/PaddleOCR-VL"
@@ -54,6 +56,19 @@ variants:
     precision: bf16
     vram_minimum_gb: 2
     description: "BF16 weights — small footprint, runs on most GPUs"
+    hardware_overrides:
+      ascend_910b:
+        docker_image: "quay.io/ascend/vllm-ascend:v0.23.0"
+        extra_args:
+          - "--compilation-config"
+          - '{"cudagraph_mode":"FULL_DECODE_ONLY"}'
+          - "--additional_config"
+          - '{"enable_cpu_binding":true}'
+        extra_env:
+          VLLM_USE_MODELSCOPE: "True"
+          TASK_QUEUE_ENABLE: "1"
+          CPU_AFFINITY_CONF: "1"
+          PYTORCH_NPU_ALLOC_CONF: "expandable_segments:True"
 
 compatible_strategies:
   - single_node_tp

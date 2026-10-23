@@ -19,8 +19,8 @@ meta:
     mi300x: unsupported
     mi325x: unsupported
     mi355x: verified
-    ascend_910b: verified
-    ascend_910c: verified
+    ascend_910b: supported
+    ascend_910c: supported
     cambricon_mlu590: verified
 
 model:
@@ -96,6 +96,20 @@ features:
         args:
           - "--speculative-config"
           - '{"method":"dspark","num_speculative_tokens":7,"draft_sample_method":"probabilistic"}'
+      ascend_mtp:
+        label: "MTP (Ascend)"
+        description: "Ascend W4A8 MTP mode documented in the vLLM-Ascend deployment guide."
+        variants: [ascend_w4a8_mtp]
+        args:
+          - "--speculative-config"
+          - '{"num_speculative_tokens":1,"method":"mtp","enforce_eager":true}'
+      ascend_dspark:
+        label: "DSpark (Ascend)"
+        description: "DSpark draft decoding documented for the 0813 W4A8 checkpoint on Atlas A3."
+        variants: [ascend_w4a8_dspark]
+        args:
+          - "--speculative-config"
+          - '{"num_speculative_tokens":5,"method":"dspark","enforce_eager":true}'
 
 opt_in_features:
   - spec_decoding
@@ -108,6 +122,9 @@ variants:
     model_id: "deepseek-ai/DeepSeek-V4-Pro-0813"
     label: "FP8 (0813)"
     precision: fp8
+    # Ascend has dedicated ModelScope W4A8 checkpoints below. Keep the generic
+    # Hugging Face FP8 release out of the Ascend path until upstream documents it.
+    supported_hardware: [arch:sm90, arch:sm100, arch:sm103, arch:sm120, arch:sm121, arch:sm89, arch:gfx942, arch:gfx950, cambricon_mlu590]
     vram_minimum_gb: 960
     description: "Official DeepSeek-V4-Pro release (2026-08-13) superseding the preview — substantially stronger agentic performance, with the DSpark draft module attached."
     # DSpark drafting landed in 0.25.0, above this recipe's 0.20.0 baseline.
@@ -126,6 +143,7 @@ variants:
     # say `DeepSeek-V4-Pro-0813` vs `DeepSeek-V4-Pro (Preview)`.
     label: "FP8 (Preview)"
     precision: fp8
+    supported_hardware: [arch:sm90, arch:sm100, arch:sm103, arch:sm120, arch:sm121, arch:sm89, arch:gfx942, arch:gfx950, cambricon_mlu590]
     vram_minimum_gb: 960
     description: "Native FP4+FP8 mixed checkpoint (MoE experts FP4, remaining params FP8)"
     # deep_gemm_mega_moe is FP8-only; NVFP4 selects its backend separately.
@@ -138,6 +156,7 @@ variants:
   nvfp4:
     model_id: "nvidia/DeepSeek-V4-Pro-NVFP4"
     precision: nvfp4
+    supported_hardware: [arch:sm90, arch:sm100, arch:sm103, arch:sm120, arch:sm121, arch:sm89, arch:gfx942, arch:gfx950, cambricon_mlu590]
     vram_minimum_gb: 960
     description: "NVIDIA modelopt NVFP4 checkpoint (MoE experts NVFP4; attention, shared experts, router head, and MTP stay FP8) for Blackwell GPUs."
     hardware_overrides:
@@ -152,6 +171,7 @@ variants:
     model_id: "deepseek-ai/DeepSeek-V4-Pro-DSpark"
     label: "DSpark"
     precision: fp8
+    supported_hardware: [arch:sm90, arch:sm100, arch:sm103, arch:sm120, arch:sm121, arch:sm89, arch:gfx942, arch:gfx950, cambricon_mlu590]
     vram_minimum_gb: 960
     description: "Preview FP4+FP8 weights with the DSpark draft module baked in — same base checkpoint as the fp8 variant plus a fused speculative decoder."
     # DSpark support landed after the recipe baseline (0.20.0), in vLLM 0.25.0.
@@ -167,9 +187,121 @@ variants:
   redhat_nvfp4:
     model_id: "RedHatAI/DeepSeek-V4-Pro-NVFP4-FP8"
     precision: nvfp4
+    supported_hardware: [arch:sm90, arch:sm100, arch:sm103, arch:sm120, arch:sm121, arch:sm89, arch:gfx942, arch:gfx950, cambricon_mlu590]
     label: "NVFP4+FP8 (RedHat)"
     vram_minimum_gb: 1000
     description: "RedHatAI NVFP4+FP8 mixed-precision checkpoint"
+  ascend_w4a8_mtp:
+    model_id: "Eco-Tech/DeepSeek-V4-Pro-w4a8-mtp"
+    label: "W4A8 (Ascend MTP)"
+    precision: int4
+    vram_minimum_gb: 1800
+    min_vllm_version: "0.23.0"
+    supported_hardware: [ascend_910b, ascend_910c]
+    description: "ModelScope W4A8 MTP checkpoint; upstream documents 4× Atlas 800 A2 at TP8·DP4 or 2× Atlas 800 A3 at TP16·DP2."
+    default_modes:
+      spec_decoding: ascend_mtp
+    extra_args:
+      - "--served-model-name"
+      - "dsv4"
+      - "--max-model-len"
+      - "135000"
+      - "--max-num-batched-tokens"
+      - "4096"
+      - "--max-num-seqs"
+      - "16"
+      - "--gpu-memory-utilization"
+      - "0.9"
+      - "--block-size"
+      - "128"
+      - "--no-enable-prefix-caching"
+      - "--tokenizer-mode"
+      - "deepseek_v4"
+      - "--attention_config.indexer_kv_dtype"
+      - "int8"
+      - "--model-loader-extra-config"
+      - '{"enable_multithread_load":true,"num_threads":128}'
+      - "--quantization"
+      - "ascend"
+      - "--compilation-config"
+      - '{"cudagraph_mode":"FULL_DECODE_ONLY"}'
+      - "--additional-config"
+      - '{"ascend_compilation_config":{"enable_npugraph_ex":true,"enable_static_kernel":false},"enable_cpu_binding":true,"enable_shared_expert_dp":true,"enable_flashcomm1":true,"multistream_overlap_shared_expert":true}'
+    extra_env:
+      HCCL_IF_IP: "$LOCAL_IP"
+      GLOO_SOCKET_IFNAME: "$IFACE_NAME"
+      TP_SOCKET_IFNAME: "$IFACE_NAME"
+      HCCL_SOCKET_IFNAME: "$IFACE_NAME"
+      HCCL_BUFFSIZE: "2048"
+      HCCL_OP_EXPANSION_MODE: "AIV"
+      PYTORCH_NPU_ALLOC_CONF: "expandable_segments:True"
+      OMP_PROC_BIND: "false"
+      OMP_NUM_THREADS: "10"
+      TASK_QUEUE_ENABLE: "1"
+      VLLM_ENGINE_READY_TIMEOUT_S: "3600"
+      HCCL_CONNECT_TIMEOUT: "7200"
+      ASCEND_CONNECT_TIMEOUT: "10000"
+      ASCEND_TRANSFER_TIMEOUT: "10000"
+      VLLM_RPC_TIMEOUT: "1800000"
+    hardware_overrides:
+      ascend_910b:
+        docker_image: "quay.io/ascend/vllm-ascend:v0.23.0"
+      ascend_910c:
+        docker_image: "quay.io/ascend/vllm-ascend:v0.23.0-a3"
+  ascend_w4a8_dspark:
+    model_id: "Eco-Tech/DeepSeek-V4-Pro-0813-w4a8"
+    label: "W4A8 DSpark (Ascend A3)"
+    precision: int4
+    vram_minimum_gb: 1800
+    min_vllm_version: "0.23.0"
+    supported_hardware: [ascend_910c]
+    description: "Official 0813 W4A8 checkpoint with fused DSpark draft weights; the documented profile uses two Atlas 800 A3 nodes at TP16·DP2."
+    default_modes:
+      spec_decoding: ascend_dspark
+    extra_args:
+      - "--served-model-name"
+      - "dsv4"
+      - "--max-model-len"
+      - "135000"
+      - "--max-num-batched-tokens"
+      - "4096"
+      - "--max-num-seqs"
+      - "16"
+      - "--gpu-memory-utilization"
+      - "0.9"
+      - "--block-size"
+      - "32"
+      - "--tokenizer-mode"
+      - "deepseek_v4"
+      - "--attention_config.indexer_kv_dtype"
+      - "int8"
+      - "--model-loader-extra-config"
+      - '{"enable_multithread_load":true,"num_threads":128}'
+      - "--quantization"
+      - "ascend"
+      - "--compilation-config"
+      - '{"cudagraph_mode":"FULL_DECODE_ONLY"}'
+      - "--additional-config"
+      - '{"ascend_compilation_config":{"enable_npugraph_ex":true,"enable_static_kernel":false},"enable_cpu_binding":true,"enable_flashcomm1":true,"multistream_overlap_shared_expert":true}'
+    extra_env:
+      HCCL_IF_IP: "$LOCAL_IP"
+      GLOO_SOCKET_IFNAME: "$IFACE_NAME"
+      TP_SOCKET_IFNAME: "$IFACE_NAME"
+      HCCL_SOCKET_IFNAME: "$IFACE_NAME"
+      HCCL_BUFFSIZE: "1024"
+      HCCL_OP_EXPANSION_MODE: "AIV"
+      PYTORCH_NPU_ALLOC_CONF: "expandable_segments:True"
+      OMP_PROC_BIND: "false"
+      OMP_NUM_THREADS: "10"
+      TASK_QUEUE_ENABLE: "1"
+      HCCL_CONNECT_TIMEOUT: "7200"
+      ASCEND_CONNECT_TIMEOUT: "10000"
+      ASCEND_TRANSFER_TIMEOUT: "10000"
+      VLLM_RPC_TIMEOUT: "1800000"
+      VLLM_PREFIX_CACHE_RETENTION_INTERVAL: "4096"
+    hardware_overrides:
+      ascend_910c:
+        docker_image: "quay.io/ascend/vllm-ascend:v0.23.0-a3"
 kv_offload_support:
   offloading_cpu: verified
   offloading_fs: verified
@@ -180,11 +312,41 @@ compatible_strategies:
   - single_node_dep
   - multi_node_tep
   - multi_node_dep
+  - multi_node_tp_dp
   - pd_cluster
 
 # TP+EP is the default deployment; single_node_tp is offered only as a
 # latency-oriented alternative.
 default_strategy: single_node_tep
+
+strategy_min_gpus:
+  ascend_910b:
+    multi_node_tp_dp: 32
+  ascend_910c:
+    multi_node_tp_dp: 32
+
+strategy_hardware:
+  single_node_tp:
+    ascend_910b: unsupported
+    ascend_910c: unsupported
+  single_node_tep:
+    ascend_910b: unsupported
+    ascend_910c: unsupported
+  single_node_dep:
+    ascend_910b: unsupported
+    ascend_910c: unsupported
+  multi_node_tp:
+    ascend_910b: unsupported
+    ascend_910c: unsupported
+  multi_node_tep:
+    ascend_910b: unsupported
+    ascend_910c: unsupported
+  multi_node_dep:
+    ascend_910b: unsupported
+    ascend_910c: unsupported
+  pd_cluster:
+    ascend_910b: unsupported
+    ascend_910c: unsupported
 
 hardware_overrides:
   hopper:
@@ -222,6 +384,9 @@ hardware_overrides:
       VLLM_ROCM_USE_AITER: "1"
 
 strategy_overrides:
+  multi_node_tp_dp:
+    worker_extra_args:
+      - "--headless"
   single_node_tp:
     # Latency-oriented TP-only deployment: no expert parallelism (single_node_tp
     # strategy doesn't add --enable-expert-parallel) and no MoE mega-kernel
@@ -303,6 +468,16 @@ guide: |
 
   Checkpoint is **FP4+FP8 mixed**: MoE expert weights are stored in FP4 while the
   remaining (attention / norm / router) params stay in FP8.
+
+  ## Ascend W4A8 deployment
+
+  vLLM-Ascend 0.23.0 documents `Eco-Tech/DeepSeek-V4-Pro-w4a8-mtp` on four Atlas 800 A2
+  nodes at TP8·DP4 or two Atlas 800 A3 nodes at TP16·DP2. The 0813 DSpark W4A8 checkpoint
+  is documented on two A3 nodes at TP16·DP2. Select the corresponding Ascend variant and
+  `Multi-Node TP + Data Parallel`; workers get `--headless` and rank-specific DP flags.
+  Mount the checkpoint at the same path on every node, set `LOCAL_IP` and `IFACE_NAME` per
+  node, and point `HEAD_IP` at node 0. These are upstream documented profiles, not local
+  end-to-end test results.
 
   An **NVFP4 variant** (`nvidia/DeepSeek-V4-Pro-NVFP4`) is also available — NVIDIA
   modelopt re-quantizes the MoE experts to standard NVFP4 while attention, shared
@@ -976,6 +1151,9 @@ guide: |
   repository — no MI355X benchmark was rerun here.
 
   - InferenceX PR: [#2792](https://github.com/SemiAnalysisAI/InferenceX/pull/2792)
+  - vLLM-Ascend DeepSeek-V4-Pro tutorial: https://docs.vllm.ai/projects/ascend/zh-cn/latest/tutorials/models/DeepSeek-V4-Pro.html
+  - Ascend W4A8 MTP checkpoint: https://www.modelscope.cn/models/Eco-Tech/DeepSeek-V4-Pro-w4a8-mtp
+  - Ascend 0813 W4A8 DSpark checkpoint: https://modelscope.cn/models/Eco-Tech/DeepSeek-V4-Pro-0813-w4a8
   - STP script: [`dsv4_fp4_mi355x_vllm.sh`](https://github.com/SemiAnalysisAI/InferenceX/blob/7393456f925f4962fc9bb6438567e73f7ca12bf8/benchmarks/single_node/fixed_seq_len/dsv4_fp4_mi355x_vllm.sh)
   - MTP script: [`dsv4_fp4_mi355x_vllm_mtp.sh`](https://github.com/SemiAnalysisAI/InferenceX/blob/7393456f925f4962fc9bb6438567e73f7ca12bf8/benchmarks/single_node/fixed_seq_len/dsv4_fp4_mi355x_vllm_mtp.sh)
   - Config matrix: [`configs/amd-master.yaml`](https://github.com/SemiAnalysisAI/InferenceX/blob/7393456f925f4962fc9bb6438567e73f7ca12bf8/configs/amd-master.yaml)

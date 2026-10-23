@@ -1,0 +1,69 @@
+meta:
+  title: "LLaVA-OneVision-Qwen2-0.5B-OV"
+  slug: "llava-onevision-qwen2-0-5b-ov"
+  provider: "LLaVA"
+  description: "Compact 0.5B vision-language model for text, single-image, and multi-image understanding; upstream validated on one Atlas A2 NPU."
+  date_added: 2026-10-21
+  date_updated: 2026-10-21
+  difficulty: beginner
+  tasks:
+    - multimodal
+    - text
+  related_recipes: []
+  hardware:
+    ascend_910b: supported
+
+model:
+  model_id: "llava-hf/llava-onevision-qwen2-0.5b-ov-hf"
+  min_vllm_version: "0.23.0"
+  architecture: dense
+  parameter_count: "0.5B"
+  active_parameters: "0.5B"
+  context_length: 32768
+  base_args:
+    - "--trust-remote-code"
+    - "--served-model-name"
+    - "LLaVA-OneVision-0.5B"
+    - "--gpu-memory-utilization"
+    - "0.8"
+  base_env: {}
+
+variants:
+  default:
+    precision: bf16
+    vram_minimum_gb: 2
+    description: "Hugging Face BF16 checkpoint; one Atlas A2 NPU and TP1 are the upstream validated profile."
+    supported_hardware: [ascend_910b]
+    tp:
+      ascend_910b: 1
+    hardware_overrides:
+      ascend_910b:
+        docker_image: "quay.io/ascend/vllm-ascend:v0.23.0"
+
+features: {}
+opt_in_features: []
+compatible_strategies:
+  - single_node_tp
+
+strategy_overrides: {}
+hardware_overrides: {}
+
+guide: |
+  ## Overview
+
+  LLaVA-OneVision-Qwen2-0.5B-OV is a compact vision-language model based on
+  Qwen2. It supports text generation, image understanding, multiple images,
+  and visual conversation. The recipe uses the canonical Hugging Face
+  checkpoint.
+
+  ## vLLM-Ascend support
+
+  The upstream tutorial validates single-NPU serving on an Atlas A2 with
+  `quay.io/ascend/vllm-ascend:v0.23.0`. The documented launch uses TP1 and
+  `--gpu-memory-utilization 0.8`. Prefill-decode disaggregation is listed as
+  unsupported. This is upstream validation, not a local test by this project.
+
+  ## References
+
+  - [Hugging Face model card](https://huggingface.co/llava-hf/llava-onevision-qwen2-0.5b-ov-hf)
+  - [vLLM-Ascend model tutorial](https://docs.vllm.ai/projects/ascend/zh-cn/latest/tutorials/models/LLaVA-OneVision-Qwen2-0.5B-OV.html)

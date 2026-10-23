@@ -1,0 +1,92 @@
+meta:
+  title: "Mixtral-8x7B-Instruct-v0.1"
+  slug: "mixtral-8x7b-instruct-v0-1"
+  provider: "Mistral AI"
+  description: "47B sparse MoE instruction model with eight 7B experts and two active experts per token; documented for Atlas A2 and A3."
+  date_added: 2026-10-21
+  date_updated: 2026-10-21
+  difficulty: advanced
+  tasks:
+    - text
+  related_recipes: []
+  hardware:
+    ascend_910b: supported
+    ascend_910c: supported
+
+model:
+  model_id: "mistralai/Mixtral-8x7B-Instruct-v0.1"
+  min_vllm_version: "0.23.0"
+  architecture: moe
+  parameter_count: "47B"
+  active_parameters: "13B"
+  context_length: 32768
+  base_args:
+    - "--trust-remote-code"
+    - "--max-model-len"
+    - "4096"
+    - "--dtype"
+    - "bfloat16"
+    - "--enforce-eager"
+    - "--block-size"
+    - "128"
+    - "--gpu-memory-utilization"
+    - "0.7"
+    - "--additional-config"
+    - '{"enable_mlapo":true}'
+  base_env:
+    HCCL_OP_EXPANSION_MODE: "AIV"
+    OMP_PROC_BIND: "false"
+    OMP_NUM_THREADS: "10"
+    VLLM_USE_V1: "1"
+    HCCL_BUFFSIZE: "200"
+    PYTORCH_NPU_ALLOC_CONF: "expandable_segments:True"
+
+features: {}
+opt_in_features: []
+
+variants:
+  default:
+    precision: bf16
+    vram_minimum_gb: 96
+    description: "Canonical BF16 Hugging Face weights; upstream describes one Atlas A2 or A3 node as the deployment target."
+    supported_hardware: [ascend_910b, ascend_910c]
+    tp:
+      ascend_910b: 4
+      ascend_910c: 4
+    hardware_overrides:
+      ascend_910b:
+        docker_image: "quay.io/ascend/vllm-ascend:v0.23.0"
+      ascend_910c:
+        docker_image: "quay.io/ascend/vllm-ascend:v0.23.0"
+
+compatible_strategies:
+  - single_node_tp
+
+strategy_overrides: {}
+hardware_overrides: {}
+
+guide: |
+  ## Overview
+
+  Mixtral-8x7B-Instruct-v0.1 is a sparse MoE instruction model with eight
+  experts and two active experts per token. This recipe uses the canonical
+  BF16 checkpoint from Hugging Face and mirrors the upstream vLLM-Ascend
+  single-node configuration.
+
+  ## vLLM-Ascend support
+
+  The current upstream tutorial documents one Atlas A2 node (64 GB × 8 NPUs)
+  or one Atlas A3 node (64 GB × 16 chips), using the v0.23.0 image. The
+  documented example uses TP4, a 4K maximum context, eager execution, block
+  size 128, and 0.7 NPU memory utilization. Treat these as a tested reference
+  profile, not a universal optimum. This recipe records upstream support, not
+  local end-to-end validation.
+
+  The tutorial also sets `enable_mlapo`, HCCL, and OpenMP environment options.
+  It notes that balanced scheduling can improve output throughput and TPOT in
+  some workloads while worsening TTFT, so it is not enabled by default here.
+
+  ## References
+
+  - [Hugging Face model card](https://huggingface.co/mistralai/Mixtral-8x7B-Instruct-v0.1)
+  - [vLLM-Ascend model tutorial](https://docs.vllm.ai/projects/ascend/zh-cn/latest/tutorials/models/Mixtral-8x7B-Instruct-v0.1.html)

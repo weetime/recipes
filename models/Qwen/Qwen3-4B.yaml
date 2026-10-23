@@ -65,7 +65,14 @@ variants:
     precision: bf16
     vram_minimum_gb: 10
     description: "Full precision BF16 — fits on a single TPU v6e chip or one 16GB+ GPU or one Xeon 6 NUMA node"
-    supported_hardware: [trillium, xeon6]
+    supported_hardware: [trillium, xeon6, ascend_910b, ascend_910b4, ascend_910c]
+    hardware_overrides:
+      ascend_910b:
+        docker_image: "quay.io/ascend/vllm-ascend:v0.23.0"
+      ascend_910b4:
+        docker_image: "quay.io/ascend/vllm-ascend:v0.23.0"
+      ascend_910c:
+        docker_image: "quay.io/ascend/vllm-ascend:v0.23.0-a3"
   fp8:
     model_id: "Qwen/Qwen3-4B-FP8"
     precision: fp8
@@ -79,6 +86,8 @@ variants:
     label: "FP8 Dynamic (RedHat)"
     vram_minimum_gb: 5
     description: "RedHatAI FP8 (E4M3) with dynamic per-token activation quantization"
+    # Preserve the upstream recipe's explicit eligibility for this checkpoint.
+    supported_hardware: [trillium]
     extra_args:
       - "--kv-cache-dtype"
       - "fp8"
@@ -103,6 +112,11 @@ guide: |
   Toggle thinking mode per request with `enable_thinking` in `chat_template_kwargs`, or set the **Reasoning** feature to add the Qwen3 reasoning parser so `<think>` content is split into a separate field.
 
   ## Prerequisites
+
+  The official [vLLM-Ascend Qwen3 Dense guide](https://docs.vllm.ai/projects/ascend/zh-cn/latest/tutorials/models/Qwen3-Dense.html)
+  documents BF16 serving on Atlas A2 and A3. The recipe has additional local
+  Ascend verification recorded in its hardware metadata; use the matching image
+  tag shown by the selected hardware profile.
 
   ### NVIDIA
   ```bash
