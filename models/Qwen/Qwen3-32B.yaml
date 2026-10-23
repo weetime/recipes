@@ -90,6 +90,13 @@ variants:
     precision: bf16
     vram_minimum_gb: 77
     description: "Full precision BF16 — TPU v6e 2x2 (4 chips, TP=4) or a single 80GB+ GPU"
+    hardware_overrides:
+      ascend_910b:
+        docker_image: "quay.io/ascend/vllm-ascend:v0.23.0"
+      ascend_910b4:
+        docker_image: "quay.io/ascend/vllm-ascend:v0.23.0"
+      ascend_910c:
+        docker_image: "quay.io/ascend/vllm-ascend:v0.23.0-a3"
   fp8:
     model_id: "Qwen/Qwen3-32B-FP8"
     precision: fp8
@@ -157,6 +164,12 @@ guide: |
   ## Overview
 
   Qwen3-32B is the flagship dense model in the Qwen3 series, with hybrid thinking / non-thinking modes. BF16 is the training precision and gives the best accuracy.
+
+  The official [vLLM-Ascend Qwen3 Dense guide](https://docs.vllm.ai/projects/ascend/zh-cn/latest/tutorials/models/Qwen3-Dense.html)
+  documents BF16 on Atlas A2 and A3. Its W8A8/W4A4 weights are hosted on
+  ModelScope rather than Hugging Face, so they are documented separately and
+  are not presented as selectable HF checkpoints in this recipe. The default
+  BF16 Docker image is pinned to the published A2/A3 tags.
 
   Toggle thinking mode per request with `enable_thinking` in `chat_template_kwargs`, or set the **Reasoning** feature to add the Qwen3 reasoning parser so `<think>` content is split into a separate field.
 

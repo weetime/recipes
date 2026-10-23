@@ -19,6 +19,7 @@ meta:
     mi325x: verified
     mi350x: verified
     mi355x: verified
+    ascend_910c: supported
 
 model:
   model_id: "zai-org/GLM-5.2"
@@ -48,6 +49,9 @@ features:
     args:
       - "--reasoning-parser"
       - "glm47"
+    hardware_overrides:
+      ascend_910c:
+        args: ["--reasoning-parser", "glm45"]
   spec_decoding:
     description: "Multi-Token Prediction speculative decoding (up to 7 draft tokens)"
     default_mode: mtp
@@ -74,6 +78,13 @@ features:
         args:
           - "--speculative-config"
           - '{"model": "RedHatAI/GLM-5.2-speculator.dspark","num_speculative_tokens": 7,"method": "dspark"}'
+      ascend_mtp:
+        label: "MTP (Ascend)"
+        description: "DeepSeek MTP draft mode used by the GLM-5.2 W4A8C8 A3 guide."
+        variants: [ascend_w4a8c8]
+        args:
+          - "--speculative-config"
+          - '{"num_speculative_tokens":3,"method":"deepseek_mtp","enforce_eager":true}'
 
 opt_in_features:
   - spec_decoding
@@ -82,6 +93,7 @@ variants:
   default:
     model_id: "zai-org/GLM-5.2-FP8"
     precision: fp8
+    supported_hardware: [arch:sm90, arch:sm100, arch:sm103, arch:sm120, arch:sm121, arch:sm89, arch:gfx942, arch:gfx950, cambricon_mlu590]
     vram_minimum_gb: 893
     description: "Native FP8 checkpoint — 8xH200/H20 (141GB × 8) single-node serving"
   mxfp4:
@@ -102,22 +114,26 @@ variants:
   nvfp4:
     model_id: "nvidia/GLM-5.2-NVFP4"
     precision: nvfp4
+    supported_hardware: [arch:sm100, arch:sm103, arch:sm120, arch:sm121]
     vram_minimum_gb: 558
     description: "NVIDIA modelopt NVFP4 checkpoint — only MoE expert linears are quantized to NVFP4; shared experts, attention, embeddings, and the early dense layers stay FP8/BF16, with FP8 KV cache. Blackwell GPUs (B200/B300) only."
   redhat_nvfp4:
     model_id: "RedHatAI/GLM-5.2-NVFP4-FP8"
     precision: nvfp4
+    supported_hardware: [arch:sm100, arch:sm103, arch:sm120, arch:sm121]
     label: "NVFP4+FP8 (RedHat)"
     vram_minimum_gb: 558
     description: "RedHatAI NVFP4+FP8 mixed-precision checkpoint (MoE expert linears NVFP4, attention/embeddings FP8) for Blackwell GPUs"
   bf16:
     precision: bf16
+    supported_hardware: [arch:sm90, arch:sm100, arch:sm103, arch:sm120, arch:sm121, arch:sm89, arch:gfx942, arch:gfx950, cambricon_mlu590]
     vram_minimum_gb: 1786
     description: "Full precision BF16 — requires multi-node deployment"
 
   redhat_fp8:
     model_id: "RedHatAI/GLM-5.2-FP8"
     precision: fp8
+    supported_hardware: [arch:sm90, arch:sm100, arch:sm103, arch:sm120, arch:sm121, arch:sm89, arch:gfx942, arch:gfx950, cambricon_mlu590]
     label: "FP8 (RedHat)"
     vram_minimum_gb: 892
     description: "RedHatAI FP8 quantization"
@@ -125,9 +141,53 @@ variants:
   redhat_nvfp4_plain:
     model_id: "RedHatAI/GLM-5.2-NVFP4"
     precision: nvfp4
+    supported_hardware: [arch:sm100, arch:sm103, arch:sm120, arch:sm121]
     label: "NVFP4 (RedHat)"
     vram_minimum_gb: 477
     description: "RedHatAI NVFP4 quantization"
+  ascend_w4a8c8:
+    model_id: "Eco-Tech/GLM-5.2-w4a8c8"
+    precision: int4
+    label: "W4A8C8 (Ascend A3)"
+    supported_hardware: [ascend_910c]
+    # 97 safetensors total 404,945,111,104 bytes; 1.2x working margin.
+    vram_minimum_gb: 486
+    min_vllm_version: "0.23.0"
+    description: "ModelScope W4A8C8 checkpoint documented on one 16-NPU Atlas 800 A3, using TP8·DP2 with expert parallelism."
+    default_modes:
+      spec_decoding: ascend_mtp
+    extra_args:
+      - "--quantization"
+      - "ascend"
+      - "--data-parallel-size"
+      - "2"
+      - "--enable-expert-parallel"
+      - "--served-model-name"
+      - "glm-5"
+      - "--max-num-seqs"
+      - "12"
+      - "--max-model-len"
+      - "135000"
+      - "--max-num-batched-tokens"
+      - "8192"
+      - "--gpu-memory-utilization"
+      - "0.92"
+      - "--compilation-config"
+      - '{"cudagraph_mode":"FULL_DECODE_ONLY"}'
+      - "--attention_config.indexer_kv_dtype"
+      - "int8"
+      - "--additional-config"
+      - '{"enable_dsa_cp":true,"enable_balance_scheduling":true,"multistream_overlap_shared_expert":true,"enable_flashcomm1":true,"enable_fused_mc2":0}'
+    extra_env:
+      HCCL_BUFFSIZE: "200"
+      HCCL_OP_EXPANSION_MODE: "AIV"
+      PYTORCH_NPU_ALLOC_CONF: "expandable_segments:True"
+    hardware_overrides:
+      ascend_910c:
+        docker_image: "quay.io/ascend/vllm-ascend:v0.23.0-a3"
+        extra_args:
+          - "--kv-cache-dtype"
+          - "auto"
 
 
 compatible_strategies:
@@ -139,11 +199,38 @@ compatible_strategies:
   - multi_node_dep
   - pd_cluster
 
+strategy_hardware:
+  single_node_tp:
+    ascend_910c: unsupported
+  multi_node_tp:
+    ascend_910c: unsupported
+  multi_node_tp_pp:
+    ascend_910c: unsupported
+  multi_node_tep:
+    ascend_910c: unsupported
+  multi_node_dep:
+    ascend_910c: unsupported
+  pd_cluster:
+    ascend_910c: unsupported
+
+strategy_overrides:
+  single_node_tep:
+    tp:
+      ascend_910c: 8
+
+strategy_min_gpus:
+  ascend_910c:
+    single_node_tep: 16
+
 kv_offload_support:
   offloading_cpu: verified
   offloading_fs: verified
 
 hardware_overrides:
+  ascend:
+    extra_args:
+      - "--kv-cache-dtype"
+      - "auto"
   hopper:
     # H100/H200 use plain fp8 KV cache; Blackwell keeps base_args' fp8_e4m3,H20 do not use kvcache fp8 
     # The synthesizer's last-wins dedupe lets this shadow --kv-cache-dtype.
@@ -160,8 +247,6 @@ hardware_overrides:
       VLLM_ROCM_USE_AITER: "1"
       VLLM_ROCM_USE_AITER_FUSION_SHARED_EXPERTS: "1"
 
-strategy_overrides: {}
-
 guide: |
   ## Overview
 
@@ -171,6 +256,13 @@ guide: |
   5 draft tokens**, lifting end-to-end throughput on reasoning, coding, and agentic workloads.
   It ships as BF16, native-FP8, and AMD Quark MXFP4 checkpoints, and keeps the GLM
   thinking-mode behavior.
+
+  The Ascend A3 option follows the upstream W4A8C8 ModelScope deployment: one
+  16-NPU Atlas 800 A3 with TP8, DP2 and expert parallelism. It uses the
+  `vllm-ascend:v0.23.0-a3` image and is documented upstream, not locally
+  end-to-end validated. The A2 multi-node recipe and 950-series W4A4C8 path are
+  not represented here because their topology or quantization workflow is not
+  modeled by this single-node variant.
 
   This recipe targets the **FP8** checkpoint, the practical default: it fits on a single
   8xH200 / 8xH20 node and — with FP8 KV cache — reaches the full 1M-token context on 8xB200.
@@ -465,6 +557,9 @@ guide: |
   - **MTP performance:** We fixed some MTP acceptance rate issue in [This PR](https://github.com/vllm-project/vllm/pull/45895). If you encounter MTP acceptance rate issue, please update your branch or refer to [GLM-5.2 Docker Image](https://hub.docker.com/r/vllm/vllm-openai/tags?name=glm52).
 
   ## References
+
+  - [vLLM-Ascend GLM-5.2 deployment guide](https://docs.vllm.ai/projects/ascend/zh-cn/latest/tutorials/models/GLM5.2.html)
+  - [Ascend W4A8C8 checkpoint](https://www.modelscope.cn/models/Eco-Tech/GLM-5.2-w4a8c8)
 
   - [Model card](https://huggingface.co/zai-org/GLM-5.2)
   - [FP8 checkpoint](https://huggingface.co/zai-org/GLM-5.2-FP8)

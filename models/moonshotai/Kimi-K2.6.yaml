@@ -9,6 +9,8 @@ meta:
   tasks:
     - multimodal
     - text
+  default_variant:
+    ascend_910c: ascend_w4a8
   performance_headline: "Multimodal agentic MoE model with DeepSeek-V3 backbone and MLA attention"
   related_recipes: []
   hardware:
@@ -18,6 +20,7 @@ meta:
     mi300x: verified
     mi325x: verified
     mi355x: verified
+    ascend_910c: supported
 
 model:
   model_id: "moonshotai/Kimi-K2.6"
@@ -50,9 +53,22 @@ features:
       - "kimi_k2"
   spec_decoding:
     description: "Eagle3 speculative decoding for accelerated inference"
-    args:
-      - "--speculative-config"
-      - '{"model":"lightseekorg/kimi-k2.6-eagle3-mla","method":"eagle3","num_speculative_tokens":3}'
+    default_mode: eagle3
+    modes:
+      eagle3:
+        label: "Eagle3"
+        description: "Eagle3 draft checkpoint for the CUDA serving variants."
+        variants: [default, nvfp4, fp8, redhat_nvfp4]
+        args:
+          - "--speculative-config"
+          - '{"model":"lightseekorg/kimi-k2.6-eagle3-mla","method":"eagle3","num_speculative_tokens":3}'
+      dflash:
+        label: "DFlash (Ascend)"
+        description: "Ascend tutorial's DFlash draft checkpoint."
+        variants: [ascend_w4a8]
+        args:
+          - "--speculative-config"
+          - '{"method":"dflash","model":"z-lab/Kimi-K2.5-DFlash","num_speculative_tokens":15}'
   text_only:
     description: "Skip loading the vision encoder for text-only workloads — frees VRAM for KV cache. Mutually exclusive with encoder_parallel."
     args:
@@ -102,6 +118,54 @@ variants:
     vram_minimum_gb: 600
     description: "RedHatAI NVFP4 quantization"
 
+  ascend_w4a8:
+    model_id: "Eco-Tech/Kimi-K2.6-W4A8"
+    precision: int4
+    label: "W4A8 (Ascend A3)"
+    vram_minimum_gb: 700
+    min_vllm_version: "0.23.0"
+    supported_hardware: [ascend_910c]
+    default_modes:
+      spec_decoding: dflash
+    description: "Official Ascend W4A8 checkpoint and single-node A3 profile: TP4 × DP4 with expert parallelism across 16 NPUs."
+    hardware_overrides:
+      ascend_910c:
+        docker_image: "quay.io/ascend/vllm-ascend:v0.23.0-a3"
+    extra_args:
+      - "--quantization"
+      - "ascend"
+      - "--served-model-name"
+      - "kimi_k26"
+      - "--data-parallel-size"
+      - "4"
+      - "--enable-expert-parallel"
+      - "--no-enable-prefix-caching"
+      - "--max-num-seqs"
+      - "4"
+      - "--max-model-len"
+      - "34816"
+      - "--max-num-batched-tokens"
+      - "16384"
+      - "--gpu-memory-utilization"
+      - "0.87"
+      - "--seed"
+      - "42"
+      - "--compilation-config"
+      - '{"cudagraph_mode":"FULL_DECODE_ONLY"}'
+      - "--mm-processor-cache-gb"
+      - "0"
+      - "--mm-encoder-tp-mode"
+      - "data"
+      - "--additional-config"
+      - '{"scheduler_config":{"enable_balance_scheduling":false},"enable_mlapo":true}'
+    extra_env:
+      HCCL_OP_EXPANSION_MODE: "AIV"
+      PYTORCH_NPU_ALLOC_CONF: "expandable_segments:True"
+      OMP_PROC_BIND: "false"
+      OMP_NUM_THREADS: "1"
+      TASK_QUEUE_ENABLE: "1"
+      HCCL_BUFFSIZE: "600"
+
 compatible_strategies:
   - single_node_tp
   - single_node_tep
@@ -124,6 +188,9 @@ hardware_overrides:
       VLLM_ROCM_QUICK_REDUCE_QUANTIZATION: "INT4"
 
 strategy_overrides:
+  single_node_tp:
+    tp:
+      ascend_910c: 4
   pd_cluster:
     env:
       VLLM_USE_NCCL_SYMM_MEM: "1"
@@ -312,9 +379,19 @@ guide: |
   - **Async scheduling:** Enabled by default for better throughput. Disable if you encounter
     issues, and file a bug report to vLLM.
 
+  ### Ascend A3 W4A8
+
+  The vLLM-Ascend tutorial documents the `Eco-Tech/Kimi-K2.6-W4A8` checkpoint on one
+  Atlas 800 A3 node with 16 NPUs. This recipe exposes its TP4 × DP4 deployment in the
+  `W4A8 (Ascend A3)` variant, using the dedicated `v0.23.0-a3` image. The recipe is
+  upstream-documented and is not locally verified. The tutorial's multi-node PD setup
+  and DFlash draft checkpoint are not included in this variant.
+
   ## References
 
   - [Kimi-K2.6 on Hugging Face](https://huggingface.co/moonshotai/Kimi-K2.6)
+  - [vLLM-Ascend Kimi-K2.6 deployment guide](https://docs.vllm.ai/projects/ascend/zh-cn/latest/tutorials/models/Kimi-K2.6.html)
+  - [Kimi-K2.6 W4A8 on ModelScope](https://www.modelscope.cn/models/Eco-Tech/Kimi-K2.6-W4A8)
   - [NVIDIA Kimi-K2.6-NVFP4 on Hugging Face](https://huggingface.co/nvidia/Kimi-K2.6-NVFP4)
   - [vLLM multimodal inputs guide](https://docs.vllm.ai/en/latest/features/multimodal_inputs.html)
   - [vLLM Expert Parallelism docs](https://docs.vllm.ai/en/latest/serving/expert_parallel_deployment.html)

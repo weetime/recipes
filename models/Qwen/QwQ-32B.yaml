@@ -16,7 +16,9 @@ meta:
 
 model:
   model_id: "Qwen/QwQ-32B"
-  min_vllm_version: "0.7.3"
+  # This recipe's verified Xeon 6 configuration is documented for the CPU
+  # backend >= 0.8.5; don't advertise the older general model floor here.
+  min_vllm_version: "0.8.5"
   architecture: dense
   parameter_count: "32B"
   active_parameters: "32B"

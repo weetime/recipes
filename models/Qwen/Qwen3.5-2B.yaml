@@ -14,9 +14,7 @@ meta:
     - "Qwen/Qwen3.5-4B"
     - "Qwen/Qwen3.5-0.8B"
   hardware:
-    ascend_910b: verified
-    ascend_910c: verified
-    ascend_910b4: verified
+    atlas_300i_duo: supported
     arc_pro_b60: verified
     arc_pro_b70: verified
 
@@ -68,6 +66,29 @@ variants:
     precision: bf16
     vram_minimum_gb: 5
     description: "Full precision BF16 — fits on an 8 GB GPU or Intel Arc Pro B60/B70"
+    tp: 1
+    extra_args:
+      - "--served-model-name"
+      - "qwen3.5"
+      - "--max-num-seqs"
+      - "32"
+      - "--max-model-len"
+      - "16384"
+      - "--gpu-memory-utilization"
+      - "0.90"
+      - "--mamba-ssm-cache-dtype"
+      - "float16"
+      - "--dtype"
+      - "float16"
+      - "--compilation-config"
+      - '{"cudagraph_mode":"FULL_DECODE_ONLY","cudagraph_capture_sizes":[2,16]}'
+      - "--additional-config"
+      - '{"ascend_compilation_config":{"enable_npugraph_ex":false}}'
+    extra_env:
+      VLLM_USE_MODELSCOPE: "True"
+    hardware_overrides:
+      atlas_300i_duo:
+        docker_image: "quay.io/ascend/vllm-ascend:v0.23.0-310p"
 
 compatible_strategies:
   - single_node_tp
@@ -147,3 +168,4 @@ guide: |
 
   - [Model card](https://huggingface.co/Qwen/Qwen3.5-2B)
   - [Base checkpoint](https://huggingface.co/Qwen/Qwen3.5-2B-Base)
+  - [Qwen3.5 Dense on vLLM-Ascend](https://docs.vllm.ai/projects/ascend/zh-cn/latest/tutorials/models/Qwen3.5-Dense.html)

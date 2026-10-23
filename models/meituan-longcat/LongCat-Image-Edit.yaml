@@ -39,7 +39,7 @@ opt_in_features: []
 variants:
   default:
     precision: bf16
-    vram_minimum_gb: 36
+    vram_minimum_gb: 40
     description: "BF16 weights; served via vLLM-Omni"
 
 compatible_strategies: []

@@ -138,25 +138,29 @@ export function resolveSingleNodeTp(
 ) {
   const gpuCount = typeof hwProfile?.gpu_count === "number" ? hwProfile.gpu_count : 1;
   const isCpu = hwProfile?.generation === "cpu";
-  if (strategyName !== "single_node_tp") return gpuCount;
-  // Variant-level override beats recipe-level. Used when a non-default variant
-  // (typically an FP8-block-quantized sibling) needs a smaller TP than the
-  // bf16 default — e.g. moe_intermediate_size=1536 demands TP ≤ 4 under FP8
-  // block_n=128, while bf16 happily runs at TP=8. A map supports variants
-  // whose documented deployment differs by GPU (e.g. TP1 B300 / TP2 H200).
-  const variantTp = declaredTpForHardware(variant?.tp, hwProfile, hwProfileId);
-  if (typeof variantTp === "number" && variantTp > 0) {
-    // CPU profiles retain gpu_count only for compatibility with the generic
-    // hardware schema. It is not a physical CPU or NUMA-node limit.
-    return isCpu ? variantTp : Math.min(variantTp, gpuCount);
+  if (strategyName === "single_node_tp") {
+    // Variant-level override beats recipe-level. Used when a non-default variant
+    // (typically an FP8-block-quantized sibling) needs a smaller TP than the
+    // bf16 default. A map supports variants whose documented deployment differs
+    // by GPU (e.g. TP1 B300 / TP2 H200).
+    const variantTp = declaredTpForHardware(variant?.tp, hwProfile, hwProfileId);
+    if (typeof variantTp === "number" && variantTp > 0) {
+      return isCpu ? variantTp : Math.min(variantTp, gpuCount);
+    }
   }
-  const declaredTp = declaredTpForHardware(
-    recipe?.strategy_overrides?.[strategyName]?.tp,
-    hwProfile,
-    hwProfileId,
-  );
-  if (typeof declaredTp === "number" && declaredTp > 0) {
-    return isCpu ? declaredTp : Math.min(declaredTp, gpuCount);
+
+  if (strategyName === "single_node_tp" || strategyName === "single_node_tep") {
+    const declaredTp = declaredTpForHardware(
+      recipe?.strategy_overrides?.[strategyName]?.tp,
+      hwProfile,
+      hwProfileId,
+    );
+    if (typeof declaredTp === "number" && declaredTp > 0) {
+      return isCpu ? declaredTp : Math.min(declaredTp, gpuCount);
+    }
+    // TEP defaults to using all visible accelerators, but some documented
+    // layouts combine a smaller TP group with an explicit DP size.
+    if (strategyName === "single_node_tep") return gpuCount;
   }
   const perGpuVram = hwProfile?.vram_gb && gpuCount ? hwProfile.vram_gb / gpuCount : 0;
   const vramMinGb = variantVramMinimumGb(variant, hwProfileId);
@@ -1197,13 +1201,14 @@ export function resolveCommand(recipe, variantKey, strategyName, hwProfileId, en
   const gpuCount = typeof hwProfile.gpu_count === "number" ? hwProfile.gpu_count : 1;
   const totalGpus = gpuCount * Math.max(1, nodeCount);
 
-  // single_node_tp TP size precedence (see resolveSingleNodeTp):
+  // Single-node TP size precedence (see resolveSingleNodeTp):
   //   1. `variant.tp` (number or hardware-aware map)
-  //   2. `strategy_overrides.single_node_tp.tp` (recipe-wide override)
-  //   3. auto-fit from `variant.vram_minimum_gb` / per-GPU VRAM.
-  //   4. gpuCount (legacy fan-out when the recipe has no VRAM hint).
+  //   2. `strategy_overrides.<strategy>.tp` (TP and TEP recipe override)
+  //   3. auto-fit from `variant.vram_minimum_gb` / per-GPU VRAM (TP only).
+  //   4. gpuCount (default TEP fan-out / legacy TP fan-out).
   //
-  // TEP/DEP require full TP by topology; multi-node is explicit scale-out.
+  // TEP defaults to full TP unless a documented layout overrides it. DEP
+  // requires full TP by topology; multi-node is explicit scale-out.
   const singleNodeTp = resolveSingleNodeTp(
     recipe,
     variant,
@@ -1503,9 +1508,8 @@ export function resolveCommand(recipe, variantKey, strategyName, hwProfileId, en
       args.push("--data-parallel-size", String(gpuCount));
       args.push("--tensor-parallel-size", "1");
     } else {
-      // Single-node TP / TEP / DEP. `singleNodeTp` equals `gpuCount` for
-      // everything except single_node_tp with a recipe-declared
-      // `strategy_overrides.single_node_tp.tp`. Always emit the flag — the
+      // Single-node TP / TEP / DEP. `singleNodeTp` equals `gpuCount` unless
+      // the recipe declares a TP override for the selected strategy. Always emit the flag — the
       // command builder's contract is "what you declare is what you see", so
       // hiding TP=1 because it matches vLLM's default would break the
       // declarative mapping and leave the user guessing what's active.
@@ -1524,6 +1528,9 @@ export function resolveCommand(recipe, variantKey, strategyName, hwProfileId, en
       } else {
         if (so.extra_args) args.push(...so.extra_args);
         if (so.vllm_args)  args.push(...so.vllm_args);
+      }
+      if (nodeRole === "worker" && so.worker_extra_args) {
+        args.push(...so.worker_extra_args);
       }
     }
 

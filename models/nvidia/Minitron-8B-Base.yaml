@@ -1,0 +1,70 @@
+meta:
+  title: "Minitron-8B-Base"
+  slug: "minitron-8b-base"
+  provider: "NVIDIA"
+  description: "8B BF16 base language model compressed from a larger model, with an upstream vLLM-Ascend single-NPU profile and GSM8K evaluation."
+  date_added: 2026-10-21
+  date_updated: 2026-10-21
+  difficulty: intermediate
+  tasks:
+    - text
+  related_recipes: []
+  hardware:
+    ascend_910b: supported
+
+model:
+  model_id: "nvidia/Minitron-8B-Base"
+  min_vllm_version: "0.23.0"
+  architecture: dense
+  parameter_count: "8B"
+  active_parameters: "8B"
+  context_length: 4096
+  base_args:
+    - "--served-model-name"
+    - "minitron-8b-base"
+    - "--max-model-len"
+    - "4096"
+    - "--gpu-memory-utilization"
+    - "0.9"
+    - "--enforce-eager"
+  base_env: {}
+
+variants:
+  default:
+    precision: bf16
+    vram_minimum_gb: 16
+    description: "BF16 Hugging Face weights; upstream demonstrates TP1 on an Ascend 910B 64 GB NPU."
+    supported_hardware: [ascend_910b]
+    tp:
+      ascend_910b: 1
+    hardware_overrides:
+      ascend_910b:
+        docker_image: "quay.io/ascend/vllm-ascend:v0.23.0"
+
+features: {}
+opt_in_features: []
+compatible_strategies:
+  - single_node_tp
+
+strategy_overrides: {}
+hardware_overrides: {}
+
+guide: |
+  ## Overview
+
+  Minitron-8B-Base is an NVIDIA 8B base language model developed using model
+  compression. This recipe uses NVIDIA's canonical Hugging Face repository.
+  The upstream vLLM-Ascend tutorial references a ModelScope mirror, but the
+  launch path and model name correspond to the BF16 base checkpoint.
+
+  ## vLLM-Ascend support
+
+  The upstream tutorial documents a single Ascend 910B 64 GB NPU with
+  `quay.io/ascend/vllm-ascend:v0.23.0`, TP1, 4K context, eager execution, and
+  0.9 memory utilization. It also reports GSM8K evaluation results. This is
+  upstream documented support, not local end-to-end validation.
+
+  ## References
+
+  - [NVIDIA Hugging Face model card](https://huggingface.co/nvidia/Minitron-8B-Base)
+  - [vLLM-Ascend model tutorial](https://docs.vllm.ai/projects/ascend/zh-cn/latest/tutorials/models/Minitron-8B-Base.html)

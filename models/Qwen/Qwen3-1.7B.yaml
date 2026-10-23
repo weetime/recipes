@@ -13,6 +13,8 @@ meta:
     - "Qwen/Qwen3-4B"
   hardware:
     xeon6: verified
+    ascend_910b: supported
+    ascend_910c: supported
 
 model:
   model_id: "Qwen/Qwen3-1.7B"
@@ -37,6 +39,11 @@ features:
       - "--reasoning-parser"
       - "qwen3"
 
+dependencies:
+  - command: "pip install vllm-ascend"
+    brand: Huawei
+    note: "Use the vLLM-Ascend runtime and the image matching the selected Atlas generation; the upstream Qwen3 Dense guide documents BF16 on Atlas A2 and A3."
+
 opt_in_features: []
 
 variants:
@@ -44,7 +51,12 @@ variants:
     precision: bf16
     vram_minimum_gb: 5
     description: "Full precision BF16"
-    supported_hardware: [xeon6]
+    supported_hardware: [xeon6, ascend_910b, ascend_910c]
+    hardware_overrides:
+      ascend_910b:
+        docker_image: "quay.io/ascend/vllm-ascend:v0.23.0"
+      ascend_910c:
+        docker_image: "quay.io/ascend/vllm-ascend:v0.23.0-a3"
 
 compatible_strategies:
   - single_node_tp
@@ -71,6 +83,16 @@ guide: |
 
   - Hardware: 1x Xeon 6 CPUs
   - vLLM >= 0.8.5
+
+  ## Ascend NPU (vLLM-Ascend)
+
+  The official vLLM-Ascend guide lists Qwen3-1.7B BF16 for Atlas A2 (910B) and
+  Atlas A3 (910C). This is upstream-documented support; it has not been
+  independently verified by this recipe. Use the matching vLLM-Ascend image and
+  host CANN driver for your Atlas generation. The generated Docker command pins
+  the image tag documented for each Atlas generation.
+
+  Reference: [Qwen3 Dense on vLLM-Ascend](https://docs.vllm.ai/projects/ascend/zh-cn/latest/tutorials/models/Qwen3-Dense.html)
 
   ### pip (Intel Xeon 6 CPUs)
 

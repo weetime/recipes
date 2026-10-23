@@ -4,7 +4,7 @@ meta:
   provider: "Qwen"
   description: "Text-to-speech served via vLLM-Omni with predefined speaker voices and optional style/emotion control, exposed through the OpenAI /v1/audio/speech API. Sibling VoiceDesign and Base (voice-clone) checkpoints share the same serving path."
   date_added: 2026-06-17
-  date_updated: 2026-06-15
+  date_updated: 2026-10-23
   difficulty: beginner
   tasks:
     - omni
@@ -34,12 +34,55 @@ omni:
         curl -X POST http://localhost:8000/v1/audio/speech \
           -H "Content-Type: application/json" \
           -d '{
-            "model": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
+            "model": "{{model_id}}",
             "input": "Hello, how are you?",
             "voice": "vivian",
             "language": "English",
             "response_format": "wav"
           }' --output output.wav
+      curl_by_variant:
+        voicedesign-1.7b: |
+          curl -X POST http://localhost:8000/v1/audio/speech \
+            -H "Content-Type: application/json" \
+            -d '{
+              "model": "{{model_id}}",
+              "input": "Hello world",
+              "task_type": "VoiceDesign",
+              "instructions": "A warm, friendly female voice with a gentle tone",
+              "response_format": "wav"
+            }' --output output.wav
+        base-1.7b: |
+          curl -X POST http://localhost:8000/v1/audio/speech \
+            -H "Content-Type: application/json" \
+            -d '{
+              "model": "{{model_id}}",
+              "input": "Hello, this is a cloned voice",
+              "task_type": "Base",
+              "ref_audio": "https://example.com/reference.wav",
+              "ref_text": "Replace with the exact transcript of the reference audio",
+              "response_format": "wav"
+            }' --output output.wav
+        customvoice-0.6b: |
+          curl -X POST http://localhost:8000/v1/audio/speech \
+            -H "Content-Type: application/json" \
+            -d '{
+              "model": "{{model_id}}",
+              "input": "Hello, how are you?",
+              "voice": "vivian",
+              "language": "English",
+              "response_format": "wav"
+            }' --output output.wav
+        base-0.6b: |
+          curl -X POST http://localhost:8000/v1/audio/speech \
+            -H "Content-Type: application/json" \
+            -d '{
+              "model": "{{model_id}}",
+              "input": "Hello, this is a cloned voice",
+              "task_type": "Base",
+              "ref_audio": "https://example.com/reference.wav",
+              "ref_text": "Replace with the exact transcript of the reference audio",
+              "response_format": "wav"
+            }' --output output.wav
 
 dependencies:
   - note: "vLLM-Omni provides the TTS serving backend and the `--omni` serve path. See the installation guide for pre-built wheels or building from source."
@@ -111,6 +154,8 @@ guide: |
 
   Use the **Variant** selector above to switch checkpoint (CustomVoice /
   VoiceDesign / Base, 1.7B or 0.6B); the served `model_id` updates accordingly.
+  The interactive request sample also follows the selected variant. For Base,
+  replace the reference audio URL and transcript with your own matching sample.
 
   ## Installation
 

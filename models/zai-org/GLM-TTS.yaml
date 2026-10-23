@@ -4,7 +4,7 @@ meta:
   provider: "GLM (Z-AI)"
   description: "Z-AI's two-stage (AR + DiT flow-matching) zero-shot voice-cloning TTS for Chinese and English, served via vLLM-Omni through the OpenAI /v1/audio/speech API. Every request is conditioned on reference audio + its transcript."
   date_added: 2026-06-17
-  date_updated: 2026-06-15
+  date_updated: 2026-10-23
   difficulty: intermediate
   tasks:
     - omni
@@ -23,6 +23,8 @@ model:
   base_args:
     - "--omni"
     - "--trust-remote-code"
+    - "--allowed-local-media-path"
+    - "/tmp/audio"
   base_env: {}
 
 omni:
@@ -38,7 +40,7 @@ omni:
             "model": "zai-org/GLM-TTS",
             "input": "你好，这是一个语音合成测试。",
             "response_format": "wav",
-            "ref_audio": "file:///path/to/ref.wav",
+            "ref_audio": "file:///tmp/audio/ref.wav",
             "ref_text": "这是参考音频的文本内容。"
           }' --output test.wav
 
@@ -92,13 +94,15 @@ guide: |
   chunking (streaming) is on by default:
 
   ```bash
-  vllm serve zai-org/GLM-TTS --omni --trust-remote-code --port 8000
+  vllm serve zai-org/GLM-TTS --omni --trust-remote-code \
+    --allowed-local-media-path /tmp/audio --port 8000
   ```
 
   For the synchronous (non-streaming) path:
 
   ```bash
-  vllm serve zai-org/GLM-TTS --omni --trust-remote-code --port 8000 --no-async-chunk
+  vllm serve zai-org/GLM-TTS --omni --trust-remote-code \
+    --allowed-local-media-path /tmp/audio --port 8000 --no-async-chunk
   ```
 
   ## Client usage
@@ -112,7 +116,7 @@ guide: |
       "model": "zai-org/GLM-TTS",
       "input": "你好，这是一个语音合成测试。",
       "response_format": "wav",
-      "ref_audio": "file:///path/to/ref.wav",
+      "ref_audio": "file:///tmp/audio/ref.wav",
       "ref_text": "这是参考音频的文本内容。"
     }' --output test.wav
   ```
@@ -122,7 +126,7 @@ guide: |
   ```bash
   python examples/online_serving/text_to_speech/glm_tts/openai_speech_client.py \
     --text "你好，这是语音克隆测试。" \
-    --ref-audio file:///path/to/ref.wav \
+    --ref-audio file:///tmp/audio/ref.wav \
     --ref-text "这是参考音频的文本内容。"
   ```
 

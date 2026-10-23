@@ -96,6 +96,7 @@ variants:
     label: "FP8 (RedHat)"
     vram_minimum_gb: 84
     description: "RedHatAI FP8 (E4M3) with dynamic per-token activation quantization"
+    supported_hardware: [h100, h200, b200, gb200]
     extra_args:
       - "--kv-cache-dtype"
       - "fp8"
@@ -116,6 +117,7 @@ variants:
     label: "FP8 Block (RedHat)"
     vram_minimum_gb: 84
     description: "RedHatAI FP8 block quantization"
+    supported_hardware: [h100, h200, b200, gb200, xeon6]
     extra_args:
       - "--kv-cache-dtype"
       - "fp8"

@@ -4,7 +4,7 @@ meta:
   provider: "OpenMOSS"
   description: "OpenMOSS's 1.7B real-time streaming TTS for low-latency voice agents (TTFB ~180 ms) — multi-turn context-aware incremental synthesis — served via vLLM-Omni through the OpenAI /v1/audio/speech API (24 kHz mono)."
   date_added: 2026-06-17
-  date_updated: 2026-06-15
+  date_updated: 2026-06-17
   difficulty: intermediate
   tasks:
     - omni
@@ -39,7 +39,8 @@ omni:
             "voice": "default",
             "ref_audio": "https://raw.githubusercontent.com/OpenMOSS/MOSS-TTS/main/assets/audio/zh_1.wav",
             "response_format": "wav",
-            "stream": true
+            "stream": true,
+            "stream_format": "audio"
           }' --output output.wav
 
 dependencies:
@@ -108,7 +109,8 @@ guide: |
       "voice": "default",
       "ref_audio": "https://raw.githubusercontent.com/OpenMOSS/MOSS-TTS/main/assets/audio/zh_1.wav",
       "response_format": "wav",
-      "stream": true
+      "stream": true,
+      "stream_format": "audio"
     }' --output output.wav
   ```
 

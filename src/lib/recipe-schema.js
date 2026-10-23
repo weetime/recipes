@@ -123,6 +123,9 @@ export function buildRecipeSchema({ taxonomy, strategies }) {
   const strategyOverride = obj({
     tp: intOrHwMap,
     extra_args: strings,
+    // Append arguments only to followers in a multi-node strategy. Needed by
+    // runtimes whose API-bearing head and headless workers use different flags.
+    worker_extra_args: strings,
     extra_env: envMap,
     env: envMap,
     vllm_args: strings,
@@ -145,6 +148,7 @@ export function buildRecipeSchema({ taxonomy, strategies }) {
         description: { type: "string" },
         extra_args: strings,
         curl: { type: "string" },
+        curl_by_variant: keyed({ type: "string", minLength: 1 }, { type: "string" }),
         benchmark: { type: "string" },
         endpoint: { type: "string" },
         axes: { type: "object", additionalProperties: { type: "string" } },

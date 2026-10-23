@@ -18,6 +18,8 @@ meta:
     mi355x: verified
     ironwood: verified
     arc_pro_b70: verified
+    ascend_910b: supported
+    ascend_910c: supported
 
 model:
   model_id: "openai/gpt-oss-120b"
@@ -50,12 +52,51 @@ variants:
     precision: mxfp4
     vram_minimum_gb: 96
     description: "gpt-oss-120b with MXFP4 MoE; fits on 1xA100 80GB, scales to TP 2/4/8"
+    supported_hardware: [h100, h200, b200, b300]
 
   amd_fp8:
     model_id: "amd/gpt-oss-120b-w-mxfp4-a-fp8"
     precision: mxfp4
     vram_minimum_gb: 80
     description: "Quark-quantized MXFP4 weights with FP8 activations for MI355X (gfx950)"
+    supported_hardware: [arch:gfx942, arch:gfx950]
+
+  ascend_bf16:
+    model_id: "unsloth/gpt-oss-120b-BF16"
+    precision: bf16
+    label: "BF16 (Ascend A2/A3)"
+    vram_minimum_gb: 250
+    min_vllm_version: "0.23.0"
+    supported_hardware: [ascend_910b, ascend_910c]
+    description: "Official vLLM-Ascend BF16 checkpoint, served with TP4 (four visible NPUs) and a 4K context in the upstream example."
+    hardware_overrides:
+      ascend_910b:
+        docker_image: "quay.io/ascend/vllm-ascend:v0.23.0"
+      ascend_910c:
+        docker_image: "quay.io/ascend/vllm-ascend:v0.23.0-a3"
+    extra_args:
+      - "--enable-expert-parallel"
+      - "--served-model-name"
+      - "gpt-oss-120b-bf16"
+      - "--max-num-seqs"
+      - "4"
+      - "--gpu-memory-utilization"
+      - "0.90"
+      - "--max-model-len"
+      - "4096"
+      - "--max-num-batched-tokens"
+      - "4096"
+      - "--compilation-config"
+      - '{"cudagraph_mode":"FULL_DECODE_ONLY","cudagraph_capture_sizes":[1,2,3,4]}'
+    extra_env:
+      HCCL_OP_EXPANSION_MODE: "AIV"
+      HCCL_BUFFSIZE: "512"
+      NPU_MEMORY_FRACTION: "0.95"
+      VLLM_USE_V1: "1"
+      TASK_QUEUE_ENABLE: "1"
+      OMP_NUM_THREADS: "1"
+      OMP_PROC_BIND: "false"
+      VLLM_USE_MODELSCOPE: "True"
 
 compatible_strategies:
   - single_node_tp
@@ -107,7 +148,28 @@ hardware_overrides:
       VLLM_ALLOW_LONG_MAX_MODEL_LEN: "1"
       VLLM_WORKER_MULTIPROC_METHOD: "spawn"
 
-strategy_overrides: {}
+strategy_overrides:
+  single_node_tp:
+    tp:
+      ascend_910b: 4
+      ascend_910c: 4
+
+strategy_hardware:
+  single_node_tep:
+    ascend_910b: unsupported
+    ascend_910c: unsupported
+  multi_node_tp:
+    ascend_910b: unsupported
+    ascend_910c: unsupported
+  multi_node_tp_pp:
+    ascend_910b: unsupported
+    ascend_910c: unsupported
+  multi_node_tep:
+    ascend_910b: unsupported
+    ascend_910c: unsupported
+  multi_node_dep:
+    ascend_910b: unsupported
+    ascend_910c: unsupported
 
 guide: |
   ## Overview

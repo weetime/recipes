@@ -27,7 +27,9 @@ model:
   parameter_count: "5.6B"
   active_parameters: "5.6B"
   context_length: 0
-  base_args: []
+  base_args:
+    - "--served-model-name"
+    - "flux-3-image-klein"
   base_env: {}
 
 features: {}
@@ -115,7 +117,7 @@ omni:
           -X POST http://localhost:8099/v1/images/generations \
           -H 'Content-Type: application/json' \
           -d '{
-            "model": "flux-3-image-klein",
+            "model": "{{model_id}}",
             "prompt": "a serene alpine meadow at golden hour, wildflowers in the foreground",
             "size": "1024x1024",
             "n": 1,
@@ -139,7 +141,7 @@ omni:
           -X POST http://localhost:8099/v1/chat/completions \
           -H 'Content-Type: application/json' \
           -d "{
-            \"model\": \"flux-3-image-klein\",
+            \"model\": \"{{model_id}}\",
             \"messages\": [{
               \"role\": \"user\",
               \"content\": [

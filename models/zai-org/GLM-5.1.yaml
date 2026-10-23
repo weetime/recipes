@@ -15,6 +15,8 @@ meta:
     mi325x: verified
     mi350x: verified
     mi355x: verified
+    ascend_910b: supported
+    ascend_910c: supported
 
 model:
   model_id: "zai-org/GLM-5.1"
@@ -41,6 +43,11 @@ features:
     args:
       - "--reasoning-parser"
       - "glm47"
+    hardware_overrides:
+      ascend_910b:
+        args: ["--reasoning-parser", "glm45"]
+      ascend_910c:
+        args: ["--reasoning-parser", "glm45"]
   spec_decoding:
     description: "Multi-Token Prediction speculative decoding (3 draft tokens) — not yet supported on the AMD MXFP4 checkpoint"
     default_mode: mtp
@@ -55,6 +62,13 @@ features:
           - "mtp"
           - "--speculative-config.num_speculative_tokens"
           - "3"
+      ascend_mtp:
+        label: "MTP (Ascend)"
+        description: "DeepSeek MTP decoding used by the official GLM-5.1 W4A8 Ascend guide."
+        variants: [ascend_w4a8]
+        args:
+          - "--speculative-config"
+          - '{"num_speculative_tokens":3,"method":"deepseek_mtp","enforce_eager":true}'
 
 opt_in_features:
   - spec_decoding
@@ -62,11 +76,13 @@ opt_in_features:
 variants:
   default:
     precision: bf16
+    supported_hardware: [arch:sm90, arch:sm100, arch:sm103, arch:sm120, arch:sm121, arch:sm89, arch:gfx942, arch:gfx950]
     vram_minimum_gb: 1786
     description: "Full precision BF16 — requires multi-node deployment"
   fp8:
     model_id: "zai-org/GLM-5.1-FP8"
     precision: fp8
+    supported_hardware: [arch:sm90, arch:sm100, arch:sm103, arch:sm120, arch:sm121, arch:sm89, arch:gfx942, arch:gfx950]
     vram_minimum_gb: 893
     description: "Native FP8 checkpoint — 8xH200/H20 (141GB × 8) single-node serving"
     hardware_overrides:
@@ -77,6 +93,7 @@ variants:
   nvfp4:
     model_id: "nvidia/GLM-5.1-NVFP4"
     precision: nvfp4
+    supported_hardware: [arch:sm90, arch:sm100, arch:sm103, arch:sm120, arch:sm121, arch:sm89, arch:gfx942, arch:gfx950]
     vram_minimum_gb: 446
     description: "NVIDIA NVFP4 quantized weights for Blackwell GPUs"
     extra_args:
@@ -106,6 +123,49 @@ variants:
           VLLM_ROCM_USE_AITER_FP4BMM: "0"
           VLLM_ROCM_USE_AITER_RMSNORM: "0"
           VLLM_ROCM_QUICK_REDUCE_QUANTIZATION: "INT4"
+  ascend_w4a8:
+    model_id: "Eco-Tech/GLM-5.1-w4a8"
+    precision: int4
+    label: "W4A8 (Ascend A2/A3)"
+    supported_hardware: [ascend_910b, ascend_910c]
+    min_vllm_version: "0.23.0"
+    # Upstream identifies the checkpoint as W4A8; 558 GB is the same 1.2x
+    # sizing estimate used for the comparable 744B GLM-5.2 quantized build.
+    vram_minimum_gb: 558
+    description: "Modelers W4A8 checkpoint documented on one 16-NPU A3 node (TP16) or one 8-NPU A2 node (TP8)."
+    default_modes:
+      spec_decoding: ascend_mtp
+    extra_args:
+      - "--quantization"
+      - "ascend"
+      - "--enable-expert-parallel"
+      - "--served-model-name"
+      - "glm-5.1"
+      - "--max-num-seqs"
+      - "16"
+      - "--max-model-len"
+      - "200000"
+      - "--max-num-batched-tokens"
+      - "4096"
+      - "--gpu-memory-utilization"
+      - "0.95"
+      - "--enable-chunked-prefill"
+      - "--enable-prefix-caching"
+      - "--additional-config"
+      - '{"multistream_overlap_shared_expert":true,"enable_balance_scheduling":true,"enable_flashcomm1":true}'
+      - "--compilation-config"
+      - '{"cudagraph_mode":"FULL_DECODE_ONLY"}'
+      - "--hf-overrides"
+      - '{"use_index_cache":true,"index_topk_freq":4}'
+    extra_env:
+      HCCL_BUFFSIZE: "200"
+      HCCL_OP_EXPANSION_MODE: "AIV"
+      PYTORCH_NPU_ALLOC_CONF: "expandable_segments:True"
+    hardware_overrides:
+      ascend_910b:
+        docker_image: "quay.io/ascend/vllm-ascend:v0.23.0"
+      ascend_910c:
+        docker_image: "quay.io/ascend/vllm-ascend:v0.23.0-a3"
 
 compatible_strategies:
   - single_node_tp
@@ -114,7 +174,49 @@ compatible_strategies:
   - multi_node_tp_pp
   - multi_node_tep
   - multi_node_dep
+  - multi_node_tp_dp
   - pd_cluster
+
+strategy_hardware:
+  single_node_tp:
+    ascend_910b: unsupported
+    ascend_910c: unsupported
+  single_node_tep:
+    ascend_910b: unsupported
+    ascend_910c: supported
+  multi_node_tp:
+    ascend_910b: unsupported
+    ascend_910c: unsupported
+  multi_node_tp_pp:
+    ascend_910b: unsupported
+    ascend_910c: unsupported
+  multi_node_tep:
+    ascend_910b: unsupported
+    ascend_910c: unsupported
+  multi_node_dep:
+    ascend_910b: unsupported
+    ascend_910c: unsupported
+  pd_cluster:
+    ascend_910b: unsupported
+    ascend_910c: unsupported
+  multi_node_tp_dp:
+    ascend_910b: supported
+    ascend_910c: unsupported
+
+strategy_overrides:
+  multi_node_tp_dp:
+    worker_extra_args:
+      - "--headless"
+    hardware_overrides:
+      ascend_910b:
+        extra_args:
+          - "--enable-expert-parallel"
+
+strategy_min_gpus:
+  ascend_910b:
+    multi_node_tp_dp: 16
+  ascend_910c:
+    single_node_tep: 16
 
 # Mooncake untested on MI355X so far — opt out until verified (the schema
 # only recognizes the literal "unsupported" value here). LMCache is left
@@ -140,8 +242,6 @@ hardware_overrides:
       # frontend's 600 s default wait for the engine.
       VLLM_ENGINE_READY_TIMEOUT_S: "3600"
 
-strategy_overrides: {}
-
 guide: |
   ## Overview
 
@@ -152,6 +252,15 @@ guide: |
 
   Thinking mode is enabled by default; disable it by passing
   `"chat_template_kwargs": {"enable_thinking": false}` in request extras.
+
+  ## Ascend deployment
+
+  The current vLLM-Ascend guide marks GLM-5 as retired from v0.30.0 and documents
+  GLM-5.1 with a dedicated Modelers W4A8 checkpoint. This recipe maps that W4A8
+  build to TP16 on one A3 node or TP8×DP2 across two A2 nodes. The runtime image,
+  quantization flag, expert parallelism, context limits and MTP mode follow the
+  upstream examples. This is documented upstream support, not local end-to-end
+  validation.
 
   ## Prerequisites
 

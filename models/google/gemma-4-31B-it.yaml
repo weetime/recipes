@@ -20,6 +20,7 @@ meta:
     ironwood: verified
     arc_pro_b60: verified
     arc_pro_b70: verified
+    ascend_950dt_8x: supported
 
 model:
   model_id: "google/gemma-4-31B-it"
@@ -97,6 +98,7 @@ variants:
     precision: bf16
     vram_minimum_gb: 75
     description: "Full BF16 — single 80 GB NVIDIA GPU or 1x MI300X/MI325X/MI350X/MI355X"
+    supported_hardware: [h100, h200, mi300x, mi325x, mi355x, trillium, ironwood, arc_pro_b60, arc_pro_b70]
   fp8:
     model_id: "RedHatAI/gemma-4-31B-it-FP8-dynamic"
     precision: fp8
@@ -137,6 +139,28 @@ variants:
     extra_args:
       - "--kv-cache-dtype"
       - "fp8"
+  ascend_mxfp4:
+    model_id: "Eco-Tech/gemma-4-31B-it-w4a4-mxfp4"
+    precision: mxfp4
+    label: "MXFP4 (Ascend 950DT)"
+    vram_minimum_gb: 300
+    min_vllm_version: "0.23.0"
+    supported_hardware: [ascend_950dt_8x]
+    description: "Official 950DT MXFP4 checkpoint; uses TP4×DP2 across all eight NPUs, 32K context, ACLGraph."
+    hardware_overrides:
+      ascend_950dt_8x:
+        docker_image: "quay.io/ascend/vllm-ascend:v0.23.0-a5"
+    extra_args:
+      - "--served-model-name"
+      - "gemma4"
+      - "--quantization"
+      - "ascend"
+      - "--max-model-len"
+      - "32768"
+      - "--compilation-config"
+      - '{"cudagraph_mode":"FULL_DECODE_ONLY"}'
+    extra_env:
+      VLLM_USE_MODELSCOPE: "True"
 
 compatible_strategies:
   - single_node_tp
@@ -162,6 +186,9 @@ hardware_overrides:
 strategy_overrides:
   single_node_tp:
     tp: 1
+    hardware_overrides:
+      ascend_950dt_8x:
+        extra_args: ["--tensor-parallel-size", "4", "--data-parallel-size", "2"]
 
 guide: |
   ## Overview

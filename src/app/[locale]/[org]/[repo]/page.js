@@ -13,6 +13,7 @@ import { CommandBuilder } from "@/components/recipes/CommandBuilder";
 import { EngineAwareGuide } from "@/components/recipes/EngineAwareGuide";
 import { GuideLinks } from "@/components/recipes/GuideLinks";
 import { DeployDialog } from "@/components/recipes/DeployDialog";
+import { MiniCurve } from "@/components/reports/MiniCurve";
 import { HuggingFaceIcon, ModelScopeIcon } from "@/components/icons/PlatformLogos";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Cpu, Layers, Pencil, Bug, ExternalLink, Link2 } from "lucide-react";
@@ -120,7 +121,7 @@ export default async function RecipePage({ params, searchParams }) {
   const related = (recipe.meta.related_recipes || [])
     .map((s) => allRecipes.find((r) => r.hf_id === s || r.meta.slug === s))
     .filter(Boolean);
-  const performanceReports = getPerformanceReportsForModel(recipe.hf_id);
+  const performanceReports = getPerformanceReportsForModel(recipe.hf_id, locale);
 
   const recipeUrl = `${siteUrl}/${recipe.hf_org}/${recipe.hf_repo}`;
   const jsonLd = [
@@ -250,32 +251,6 @@ export default async function RecipePage({ params, searchParams }) {
         </div>
       </header>
 
-      {performanceReports.length > 0 && (
-        <section aria-label={t("detail.performanceReports")} className="mb-10 border-y border-border py-5">
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            <div>
-              <div className="section-label">{t("detail.measuredConfigurations", { count: performanceReports.length })}</div>
-              <h2 className="mt-2 text-lg font-semibold tracking-[-.025em]">{t("detail.performanceReports")}</h2>
-            </div>
-            <Link href="/reports" className="text-xs text-muted-foreground hover:text-vllm-blue">{t("detail.allReports")}</Link>
-          </div>
-          <div className="mt-4 divide-y divide-border border-t border-border">
-            {performanceReports.map((report) => (
-              <div key={report.slug} className="grid gap-4 py-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
-                <div>
-                  <div className="flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
-                    <span>{report.date}</span><span>{report.hardware}</span><span>{report.precision}</span>
-                  </div>
-                  <p className="mt-1 text-sm font-medium">{report.title}</p>
-                  <p className="mt-1 text-xs text-muted-foreground">{report.highlights[0].value} {report.highlights[0].unit} · {report.highlights[0].label}</p>
-                </div>
-                <a href={report.href} className="text-sm font-semibold text-vllm-blue hover:underline">{t("detail.readReport")}</a>
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
-
       <nav aria-label={t("detail.sections")} className="mb-10 flex flex-wrap items-center gap-8 border-b border-border pb-4 text-sm font-medium">
         <a href="#configure" className="inline-flex items-center gap-2 text-vllm-blue hover:underline"><span className="font-mono">02</span> {t("detail.configureStep")}</a>
         {(recipe.guide || Object.values(recipe.engines ?? {}).some((e) => e?.guide)) && (
@@ -314,6 +289,62 @@ export default async function RecipePage({ params, searchParams }) {
 
       </section>
 
+      {performanceReports.length > 0 && (
+        <section aria-label={t("detail.performanceReports")} className="mt-12 border-t border-border pt-6">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div>
+              <div className="section-label">{t("detail.measuredConfigurations", { count: performanceReports.length })}</div>
+              <h2 className="mt-2 text-lg font-semibold tracking-[-.025em]">{t("detail.performanceReports")}</h2>
+            </div>
+            <Link href="/reports" className="text-xs text-muted-foreground hover:text-vllm-blue">{t("detail.allReports")}</Link>
+          </div>
+          <div className="mt-5">
+            {performanceReports.map((report, index) => (
+              <article key={report.slug} className="grid gap-x-8 gap-y-5 border-b border-border py-6 lg:grid-cols-[minmax(0,1.08fr)_minmax(260px,.72fr)_minmax(300px,.85fr)] lg:items-center lg:py-7">
+                <div className="min-w-0">
+                  <div className="mb-2 flex flex-wrap items-center gap-x-3 font-mono text-[10px] text-muted-foreground">
+                    <span className="text-vllm-blue">{String(index + 1).padStart(2, "0")}</span>
+                    <span>{report.date}</span><span className="text-border">/</span><span>{report.engine}</span>
+                  </div>
+                  <h3 className="text-xl font-semibold tracking-[-.045em] sm:text-2xl">
+                    <a href={report.href} className="group inline-flex flex-wrap items-center gap-x-2 hover:text-vllm-blue">
+                      <span>{report.modelName}</span><span className="text-muted-foreground/60">×</span><span>{report.hardwareName}</span><ExternalLink size={16} className="text-vllm-blue opacity-70 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+                    </a>
+                  </h3>
+                  <p className="mt-2 line-clamp-2 text-sm leading-5 text-muted-foreground">{report.summary}</p>
+                  <div className="mt-3 flex flex-wrap gap-x-2 gap-y-1 font-mono text-[10px] text-foreground/80">
+                    <span className="border border-border px-2 py-1">{report.hardware}</span>
+                    <span className="border border-border px-2 py-1">{report.precision}</span>
+                  </div>
+                  <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-muted-foreground">
+                    <span className="font-mono uppercase tracking-wider text-muted-foreground/80">{t("reports.topology")}</span>
+                    <span>{report.topology || t("reports.topologyInReport")}</span>
+                  </div>
+                </div>
+
+                <div className="min-w-0 lg:border-l lg:border-border lg:pl-6">
+                  <div className="mb-2 font-mono text-[10px] uppercase tracking-[.1em] text-muted-foreground">{t("reports.testCoverage")}</div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {report.testIds.map((id, testIndex) => <span key={`${id}-${testIndex}`} className="border border-border bg-foreground/[.025] px-2 py-1 text-[10px] text-foreground/80">{t.has(`reports.tests.${id}`) ? t(`reports.tests.${id}`) : report.testLabels[testIndex]}</span>)}
+                  </div>
+                  <a href={report.href} className="mt-4 inline-flex items-center gap-1.5 text-xs font-medium text-vllm-blue hover:underline">{t("reports.read")} <ExternalLink size={13} /></a>
+                </div>
+
+                <div className="grid min-w-0 gap-3 sm:grid-cols-[minmax(120px,.72fr)_minmax(160px,1fr)] lg:border-l lg:border-border lg:pl-6">
+                  <div className="flex flex-col justify-between border-y border-border py-2.5 sm:border-y-0 sm:py-0">
+                    <div className="text-[10px] leading-4 text-muted-foreground">{report.listMetric?.label || t("reports.singleStream")}</div>
+                    {(report.listMetric || report.singleStream) && <div className="mt-1 line-clamp-2 text-[10px] leading-4 text-muted-foreground/80" title={(report.listMetric || report.singleStream).profile}>{(report.listMetric || report.singleStream).profile}</div>}
+                    <div className="mt-2 flex items-baseline gap-1.5">
+                      {report.listMetric || report.singleStream ? <><span className="text-2xl font-medium tracking-[-.045em] tabular-nums">{Number((report.listMetric || report.singleStream).value).toLocaleString(undefined, { maximumFractionDigits: 2 })}</span><span className="text-[10px] text-muted-foreground">{(report.listMetric || report.singleStream).unit}</span></> : <span className="text-sm text-muted-foreground">{t("reports.singleUnavailable")}</span>}
+                    </div>
+                  </div>
+                  <MiniCurve curve={report.curve} />
+                </div>
+              </article>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* ── Footer ── */}
       <footer className="mt-10 pt-4 border-t border-border text-sm text-muted-foreground flex flex-wrap gap-x-4 gap-y-2">

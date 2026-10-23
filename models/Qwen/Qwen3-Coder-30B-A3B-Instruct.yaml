@@ -1,0 +1,106 @@
+meta:
+  title: "Qwen3-Coder-30B-A3B-Instruct"
+  slug: "qwen3-coder-30b-a3b-instruct"
+  provider: "Qwen"
+  description: "30.5B coding MoE with 3.3B active parameters, documented for BF16 serving with expert parallelism on Ascend Atlas A2 and A3."
+  date_added: 2026-10-21
+  date_updated: 2026-10-21
+  difficulty: advanced
+  tasks:
+    - text
+  hardware:
+    ascend_910b: supported
+    ascend_910c: supported
+
+model:
+  model_id: "Qwen/Qwen3-Coder-30B-A3B-Instruct"
+  min_vllm_version: "0.10.0"
+  architecture: moe
+  parameter_count: "30.5B"
+  active_parameters: "3.3B"
+  context_length: 262144
+  base_args:
+    - "--trust-remote-code"
+    - "--max-model-len"
+    - "40960"
+    - "--max-num-batched-tokens"
+    - "16384"
+    - "--enable-expert-parallel"
+    - "--distributed-executor-backend"
+    - "mp"
+    - "--no-enable-prefix-caching"
+    - "--compilation-config"
+    - '{"cudagraph_mode":"FULL_DECODE_ONLY"}'
+    - "--gpu-memory-utilization"
+    - "0.95"
+    - "--additional-config"
+    - '{"weight_nz_mode": 2}'
+  base_env:
+    HCCL_BUFFSIZE: "1024"
+    PYTORCH_NPU_ALLOC_CONF: "expandable_segments:True"
+
+dependencies:
+  - command: "pip install vllm-ascend"
+    brand: Huawei
+    note: "Ascend serving uses the vLLM-Ascend plugin; use the per-generation official image pins below."
+
+features:
+  tool_calling:
+    description: "Enable Qwen3 Coder tool calling with the Qwen3 Coder parser."
+    args:
+      - "--enable-auto-tool-choice"
+      - "--tool-call-parser"
+      - "qwen3_coder"
+
+opt_in_features: []
+
+variants:
+  default:
+    precision: bf16
+    vram_minimum_gb: 64
+    description: "Official BF16 checkpoint. The upstream sample uses TP4 with expert parallelism; tune card count for the available A2/A3 system."
+    supported_hardware: [ascend_910b, ascend_910c]
+    tp: 4
+    hardware_overrides:
+      ascend_910b:
+        docker_image: "quay.io/ascend/vllm-ascend:v0.23.0"
+        extra_env:
+          ASCEND_RT_VISIBLE_DEVICES: "0,1,2,3"
+      ascend_910c:
+        docker_image: "quay.io/ascend/vllm-ascend:v0.23.0-a3"
+        extra_env:
+          ASCEND_RT_VISIBLE_DEVICES: "0,1,2,3"
+          HCCL_OP_EXPANSION_MODE: "AIV"
+
+compatible_strategies:
+  - single_node_tp
+
+hardware_overrides: {}
+
+guide: |
+  ## Overview
+
+  [Qwen3-Coder-30B-A3B-Instruct](https://huggingface.co/Qwen/Qwen3-Coder-30B-A3B-Instruct)
+  is a coding-focused MoE checkpoint with 30.5B total and 3.3B active parameters.
+  vLLM-Ascend lists support from v0.10.0rc1 and documents the BF16 checkpoint on
+  Atlas A2 and A3. The current recipe uses the upstream v0.23.0 image family;
+  this is documented support, not a local end-to-end verification.
+
+  ## Hardware and serving profile
+
+  Upstream recommends 1–2 A3 cards or 2–4 A2 cards, adjustable for the workload.
+  The example command uses TP4 and expert parallelism, a 40,960-token serving
+  limit, 16,384 batched tokens, and disables prefix caching. Although the model
+  config advertises a longer context window, this recipe keeps the generated
+  default at the documented serving profile rather than claiming a 262K test.
+
+  The decode-only graph setting follows the upstream Ascend launch example. The
+  W8A8 checkpoint described by
+  upstream is distributed through ModelScope and is not exposed as a selectable
+  variant here because recipe variants require a canonical Hugging Face model ID.
+
+  ## References
+
+  - [Hugging Face BF16 checkpoint](https://huggingface.co/Qwen/Qwen3-Coder-30B-A3B-Instruct)
+  - [vLLM-Ascend Qwen3-Coder-30B-A3B guide](https://docs.vllm.ai/projects/ascend/zh-cn/latest/tutorials/models/Qwen3-Coder-30B-A3B.html)
+  - [vLLM-Ascend model introduction](https://docs.vllm.ai/projects/ascend/zh-cn/latest/getting_started/overview.html)

@@ -9,6 +9,8 @@ meta:
   tasks:
     - multimodal
     - text
+  default_variant:
+    ascend_910c: ascend_bf16
   performance_headline: "Unified multimodal intelligence with strong agent capabilities"
   hardware:
     h100: verified
@@ -19,6 +21,7 @@ meta:
     mi300x: unsupported
     mi325x: unsupported
     mi355x: unsupported
+    ascend_910c: supported
 
 model:
   model_id: "dots-studio/dots3-note-prev"
@@ -75,6 +78,7 @@ variants:
     model_id: "dots-studio/dots3-note-prev-fp8"
     precision: fp8
     vram_minimum_gb: 359
+    supported_hardware: [h100]
     description: "Native block-scaled FP8 language-model weights with BF16 multimodal encoders; verified on 8x 80GB NVIDIA GPUs."
     hardware_overrides:
       nvidia:
@@ -95,6 +99,50 @@ variants:
           - "--moe-backend"
           - "triton"
 
+  ascend_bf16:
+    model_id: "dots-studio/dots3-note-prev"
+    precision: bf16
+    label: "BF16 (Ascend A3)"
+    vram_minimum_gb: 600
+    min_vllm_version: "0.22.1"
+    supported_hardware: [ascend_910c]
+    description: "Official A3 text-only deployment on 16 Ascend chips (8 cards), TP16 + EP. The upstream guide pins vLLM-Ascend 0.22.1rc1 and its dedicated image."
+    hardware_overrides:
+      ascend_910c:
+        docker_image: "quay.io/ascend/vllm-ascend:dots3-note-prev-a3-openeuler"
+    extra_args:
+      - "--served-model-name"
+      - "dots3_note"
+      - "--enable-expert-parallel"
+      - "--max-model-len"
+      - "32768"
+      - "--gpu-memory-utilization"
+      - "0.92"
+      - "--safetensors-load-strategy"
+      - "lazy"
+      - "--enable-prefix-caching"
+      - "--enable-chunked-prefill"
+      - "--async-scheduling"
+      - "--language-model-only"
+      - "--max-num-batched-tokens"
+      - "8192"
+      - "--max-num-seqs"
+      - "4"
+      - "--default-chat-template-kwargs"
+      - '{"enable_thinking":false}'
+      - "--generation-config"
+      - "vllm"
+      - "--additional-config"
+      - '{"enable_fused_mc2":1}'
+      - "--compilation-config"
+      - '{"mode":"VLLM_COMPILE","cudagraph_mode":"FULL_DECODE_ONLY","cudagraph_capture_sizes":[16],"max_cudagraph_capture_size":16}'
+    extra_env:
+      ASCEND_RT_VISIBLE_DEVICES: "0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15"
+      PYTORCH_NPU_ALLOC_CONF: "expandable_segments:True"
+      TASK_QUEUE_ENABLE: "1"
+      CPU_AFFINITY_CONF: "1"
+      HCCL_OP_EXPANSION_MODE: "AIV"
+
 compatible_strategies:
   - single_node_tp
   - single_node_tep
@@ -103,7 +151,10 @@ compatible_strategies:
 default_strategy: single_node_tep
 
 hardware_overrides: {}
-strategy_overrides: {}
+strategy_overrides:
+  single_node_tep:
+    tp:
+      ascend_910c: 16
 
 guide: |
   ## Overview
@@ -315,5 +366,6 @@ guide: |
 
   - [dots3-note-prev FP8 on Hugging Face](https://huggingface.co/dots-studio/dots3-note-prev-fp8)
   - [dots3-note-prev BF16 on Hugging Face](https://huggingface.co/dots-studio/dots3-note-prev)
+  - [vLLM-Ascend Dots3 Note deployment guide](https://docs.vllm.ai/projects/ascend/zh-cn/latest/tutorials/models/Dots3-Note.html) — A3 text-only settings are represented as a separate BF16 variant; the guide's image/audio modes are not included in this recipe yet.
   - [vLLM dots3-note-prev support PR](https://github.com/vllm-project/vllm/pull/51255)
   - [vLLM parallelism and scaling guide](https://docs.vllm.ai/en/latest/serving/parallelism_scaling.html)

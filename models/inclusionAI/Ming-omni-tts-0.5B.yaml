@@ -4,7 +4,7 @@ meta:
   provider: "inclusionAI"
   description: "inclusionAI's dense 0.5B-LM text-to-speech model served via vLLM-Omni with style, dialect, voice-cloning and multi-speaker controls, through the OpenAI /v1/audio/speech API (44.1 kHz mono)."
   date_added: 2026-06-17
-  date_updated: 2026-06-15
+  date_updated: 2026-10-23
   difficulty: intermediate
   tasks:
     - omni
@@ -23,6 +23,10 @@ model:
   base_args:
     - "--omni"
     - "--enforce-eager"
+    - "--deploy-config"
+    - "vllm_omni/deploy/ming_tts.yaml"
+    - "--allowed-local-media-path"
+    - "/tmp/audio"
   base_env: {}
 
 omni:
@@ -38,7 +42,7 @@ omni:
             "model": "inclusionAI/Ming-omni-tts-0.5B",
             "input": "我觉得社会企业同个人都有责任",
             "voice": "default",
-            "ref_audio": "file:///path/to/prompt.wav",
+            "ref_audio": "file:///tmp/audio/prompt.wav",
             "response_format": "wav"
           }' --output output.wav
 
@@ -101,6 +105,7 @@ guide: |
   ```bash
   vllm serve inclusionAI/Ming-omni-tts-0.5B \
     --deploy-config vllm_omni/deploy/ming_tts.yaml \
+    --allowed-local-media-path /tmp/audio \
     --omni --enforce-eager --port 8000
   ```
 
@@ -112,12 +117,14 @@ guide: |
     --security-opt seccomp=unconfined \
     --device /dev/kfd --device /dev/dri \
     -v ~/.cache/huggingface:/root/.cache/huggingface \
+    -v /tmp/audio:/tmp/audio \
     -v "$PWD":/app/vllm-omni -w /app/vllm-omni \
     -e VLLM_ROCM_USE_AITER=0 \
     -p 8000:8000 \
     vllm/vllm-omni-rocm:v0.22.0 \
     --model inclusionAI/Ming-omni-tts-0.5B \
     --deploy-config vllm_omni/deploy/ming_tts.yaml \
+    --allowed-local-media-path /tmp/audio \
     --omni --port 8000 --enforce-eager
   ```
 
@@ -125,7 +132,8 @@ guide: |
 
   Dialect control with a reference clip (e.g. Cantonese / 广粤话). `--ref-audio`
   matches upstream `use_spk_emb=True`; do **not** add `--ref-text` for the
-  dialect case:
+  dialect case. The server allows local media under `/tmp/audio`; place the
+  reference clip there when calling the API with a `file://` URL.
 
   ```bash
   python examples/online_serving/text_to_speech/ming_tts/openai_speech_client.py \

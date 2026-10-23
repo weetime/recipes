@@ -1,0 +1,78 @@
+meta:
+  title: "Qwen3-0.6B"
+  slug: "qwen3-0.6b"
+  provider: "Qwen"
+  description: "Compact 0.6B dense Qwen3 model; the vLLM-Ascend guide documents BF16 serving on Atlas A2 and A3."
+  date_added: 2026-10-21
+  date_updated: 2026-10-21
+  tasks:
+    - text
+  related_recipes:
+    - "Qwen/Qwen3-1.7B"
+  hardware:
+    ascend_910b: supported
+    ascend_910c: supported
+
+model:
+  model_id: "Qwen/Qwen3-0.6B"
+  min_vllm_version: "0.8.5"
+  architecture: dense
+  parameter_count: "0.6B"
+  active_parameters: "0.6B"
+  context_length: 40960
+  base_args: []
+  base_env: {}
+
+dependencies:
+  - command: "pip install vllm-ascend"
+    brand: Huawei
+    note: "Use the vLLM-Ascend runtime and image matching the selected Atlas generation; the official guide documents this BF16 model on Atlas A2 and A3."
+
+features:
+  reasoning:
+    description: "Enable Qwen3 thinking mode with the Qwen3 reasoning parser"
+    args:
+      - "--reasoning-parser"
+      - "qwen3"
+
+opt_in_features:
+  - reasoning
+
+variants:
+  default:
+    precision: bf16
+    vram_minimum_gb: 2
+    description: "Qwen3 official BF16 checkpoint."
+    hardware_overrides:
+      ascend_910b:
+        docker_image: "quay.io/ascend/vllm-ascend:v0.23.0"
+      ascend_910c:
+        docker_image: "quay.io/ascend/vllm-ascend:v0.23.0-a3"
+
+compatible_strategies:
+  - single_node_tp
+
+hardware_overrides: {}
+
+strategy_overrides: {}
+
+guide: |
+  ## Overview
+
+  Qwen3-0.6B is the smallest dense checkpoint in the Qwen3 family. The official
+  vLLM-Ascend guide lists BF16 weights for Atlas A2 (8 × 64 GB) and Atlas A3
+  (16 × 64 GB). This is upstream-documented support, not an independent run
+  performed for this catalog entry.
+
+  ## Ascend runtime
+
+  Select the image matching the Atlas generation. The generated Docker tab pins
+  `quay.io/ascend/vllm-ascend:v0.23.0` for A2 and the `-a3` tag for A3. Install
+  the host CANN driver compatible with that image. This tutorial was written
+  against vLLM-Ascend 0.21.0 and reports stable operation from that version;
+  the currently documented container tags are 0.23.0.
+
+  ## References
+
+  - [Qwen3 Dense on vLLM-Ascend](https://docs.vllm.ai/projects/ascend/zh-cn/latest/tutorials/models/Qwen3-Dense.html)
+  - [Qwen3-0.6B model card](https://huggingface.co/Qwen/Qwen3-0.6B)

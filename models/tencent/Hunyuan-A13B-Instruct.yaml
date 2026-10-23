@@ -14,6 +14,7 @@ meta:
     mi300x: verified
     mi325x: verified
     mi355x: verified
+    ascend_910c: supported
 
 model:
   model_id: "tencent/Hunyuan-A13B-Instruct"
@@ -43,14 +44,37 @@ variants:
     precision: bf16
     vram_minimum_gb: 580
     description: "Full precision BF16 — 2x GPU (TP=2) on AMD MI300X/MI325X/MI355X"
+    supported_hardware: [mi300x, mi325x, mi355x]
   fp8:
     model_id: "tencent/Hunyuan-A13B-Instruct-FP8"
     precision: fp8
     vram_minimum_gb: 96
     description: "FP8 quantized weights for Hopper/Blackwell GPUs"
+    supported_hardware: [h100, h200, b200, b300, arch:gfx942, arch:gfx950]
     extra_args:
       - "--kv-cache-dtype"
       - "fp8"
+  ascend_bf16:
+    model_id: "Tencent-Hunyuan/Hunyuan-A13B-Instruct"
+    precision: bf16
+    label: "BF16 (Ascend A3)"
+    vram_minimum_gb: 150
+    min_vllm_version: "0.23.0"
+    supported_hardware: [ascend_910c]
+    description: "Official vLLM-Ascend A3 tutorial profile: BF16 on four 910C NPUs (TP4), max context 32K."
+    hardware_overrides:
+      ascend_910c:
+        docker_image: "quay.io/ascend/vllm-ascend:v0.23.0-a3"
+    extra_args:
+      - "--served-model-name"
+      - "Hunyuan"
+      - "--max-model-len"
+      - "32768"
+      - "--gpu-memory-utilization"
+      - "0.90"
+    extra_env:
+      HCCL_INTRA_ROCE_ENABLE: "1"
+      HF_HOME: "/data"
 
 compatible_strategies:
   - single_node_tp
@@ -70,7 +94,20 @@ hardware_overrides:
     extra_env:
       VLLM_ROCM_USE_AITER: "1"
 
-strategy_overrides: {}
+strategy_overrides:
+  single_node_tp:
+    tp:
+      ascend_910c: 4
+
+strategy_hardware:
+  single_node_tep:
+    ascend_910c: unsupported
+  multi_node_tp:
+    ascend_910c: unsupported
+  multi_node_tep:
+    ascend_910c: unsupported
+  multi_node_dep:
+    ascend_910c: unsupported
 
 guide: |
   ## Overview

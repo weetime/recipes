@@ -9,7 +9,7 @@ description: >
 
 hardware_match:
   min_gpus: 1
-  max_gpus: 8
+  max_gpus: 16
   multi_node: false
 
 vllm_args: []

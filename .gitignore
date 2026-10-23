@@ -3,6 +3,7 @@ venv
 site/
 .idea
 .next/
+.next-*/
 out/
 node_modules
 

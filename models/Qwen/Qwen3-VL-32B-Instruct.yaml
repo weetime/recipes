@@ -1,0 +1,82 @@
+meta:
+  title: "Qwen3-VL-32B-Instruct"
+  slug: "qwen3-vl-32b-instruct"
+  provider: "Qwen"
+  description: "32B Qwen3 vision-language model for image, video, and text understanding, with documented vLLM-Ascend support on Atlas A2 and A3."
+  date_added: 2026-10-21
+  date_updated: 2026-10-21
+  difficulty: advanced
+  tasks:
+    - multimodal
+    - text
+  related_recipes:
+    - "Qwen/Qwen3-VL-8B-Instruct"
+    - "Qwen/Qwen3-VL-30B-A3B-Instruct"
+  hardware:
+    ascend_910b: supported
+    ascend_910c: supported
+
+model:
+  model_id: "Qwen/Qwen3-VL-32B-Instruct"
+  min_vllm_version: "0.11.0"
+  architecture: dense
+  parameter_count: "32B"
+  active_parameters: "32B"
+  context_length: 262144
+  base_args:
+    - "--trust-remote-code"
+  base_env: {}
+
+dependencies:
+  - command: "pip install vllm-ascend"
+    brand: Huawei
+    note: "Use the vLLM-Ascend image matching the selected Atlas generation. The upstream tutorial documents BF16 on Atlas A2 and A3; this recipe has not been locally E2E-verified on Ascend."
+
+features: {}
+opt_in_features: []
+
+variants:
+  default:
+    precision: bf16
+    vram_minimum_gb: 64
+    description: "BF16 weights; upstream tutorial recommends at least two NPUs."
+    supported_hardware: [ascend_910b, ascend_910c]
+    tp: 2
+    hardware_overrides:
+      ascend_910b:
+        docker_image: "quay.io/ascend/vllm-ascend:v0.23.0"
+      ascend_910c:
+        docker_image: "quay.io/ascend/vllm-ascend:v0.23.0-a3"
+
+compatible_strategies:
+  - single_node_tp
+
+hardware_overrides: {}
+
+guide: |
+  ## Overview
+
+  Qwen3-VL-32B-Instruct is a 32B vision-language model for image, video, and
+  text understanding. The upstream vLLM-Ascend tutorial documents BF16 serving
+  on Atlas 800I A2 (910B) and Atlas 800 A3 (910C), using two NPUs. The Ascend
+  status here reflects upstream documentation, not local end-to-end validation.
+
+  ## Ascend prerequisites
+
+  - Atlas A2: use `quay.io/ascend/vllm-ascend:v0.23.0` with a compatible host CANN driver.
+  - Atlas A3: use `quay.io/ascend/vllm-ascend:v0.23.0-a3` with a compatible host CANN driver.
+  - vLLM-Ascend 0.18.0 or later is required for Atlas inference products. The
+    current upstream tutorial lists 0.23.0 images; confirm driver/image
+    compatibility for the target system.
+
+  ## Launch
+
+  The default recipe selects TP=2, matching the upstream tutorial's minimum
+  two-NPU recommendation. Its serving examples include workload-specific
+  scheduler, cache, and multimodal processor options; tune those for the target
+  workload.
+
+  ## References
+
+  - [Model card](https://huggingface.co/Qwen/Qwen3-VL-32B-Instruct)
+  - [vLLM-Ascend Qwen-VL Dense tutorial](https://docs.vllm.ai/projects/ascend/zh-cn/latest/tutorials/models/Qwen-VL-Dense.html)
