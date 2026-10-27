@@ -4,7 +4,7 @@ meta:
   provider: "Qwen"
   description: "32B Qwen3 vision-language model for image, video, and text understanding, with documented vLLM-Ascend support on Atlas A2 and A3."
   date_added: 2026-10-21
-  date_updated: 2026-10-21
+  date_updated: 2026-10-25
   difficulty: advanced
   tasks:
     - multimodal
@@ -38,7 +38,7 @@ opt_in_features: []
 variants:
   default:
     precision: bf16
-    vram_minimum_gb: 64
+    vram_minimum_gb: 81
     description: "BF16 weights; upstream tutorial recommends at least two NPUs."
     supported_hardware: [ascend_910b, ascend_910c]
     tp: 2

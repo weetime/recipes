@@ -4,7 +4,7 @@ meta:
   provider: "Qwen"
   description: "30.5B coding MoE with 3.3B active parameters, documented for BF16 serving with expert parallelism on Ascend Atlas A2 and A3."
   date_added: 2026-10-21
-  date_updated: 2026-10-21
+  date_updated: 2026-10-25
   difficulty: advanced
   tasks:
     - text
@@ -57,7 +57,7 @@ opt_in_features: []
 variants:
   default:
     precision: bf16
-    vram_minimum_gb: 64
+    vram_minimum_gb: 74
     description: "Official BF16 checkpoint. The upstream sample uses TP4 with expert parallelism; tune card count for the available A2/A3 system."
     supported_hardware: [ascend_910b, ascend_910c]
     tp: 4

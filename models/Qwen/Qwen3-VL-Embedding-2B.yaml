@@ -4,7 +4,7 @@ meta:
   provider: "Qwen"
   description: "2B multimodal embedding model for text, image, screenshot, and video retrieval."
   date_added: 2026-10-21
-  date_updated: 2026-10-21
+  date_updated: 2026-10-25
   difficulty: intermediate
   tasks:
     - multimodal
@@ -40,7 +40,7 @@ opt_in_features: []
 variants:
   default:
     precision: bf16
-    vram_minimum_gb: 4
+    vram_minimum_gb: 6
     description: "BF16 pooling runner; max model length is capped at 1,024 as in the upstream Ascend recipe."
     supported_hardware: [ascend_910b, ascend_910c, ascend_950dt, ascend_950pr]
     hardware_overrides:

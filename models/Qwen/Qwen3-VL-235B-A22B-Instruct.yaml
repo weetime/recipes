@@ -4,7 +4,7 @@ meta:
   provider: "Qwen"
   description: "Qwen3-VL flagship MoE vision-language model with 235B total / 22B active parameters, supporting images, video, and long context."
   date_added: 2025-09-28
-  date_updated: 2026-04-17
+  date_updated: 2026-10-25
   difficulty: intermediate
   tasks:
     - multimodal
@@ -18,8 +18,6 @@ meta:
     mi300x: verified
     mi325x: verified
     mi355x: verified
-    ascend_910b: verified
-    ascend_910c: verified
 
 model:
   model_id: "Qwen/Qwen3-VL-235B-A22B-Instruct"
@@ -37,10 +35,6 @@ dependencies:
   - note: "Recommended for offline multimodal inference (image/video pre-processing helpers)"
     command: "uv pip install qwen-vl-utils==0.0.14"
     optional: true
-  - command: "pip install vllm-ascend"
-    brand: Huawei
-    note: "Huawei Ascend NPU support is provided by the vllm-ascend plugin (requires CANN 9.0 + torch-npu; use the matching quay.io/ascend/vllm-ascend image). FP8 weights are served via W8A8 on Ascend. See https://docs.vllm.ai/projects/ascend"
-
 features:
   text_only:
     description: "Skip loading the vision encoder for text-only workloads — frees VRAM for KV cache. Mutually exclusive with encoder_parallel."
@@ -69,7 +63,7 @@ opt_in_features:
 variants:
   default:
     precision: bf16
-    vram_minimum_gb: 564
+    vram_minimum_gb: 566
     description: "Full BF16 — ideal on H200/B200 with 8 GPUs"
   fp8:
     model_id: "Qwen/Qwen3-VL-235B-A22B-Instruct-FP8"

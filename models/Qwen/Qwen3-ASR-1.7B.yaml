@@ -4,7 +4,7 @@ meta:
   provider: "Qwen"
   description: "Speech-to-text model supporting 11 languages, multiple accents, and singing voice with customizable text-context prompting."
   date_added: 2026-01-29
-  date_updated: 2026-04-17
+  date_updated: 2026-10-25
   difficulty: beginner
   tasks:
     - multimodal
@@ -35,7 +35,7 @@ opt_in_features: []
 variants:
   default:
     precision: bf16
-    vram_minimum_gb: 4
+    vram_minimum_gb: 6
     description: "Full precision BF16 — fits on a single mid-range GPU"
     supported_hardware: [ascend_910b, atlas_300i_duo]
     min_vllm_version: "0.19.0"

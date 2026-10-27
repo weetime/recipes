@@ -4,7 +4,7 @@ meta:
   provider: "Qwen"
   description: "Advanced Qwen3-Next MoE model (80B total / 3B active) with hybrid attention, highly sparse experts, and multi-token prediction."
   date_added: 2025-09-11
-  date_updated: 2026-09-10
+  date_updated: 2026-10-25
   difficulty: intermediate
   tasks:
     - text
@@ -58,7 +58,7 @@ opt_in_features:
 variants:
   default:
     precision: bf16
-    vram_minimum_gb: 192
+    vram_minimum_gb: 196
     description: "Full precision BF16. Ascend uses the upstream TP4 / 32K profile; the A2/A3 paths use vLLM-Ascend's experimental Triton kernels."
     tp:
       ascend_910b: 4
