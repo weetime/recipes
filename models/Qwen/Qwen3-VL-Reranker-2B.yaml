@@ -4,7 +4,7 @@ meta:
   provider: "Qwen"
   description: "2B multimodal reranker for text, image, screenshot, and video query-document relevance scoring."
   date_added: 2026-10-21
-  date_updated: 2026-10-21
+  date_updated: 2026-10-25
   difficulty: advanced
   tasks:
     - multimodal
@@ -44,7 +44,7 @@ opt_in_features: []
 variants:
   default:
     precision: bf16
-    vram_minimum_gb: 4
+    vram_minimum_gb: 6
     description: "BF16 multimodal pooling runner with the sequence-classification overrides and custom Qwen reranker chat template."
     supported_hardware: [ascend_910b, ascend_910c, ascend_950dt, ascend_950pr]
     hardware_overrides:

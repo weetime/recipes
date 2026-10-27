@@ -4,7 +4,7 @@ meta:
   provider: "Qwen"
   description: "8B dense text embedding model for retrieval and semantic ranking."
   date_added: 2026-10-21
-  date_updated: 2026-10-21
+  date_updated: 2026-10-25
   difficulty: intermediate
   tasks:
     - embedding
@@ -39,7 +39,7 @@ opt_in_features: []
 variants:
   default:
     precision: bf16
-    vram_minimum_gb: 16
+    vram_minimum_gb: 19
     description: "BF16 pooling runner; max model length is capped at 1,024 as in the upstream Ascend recipe."
     supported_hardware: [ascend_910b, ascend_910c, ascend_950dt, ascend_950pr]
     hardware_overrides:

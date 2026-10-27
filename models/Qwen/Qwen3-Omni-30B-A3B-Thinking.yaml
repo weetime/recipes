@@ -4,7 +4,7 @@ meta:
   provider: "Qwen"
   description: "30B/3B active multimodal MoE model for audio, video, and text input with text reasoning output; documented for vLLM-Ascend Atlas A2 and A3."
   date_added: 2026-10-21
-  date_updated: 2026-10-21
+  date_updated: 2026-10-25
   difficulty: advanced
   tasks:
     - multimodal
@@ -53,7 +53,7 @@ opt_in_features: []
 variants:
   default:
     precision: bf16
-    vram_minimum_gb: 64
+    vram_minimum_gb: 77
     description: "Canonical BF16 Hugging Face checkpoint; upstream recommends 1–2 Atlas A3 NPUs or 2–4 Atlas A2 NPUs."
     supported_hardware: [ascend_910b, ascend_910c]
     tp:

@@ -4,7 +4,7 @@ meta:
   provider: "DeepSeek"
   description: "DeepSeek-V3.1 is a hybrid MoE model that supports dynamic switching between thinking and non-thinking modes, with tool calling and function execution."
   date_added: 2025-08-21
-  date_updated: 2026-09-14
+  date_updated: 2026-10-25
   difficulty: intermediate
   tasks:
     - text
@@ -14,8 +14,6 @@ meta:
     - "deepseek-ai/DeepSeek-V3.2-Exp"
   hardware:
     h200: verified
-    ascend_910b: verified
-    ascend_910c: verified
     mi300x: verified
     mi325x: verified
     mi355x: verified
@@ -33,11 +31,6 @@ model:
     - "--trust-remote-code"
     - "--enable-expert-parallel"
   base_env: {}
-
-dependencies:
-  - command: "pip install vllm-ascend"
-    brand: Huawei
-    note: "Huawei Ascend NPU support is provided by the vllm-ascend plugin (requires CANN 9.0 + torch-npu; use the matching quay.io/ascend/vllm-ascend image). FP8 weights are served via W8A8 on Ascend. See https://docs.vllm.ai/projects/ascend"
 
 features:
   tool_calling:
