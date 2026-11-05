@@ -20,22 +20,63 @@
   "sections": [
     {
       "id": "fixed",
-      "zh": "测试结果",
-      "en": "Results"
+      "zh": "固定长度测试",
+      "en": "Fixed-length serving"
+    },
+    {
+      "id": "open-loop",
+      "zh": "泊松到达",
+      "en": "Poisson arrivals"
+    },
+    {
+      "id": "real",
+      "zh": "真实语料",
+      "en": "Real-world workloads"
+    },
+    {
+      "id": "agent",
+      "zh": "Agent 多轮回放",
+      "en": "Agent replay"
+    },
+    {
+      "id": "context",
+      "zh": "YaRN 长上下文冷热探测",
+      "en": "YaRN long-context cold/hot probes"
     },
     {
       "id": "method",
-      "zh": "方法与边界",
-      "en": "Method and limits"
+      "zh": "测试方法与环境",
+      "en": "Method and environment"
     }
   ],
   "stats": [
     {
-      "zhLabel": "代表测点",
-      "enLabel": "Representative point",
-      "value": "524.90 / 7.05 s",
-      "zhNote": "Near 1M · cold / hot TTFT",
-      "enNote": "Near 1M · cold / hot TTFT"
+      "zhLabel": "近 1M 冷 TTFT",
+      "enLabel": "Near-1M cold TTFT",
+      "value": "524.90 s",
+      "zhNote": "YaRN4 · 8 组中位数",
+      "enNote": "YaRN4 · median of 8"
+    },
+    {
+      "zhLabel": "近 1M 热 TTFT",
+      "enLabel": "Near-1M hot TTFT",
+      "value": "7.05 s",
+      "zhNote": "热命中 99.79%",
+      "enNote": "99.79% hot-prefix hit"
+    },
+    {
+      "zhLabel": "检索码",
+      "enLabel": "Retrieval codes",
+      "value": "8 / 8",
+      "zhNote": "近 1M · 小样本",
+      "enNote": "Near 1M · small sample"
+    },
+    {
+      "zhLabel": "Agent 回灌",
+      "enLabel": "Agent feedback",
+      "value": "338",
+      "zhNote": "每实例回灌检查 · 共 352 轮",
+      "enNote": "Feedback checks per instance · 352 turns"
     }
   ],
   "overview": {
@@ -56,77 +97,815 @@
     {
       "id": "fixed",
       "label": {
-        "zh": "测试结果",
-        "en": "RESULTS"
+        "zh": "固定长度测试",
+        "en": "Fixed-length serving"
       },
       "heading": {
-        "zh": "按负载和测量口径解读",
-        "en": "Read each point in its workload context"
+        "zh": "固定长度测试",
+        "en": "Fixed-length serving"
       },
       "intro": {
-        "zh": "下表为报告中的代表性实测点；C 表示客户端并发。",
-        "en": "Representative measured points from the report; C denotes client concurrency."
+        "zh": "8K / 32K 固定输出，各实例结果独立记录。",
+        "en": "Fixed-output 8K / 32K measurements are reported by instance."
       },
+      "notes": [
+        {
+          "zh": "客户端交付 TPOT 与服务端 native TPOT 口径不同；MTP burst 内单 token 时间不可观察。",
+          "en": "Client-delivered TPOT and server-native TPOT use different definitions; token timing inside an MTP burst is not observable."
+        }
+      ],
       "table": {
         "headers": {
           "zh": [
             "场景",
             "实例",
-            "请求数",
+            "并发",
+            "请求",
             "TTFT P50 s",
+            "ITL P50 ms",
             "交付 TPOT P95 ms",
-            "整窗输出 tok/s"
+            "native TPOT 均值 ms",
+            "单流 Decode tok/s",
+            "整窗输出 tok/s",
+            "MTP 接受 %",
+            "前缀命中 %",
+            "抢占"
           ],
           "en": [
             "Scenario",
             "Instance",
+            "Concurrency",
             "Requests",
             "TTFT P50 s",
+            "ITL P50 ms",
             "Delivered TPOT P95 ms",
-            "Aggregate output tok/s"
+            "Mean native TPOT ms",
+            "Single-stream decode tok/s",
+            "Aggregate output tok/s",
+            "MTP acceptance %",
+            "Prefix hit %",
+            "Preemptions"
           ]
         },
         "rows": [
           [
-            "32K / 512 · C1",
+            "32K/512 C1",
             "L0",
+            "1",
             "128",
             "6.67",
+            "14.59",
             "16.16",
-            "36.74"
+            "14.25",
+            "70.20",
+            "36.74",
+            "54.23",
+            "0.00",
+            "0"
           ],
           [
-            "32K / 512 · C1",
+            "32K/512 C1",
             "L1",
+            "1",
             "128",
             "6.69",
+            "14.65",
             "16.35",
-            "36.41"
+            "14.47",
+            "69.13",
+            "36.41",
+            "54.15",
+            "0.00",
+            "0"
           ],
           [
-            "32K / 512 · C1",
+            "32K/512 C1",
             "L2",
+            "1",
             "128",
             "6.70",
+            "14.48",
             "16.41",
-            "36.71"
+            "14.23",
+            "70.27",
+            "36.71",
+            "53.79",
+            "0.00",
+            "0"
           ],
           [
-            "32K / 512 · C1",
+            "32K/512 C1",
             "L3",
+            "1",
             "128",
             "6.71",
+            "14.55",
             "16.18",
-            "36.64"
+            "14.27",
+            "70.10",
+            "36.64",
+            "54.42",
+            "0.00",
+            "0"
+          ],
+          [
+            "32K/512 C8",
+            "L0",
+            "8",
+            "128",
+            "7.57",
+            "110.95",
+            "137.42",
+            "104.96",
+            "—",
+            "63.09",
+            "55.42",
+            "0.00",
+            "0"
+          ],
+          [
+            "32K/512 C8",
+            "L1",
+            "8",
+            "128",
+            "7.16",
+            "111.84",
+            "133.67",
+            "105.73",
+            "—",
+            "63.08",
+            "55.63",
+            "0.00",
+            "0"
+          ],
+          [
+            "32K/512 C8",
+            "L2",
+            "8",
+            "128",
+            "8.00",
+            "111.83",
+            "138.69",
+            "104.98",
+            "—",
+            "62.70",
+            "53.77",
+            "0.00",
+            "0"
+          ],
+          [
+            "32K/512 C8",
+            "L3",
+            "8",
+            "128",
+            "7.19",
+            "112.01",
+            "134.41",
+            "105.95",
+            "—",
+            "62.98",
+            "55.72",
+            "0.00",
+            "0"
+          ],
+          [
+            "8K/2048",
+            "L0",
+            "1",
+            "128",
+            "1.61",
+            "13.98",
+            "15.37",
+            "14.02",
+            "71.33",
+            "67.55",
+            "53.72",
+            "0.00",
+            "0"
+          ],
+          [
+            "8K/2048",
+            "L1",
+            "1",
+            "128",
+            "1.60",
+            "13.88",
+            "15.41",
+            "13.96",
+            "71.61",
+            "67.82",
+            "53.79",
+            "0.00",
+            "0"
+          ],
+          [
+            "8K/2048",
+            "L2",
+            "8",
+            "128",
+            "1.89",
+            "26.10",
+            "29.28",
+            "25.83",
+            "—",
+            "291.93",
+            "54.38",
+            "0.00",
+            "0"
+          ],
+          [
+            "8K/2048",
+            "L3",
+            "8",
+            "128",
+            "1.82",
+            "25.25",
+            "27.75",
+            "24.96",
+            "—",
+            "302.31",
+            "52.85",
+            "0.00",
+            "0"
           ]
         ]
+      }
+    },
+    {
+      "id": "open-loop",
+      "label": {
+        "zh": "泊松到达",
+        "en": "Poisson arrivals"
+      },
+      "heading": {
+        "zh": "泊松到达",
+        "en": "Poisson arrivals"
+      },
+      "intro": {
+        "zh": "分别记录目标速率、完成数、延迟与缓存命中。",
+        "en": "Report target rate, completions, latency and cache hit separately."
       },
       "notes": [
         {
-          "zh": "近 1M（999000 token）YaRN4 TP4 的 8 组冷热探针，native TTFT 中位数 524.90 / 7.05 秒，热命中 99.79%，检索码均正确。32K/512 C8 交付 TPOT P95 超过实验门限后停止扩档。",
-          "en": "Eight near-1M (999,000-token) YaRN4 TP4 cold/hot probes had native TTFT medians of 524.90 / 7.05 s, 99.79% hot-cache hit and correct retrieval codes. At 32K/512 C8, delivered TPOT P95 crossed the experiment threshold and higher concurrency was stopped."
+          "zh": "样本不足的分位数仅供探索；名义 QPS 不代表容量。",
+          "en": "Percentiles with insufficient samples are exploratory; target QPS is not a capacity claim."
         }
-      ]
+      ],
+      "table": {
+        "headers": {
+          "zh": [
+            "场景",
+            "档位",
+            "目标 QPS",
+            "完成",
+            "TTFT P50 s",
+            "交付 TPOT P50 ms",
+            "整窗输出 tok/s",
+            "MTP 接受 %",
+            "前缀命中 %",
+            "抢占"
+          ],
+          "en": [
+            "Scenario",
+            "Level",
+            "Target QPS",
+            "Completed",
+            "TTFT P50 s",
+            "Delivered TPOT P50 ms",
+            "Aggregate output tok/s",
+            "MTP acceptance %",
+            "Prefix hit %",
+            "Preemptions"
+          ]
+        },
+        "rows": [
+          [
+            "32K/512",
+            "low",
+            "0.0358",
+            "14",
+            "7.41",
+            "21.42",
+            "22.85",
+            "58.02",
+            "0.00",
+            "0"
+          ],
+          [
+            "32K/512",
+            "near",
+            "0.0644",
+            "22",
+            "8.70",
+            "29.60",
+            "36.57",
+            "56.77",
+            "0.00",
+            "0"
+          ],
+          [
+            "32K/512",
+            "over",
+            "0.0858",
+            "28",
+            "9.39",
+            "43.21",
+            "45.74",
+            "53.02",
+            "0.00",
+            "0"
+          ],
+          [
+            "32K/512",
+            "near-repeat",
+            "0.0644",
+            "22",
+            "8.72",
+            "31.18",
+            "36.57",
+            "54.97",
+            "0.00",
+            "0"
+          ],
+          [
+            "8K/512",
+            "low",
+            "0.0556",
+            "20",
+            "1.69",
+            "17.65",
+            "34.13",
+            "50.32",
+            "0.00",
+            "0"
+          ],
+          [
+            "8K/512",
+            "near",
+            "0.3711",
+            "106",
+            "2.35",
+            "50.46",
+            "176.84",
+            "51.83",
+            "0.00",
+            "0"
+          ],
+          [
+            "8K/512",
+            "over",
+            "0.4948",
+            "143",
+            "4.94",
+            "97.79",
+            "224.85",
+            "52.41",
+            "0.00",
+            "0"
+          ],
+          [
+            "8K/512",
+            "near-repeat",
+            "0.3711",
+            "106",
+            "2.28",
+            "49.73",
+            "176.69",
+            "51.68",
+            "0.00",
+            "0"
+          ]
+        ]
+      }
+    },
+    {
+      "id": "real",
+      "label": {
+        "zh": "真实语料",
+        "en": "Real-world workloads"
+      },
+      "heading": {
+        "zh": "真实语料",
+        "en": "Real-world workloads"
+      },
+      "intro": {
+        "zh": "各数据集记录自然输出、触顶数和吞吐。",
+        "en": "Natural output, output-cap hits and throughput are recorded by dataset."
+      },
+      "notes": [
+        {
+          "zh": "触顶及仅 thinking 的输出不能视为完成有效回答。",
+          "en": "Output-cap hits and reasoning-only responses must not be counted as complete answers."
+        }
+      ],
+      "table": {
+        "headers": {
+          "zh": [
+            "数据",
+            "并发",
+            "请求",
+            "输入 P50",
+            "输出 P50",
+            "触顶数",
+            "TTFT P50 s",
+            "交付 TPOT P95 ms",
+            "输出 tok/s",
+            "MTP 接受 %",
+            "前缀命中 %",
+            "抢占"
+          ],
+          "en": [
+            "Dataset",
+            "Concurrency",
+            "Requests",
+            "Input P50",
+            "Output P50",
+            "Output-cap hits",
+            "TTFT P50 s",
+            "Delivered TPOT P95 ms",
+            "Output tok/s",
+            "MTP acceptance %",
+            "Prefix hit %",
+            "Preemptions"
+          ]
+        },
+        "rows": [
+          [
+            "sharegpt",
+            "1",
+            "128",
+            "731",
+            "512",
+            "102",
+            "0.37",
+            "15.27",
+            "76.26",
+            "66.84",
+            "0.00",
+            "0"
+          ],
+          [
+            "sharegpt",
+            "8",
+            "128",
+            "731",
+            "512",
+            "99",
+            "0.50",
+            "27.27",
+            "332.22",
+            "67.24",
+            "0.00",
+            "0"
+          ],
+          [
+            "rag-qasper",
+            "1",
+            "128",
+            "4935",
+            "4",
+            "0",
+            "1.00",
+            "25.18",
+            "9.06",
+            "90.12",
+            "0.00",
+            "0"
+          ],
+          [
+            "rag-qasper",
+            "8",
+            "128",
+            "4935",
+            "4",
+            "0",
+            "5.08",
+            "1187.59",
+            "10.19",
+            "90.67",
+            "0.00",
+            "0"
+          ],
+          [
+            "sharegpt",
+            "16",
+            "128",
+            "731",
+            "512",
+            "103",
+            "0.73",
+            "44.19",
+            "407.88",
+            "66.27",
+            "0.00",
+            "0"
+          ],
+          [
+            "sharegpt",
+            "16",
+            "128",
+            "731",
+            "512",
+            "101",
+            "0.78",
+            "52.55",
+            "377.29",
+            "66.81",
+            "0.00",
+            "0"
+          ]
+        ]
+      }
+    },
+    {
+      "id": "agent",
+      "label": {
+        "zh": "Agent 多轮回放",
+        "en": "Agent replay"
+      },
+      "heading": {
+        "zh": "Agent 多轮回放",
+        "en": "Agent replay"
+      },
+      "intro": {
+        "zh": "关闭思考的 14 个筛选会话，每实例 352 轮。",
+        "en": "Fourteen selected sessions with thinking disabled; 352 turns per instance."
+      },
+      "notes": [
+        {
+          "zh": "338 次回灌检查通过；使用录制的工具反馈，未评估真实工具执行与任务准确率。",
+          "en": "338 feedback checks passed; recorded tool responses do not measure live tool execution or task accuracy."
+        }
+      ],
+      "table": {
+        "headers": {
+          "zh": [
+            "实例",
+            "并发",
+            "会话",
+            "轮数",
+            "回灌检查",
+            "TTFT P50 ms",
+            "ITL P50 ms",
+            "ITL P95 ms",
+            "E2E P50 s",
+            "输出 tok/s",
+            "MTP 接受 %",
+            "接受长度",
+            "前缀命中 %",
+            "抢占"
+          ],
+          "en": [
+            "Instance",
+            "Concurrency",
+            "Sessions",
+            "Turns",
+            "Feedback checks",
+            "TTFT P50 ms",
+            "ITL P50 ms",
+            "ITL P95 ms",
+            "E2E P50 s",
+            "Output tok/s",
+            "MTP acceptance %",
+            "Acceptance length",
+            "Prefix hit %",
+            "Preemptions"
+          ]
+        },
+        "rows": [
+          [
+            "L0",
+            "1",
+            "14",
+            "352",
+            "338",
+            "648.19",
+            "10.16",
+            "13.66",
+            "1.35",
+            "51.26",
+            "78.52",
+            "2.36",
+            "73.96",
+            "0"
+          ],
+          [
+            "L1",
+            "1",
+            "14",
+            "352",
+            "338",
+            "632.01",
+            "10.04",
+            "13.49",
+            "1.34",
+            "52.71",
+            "78.23",
+            "2.35",
+            "74.14",
+            "0"
+          ],
+          [
+            "L2",
+            "8",
+            "14",
+            "352",
+            "338",
+            "1316.77",
+            "49.34",
+            "102.94",
+            "4.66",
+            "93.84",
+            "81.34",
+            "2.44",
+            "74.27",
+            "0"
+          ],
+          [
+            "L3",
+            "8",
+            "14",
+            "352",
+            "338",
+            "1327.83",
+            "53.92",
+            "94.51",
+            "4.53",
+            "91.43",
+            "79.91",
+            "2.40",
+            "73.99",
+            "0"
+          ]
+        ]
+      }
+    },
+    {
+      "id": "context",
+      "label": {
+        "zh": "YaRN 长上下文冷热探测",
+        "en": "YaRN long-context cold/hot probes"
+      },
+      "heading": {
+        "zh": "YaRN 长上下文冷热探测",
+        "en": "YaRN long-context cold/hot probes"
+      },
+      "intro": {
+        "zh": "近 512K 和近 1M 为 YaRN 扩展，每组 8 次。",
+        "en": "Near-512K and near-1M use YaRN extension with eight probes per group."
+      },
+      "notes": [
+        {
+          "zh": "原生 128K / 近 256K 和高并发新配方尚未测试；小样本不支持尾延迟推断。",
+          "en": "Native 128K / near-256K and new high-concurrency configurations were not tested; small samples do not support tail latency conclusions."
+        }
+      ],
+      "table": {
+        "headers": {
+          "zh": [
+            "配置",
+            "输入",
+            "冷热",
+            "组数",
+            "native TTFT 中位 s",
+            "native TPOT 中位 ms",
+            "等效 Decode 中位 tok/s",
+            "MTP 接受中位 %",
+            "前缀命中 %",
+            "抢占",
+            "检索码"
+          ],
+          "en": [
+            "Configuration",
+            "Input",
+            "Cold / hot",
+            "Groups",
+            "Native TTFT median s",
+            "Native TPOT median ms",
+            "Equivalent decode median tok/s",
+            "MTP acceptance median %",
+            "Prefix hit %",
+            "Preemptions",
+            "Retrieval code"
+          ]
+        },
+        "rows": [
+          [
+            "2× 共驻",
+            "512k",
+            "COLD",
+            "8",
+            "166.25",
+            "10.73",
+            "93.23",
+            "90.28",
+            "0.00",
+            "0",
+            "8/8"
+          ],
+          [
+            "2× 共驻",
+            "512k",
+            "HOT",
+            "8",
+            "3.91",
+            "11.43",
+            "87.52",
+            "82.58",
+            "99.51",
+            "0",
+            "8/8"
+          ],
+          [
+            "4× 单实例",
+            "512k",
+            "COLD",
+            "8",
+            "169.32",
+            "10.69",
+            "93.51",
+            "87.17",
+            "0.00",
+            "0",
+            "8/8"
+          ],
+          [
+            "4× 单实例",
+            "512k",
+            "HOT",
+            "8",
+            "3.96",
+            "10.80",
+            "92.62",
+            "85.39",
+            "99.51",
+            "0",
+            "8/8"
+          ],
+          [
+            "4× 单实例",
+            "999k",
+            "COLD",
+            "8",
+            "524.90",
+            "12.38",
+            "80.80",
+            "87.06",
+            "0.00",
+            "0",
+            "8/8"
+          ],
+          [
+            "4× 单实例",
+            "999k",
+            "HOT",
+            "8",
+            "7.05",
+            "12.50",
+            "79.98",
+            "87.55",
+            "99.79",
+            "0",
+            "8/8"
+          ]
+        ]
+      },
+      "chart": {
+        "title": {
+          "zh": "近 1M YaRN4 · 冷热首 token 延迟",
+          "en": "Near-1M YaRN4 · cold and hot TTFT"
+        },
+        "hint": {
+          "zh": "每组 8 条；冷热缓存条件不同。",
+          "en": "Eight probes per group; cache conditions differ."
+        },
+        "type": "bar",
+        "labels": {
+          "zh": [
+            "冷",
+            "热"
+          ],
+          "en": [
+            "Cold",
+            "Hot"
+          ]
+        },
+        "series": [
+          {
+            "zh": "TTFT 中位数",
+            "en": "Median TTFT",
+            "values": [
+              524.9,
+              7.05
+            ],
+            "color": "blue"
+          }
+        ],
+        "yTitle": {
+          "zh": "秒",
+          "en": "Seconds"
+        }
+      }
     }
   ],
   "meta": [
@@ -149,6 +928,16 @@
       "zh": "精度",
       "en": "Precision",
       "value": "W8A8 · MTP3"
+    },
+    {
+      "zh": "推测解码",
+      "en": "Speculative decoding",
+      "value": "MTP3"
+    },
+    {
+      "zh": "长上下文",
+      "en": "Long context",
+      "value": "YaRN4 · TP4"
     }
   ],
   "methodIntro": {

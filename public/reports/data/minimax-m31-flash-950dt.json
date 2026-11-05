@@ -20,22 +20,68 @@
   "sections": [
     {
       "id": "fixed",
-      "zh": "测试结果",
-      "en": "Results"
+      "zh": "固定长度与并发",
+      "en": "Fixed length and concurrency"
+    },
+    {
+      "id": "context",
+      "zh": "长上下文驻留",
+      "en": "Long-context residency"
+    },
+    {
+      "id": "cache",
+      "zh": "冷暖前缀",
+      "en": "Cold and hot prefixes"
+    },
+    {
+      "id": "agent",
+      "zh": "Agent 与接口",
+      "en": "Agent and interfaces"
+    },
+    {
+      "id": "open-loop",
+      "zh": "泊松到达与排队",
+      "en": "Poisson arrivals and queueing"
+    },
+    {
+      "id": "repeats",
+      "zh": "复测与边界",
+      "en": "Repeats and limits"
     },
     {
       "id": "method",
-      "zh": "方法与边界",
-      "en": "Method and limits"
+      "zh": "测试方法与环境",
+      "en": "Method and environment"
     }
   ],
   "stats": [
     {
-      "zhLabel": "代表测点",
-      "enLabel": "Representative point",
+      "zhLabel": "C1 整窗输出",
+      "enLabel": "C1 aggregate output",
+      "value": "83.20 tok/s",
+      "zhNote": "8K / 512 · N128",
+      "enNote": "8K / 512 · N128"
+    },
+    {
+      "zhLabel": "C64 整窗输出",
+      "enLabel": "C64 aggregate output",
       "value": "688.11 tok/s",
-      "zhNote": "8K / 512 · C64",
-      "enNote": "8K / 512 · C64"
+      "zhNote": "8K / 512 · N256",
+      "enNote": "8K / 512 · N256"
+    },
+    {
+      "zhLabel": "满长驻留",
+      "enLabel": "Full-window residency",
+      "value": "6",
+      "zhNote": "133000 总窗口 · 零抢占",
+      "enNote": "133,000 total window · no preemption"
+    },
+    {
+      "zhLabel": "Agent 最终回复",
+      "enLabel": "Agent final content",
+      "value": "436 / 437",
+      "zhNote": "C4 · 传输均有效",
+      "enNote": "C4 · all transport valid"
     }
   ],
   "overview": {
@@ -56,71 +102,429 @@
     {
       "id": "fixed",
       "label": {
-        "zh": "测试结果",
-        "en": "RESULTS"
+        "zh": "固定长度与并发",
+        "en": "Fixed length and concurrency"
       },
       "heading": {
-        "zh": "按负载和测量口径解读",
-        "en": "Read each point in its workload context"
+        "zh": "固定长度与并发",
+        "en": "Fixed length and concurrency"
       },
       "intro": {
-        "zh": "下表为报告中的代表性实测点；C 表示客户端并发。",
-        "en": "Representative measured points from the report; C denotes client concurrency."
+        "zh": "8K / 512 冷缓存批次；各并发点样本数不同。",
+        "en": "8K / 512 cold-cache batches; sample counts vary by concurrency."
       },
+      "notes": [
+        {
+          "zh": "每点一次批次；C8 和 C32 样本不足以稳健估计 P95。",
+          "en": "Each point is one batch; C8 and C32 samples do not support robust P95 estimates."
+        }
+      ],
       "table": {
         "headers": {
           "zh": [
-            "输入/输出",
+            "输入 / 输出",
             "并发",
-            "请求数",
-            "整窗输出 tok/s",
-            "TTFT P50 s"
+            "有效N",
+            "聚合输出 tok/s",
+            "TTFT中位秒"
           ],
           "en": [
-            "Input/output",
+            "Input / output",
             "Concurrency",
-            "Requests",
+            "Valid N",
             "Aggregate output tok/s",
-            "TTFT P50 s"
+            "TTFT median s"
           ]
         },
         "rows": [
           [
             "8K / 512",
-            "C1",
+            "1",
             "128",
             "83.20",
             "0.90"
           ],
           [
             "8K / 512",
-            "C8",
-            "32",
-            "288.17",
-            "1.47"
-          ],
-          [
-            "8K / 512",
-            "C32",
             "64",
-            "578.66",
-            "3.63"
-          ],
-          [
-            "8K / 512",
-            "C64",
             "256",
             "688.11",
             "3.14"
+          ],
+          [
+            "32K / 512",
+            "8",
+            "128",
+            "139.44",
+            "3.52"
+          ],
+          [
+            "32K / 2048",
+            "1",
+            "128",
+            "90.34",
+            "2.65"
           ]
         ]
       },
+      "chart": {
+        "title": {
+          "zh": "8K / 512 · 并发输出吞吐",
+          "en": "8K / 512 · aggregate throughput"
+        },
+        "hint": {
+          "zh": "按图中标注的测试条件读取；悬停查看数值。",
+          "en": "Read values with the stated workload; hover for details."
+        },
+        "type": "bar",
+        "labels": {
+          "zh": [
+            "C1",
+            "C8",
+            "C32",
+            "C64"
+          ],
+          "en": [
+            "C1",
+            "C8",
+            "C32",
+            "C64"
+          ]
+        },
+        "series": [
+          {
+            "zh": "输出吞吐",
+            "en": "Output throughput",
+            "values": [
+              83.2,
+              288.17,
+              578.66,
+              688.11
+            ],
+            "color": "blue"
+          }
+        ],
+        "yTitle": {
+          "zh": "整窗输出 tok/s",
+          "en": "Aggregate output tok/s"
+        }
+      }
+    },
+    {
+      "id": "context",
+      "label": {
+        "zh": "长上下文驻留",
+        "en": "Long-context residency"
+      },
+      "heading": {
+        "zh": "长上下文驻留",
+        "en": "Long-context residency"
+      },
+      "intro": {
+        "zh": "133000 总窗口，双 DP 同时驻留的采样证据。",
+        "en": "Residency evidence from both DP instances in a 133,000-token total window."
+      },
       "notes": [
         {
-          "zh": "133000 总窗口六路满长驻留、零抢占（N=12）。Agent C4 共 437 轮传输有效，436 轮有最终回复；工具控制和截断仍有边界。",
-          "en": "Six full-window requests resided without preemption at a 133,000-token window (N=12). Agent C4 had 437 transport-valid turns and 436 final responses; tool control and truncation remain limitations."
+          "zh": "六路驻留通过不等于验证了 262K 或 1M 窗口。",
+          "en": "Six-way residency does not validate a 262K or 1M window."
         }
-      ]
+      ],
+      "table": {
+        "headers": {
+          "zh": [
+            "满长输入 / 输出",
+            "并发 / N",
+            "双DP驻留证据",
+            "DP0 / DP1 KV峰值",
+            "抢占"
+          ],
+          "en": [
+            "Full-window input / output",
+            "Concurrency / N",
+            "Both-DP residency evidence",
+            "DP0 / DP1 peak KV",
+            "Preemptions"
+          ]
+        },
+        "rows": [
+          [
+            "130952 / 2048",
+            "4 / 12",
+            "54个同秒采样：每DP运行≥2",
+            "56.30% / 84.41%",
+            "0"
+          ],
+          [
+            "130952 / 2048",
+            "6 / 12",
+            "52个同秒采样：每DP运行≥3",
+            "84.52% / 84.60%",
+            "0"
+          ]
+        ]
+      }
+    },
+    {
+      "id": "cache",
+      "label": {
+        "zh": "冷暖前缀",
+        "en": "Cold and hot prefixes"
+      },
+      "heading": {
+        "zh": "冷暖前缀",
+        "en": "Cold and hot prefixes"
+      },
+      "intro": {
+        "zh": "各长度每启动 3 冷、24 热；primer 不计入。",
+        "en": "Each length has three cold and 24 hot requests per start; primers are excluded."
+      },
+      "notes": [
+        {
+          "zh": "冷、热请求和前缀复用条件不同，结果不代表全冷负载。",
+          "en": "Cold and hot requests use different prefix reuse conditions and do not represent all-cold traffic."
+        }
+      ],
+      "table": {
+        "headers": {
+          "zh": [
+            "前缀token",
+            "冷 / 热N",
+            "冷TTFT秒",
+            "热TTFT秒",
+            "热token命中率"
+          ],
+          "en": [
+            "Prefix tokens",
+            "Cold / hot N",
+            "Cold TTFT s",
+            "Hot TTFT s",
+            "Hot token hit rate"
+          ]
+        },
+        "rows": [
+          [
+            "32768",
+            "3 / 24",
+            "2.71",
+            "0.47",
+            "99.22%"
+          ],
+          [
+            "65536",
+            "3 / 24",
+            "4.91",
+            "0.58",
+            "99.61%"
+          ],
+          [
+            "131072",
+            "3 / 24",
+            "9.62",
+            "0.73",
+            "99.80%"
+          ]
+        ]
+      }
+    },
+    {
+      "id": "agent",
+      "label": {
+        "zh": "Agent 与接口",
+        "en": "Agent and interfaces"
+      },
+      "heading": {
+        "zh": "Agent 与接口",
+        "en": "Agent and interfaces"
+      },
+      "intro": {
+        "zh": "记录传输、最终内容、工具和媒体接口的边界。",
+        "en": "Transport, final content, tool and media interface limits are reported separately."
+      },
+      "notes": [
+        {
+          "zh": "功能检查不等于任务准确率或视觉准确率。",
+          "en": "Interface checks do not establish task or vision accuracy."
+        }
+      ],
+      "table": {
+        "headers": {
+          "zh": [
+            "场景",
+            "实测结果",
+            "功能边界"
+          ],
+          "en": [
+            "Scenario",
+            "Observed result",
+            "Limitations"
+          ]
+        },
+        "rows": [
+          [
+            "完整Agent，16会话、C4",
+            "437/437传输有效；436有最终content",
+            "1轮达到2048输出上限，仅生成reasoning；任务正确率未评估。"
+          ],
+          [
+            "截断案例诊断",
+            "同2K上限续写仍截断；原请求4K/C1输出2530后stop",
+            "21.07秒完成且final非空；不改写原437轮，不保证所有任务4K内完成。"
+          ],
+          [
+            "工具生命周期",
+            "70条传输有效；25次实际调用全部通过JSON/schema",
+            "AT02覆盖forced/auto/required/none双传输；多工具AT11两条指定调用未生成。"
+          ],
+          [
+            "并行、逆序、会话交错",
+            "实际并行2个call；回传和交错传输有效",
+            "客户端核对call ID；模板不携带ID，未评分语义绑定。"
+          ],
+          [
+            "模拟错误 / 超时返回",
+            "错误后重试0次；超时后重试1次并完成闭环",
+            "错误分支自动重试未触发；工具结果由本地fixture模拟。"
+          ],
+          [
+            "主动断流",
+            "关闭连接后0.53秒恢复空闲，后续请求正常",
+            "原生abort原因计数增量为0，只确认观察到回收及恢复。"
+          ],
+          [
+            "媒体功能",
+            "8图+8视频全部传输有效，14条有最终回复",
+            "2图在512输出上限截断；未进行视觉正确率评估。"
+          ]
+        ]
+      }
+    },
+    {
+      "id": "open-loop",
+      "label": {
+        "zh": "泊松到达与排队",
+        "en": "Poisson arrivals and queueing"
+      },
+      "heading": {
+        "zh": "泊松到达与排队",
+        "en": "Poisson arrivals and queueing"
+      },
+      "intro": {
+        "zh": "计划到达、实际 HTTP 发起和完成吞吐分开统计。",
+        "en": "Scheduled arrivals, actual HTTP sends and completion throughput are distinct."
+      },
+      "notes": [
+        {
+          "zh": "8K / 1 RPS 到达至完成 P99 为 193.52 秒；成功请求不代表没有客户端排队。",
+          "en": "At 8K / 1 RPS, arrival-to-completion P99 was 193.52 s; successful requests do not imply no client queue."
+        }
+      ],
+      "table": {
+        "headers": {
+          "zh": [
+            "输入 / 目标RPS",
+            "TTFT p99秒",
+            "客户端排队 p99秒",
+            "到达至完成 p99秒",
+            "有效N"
+          ],
+          "en": [
+            "Input / target RPS",
+            "TTFT P99 s",
+            "Client queue P99 s",
+            "Arrival-to-completion P99 s",
+            "Valid N"
+          ]
+        },
+        "rows": [
+          [
+            "8K / 0.4",
+            "2.83",
+            "0.00",
+            "25.41",
+            "512"
+          ],
+          [
+            "8K / 0.7",
+            "3.35",
+            "10.08",
+            "54.13",
+            "512"
+          ],
+          [
+            "8K / 1.0",
+            "3.15",
+            "159.64",
+            "193.52",
+            "512"
+          ],
+          [
+            "32K / 0.16",
+            "6.52",
+            "0.00",
+            "39.87",
+            "512"
+          ],
+          [
+            "32K / 0.3",
+            "7.69",
+            "0.00",
+            "61.01",
+            "512"
+          ]
+        ]
+      }
+    },
+    {
+      "id": "repeats",
+      "label": {
+        "zh": "复测与边界",
+        "en": "Repeats and limits"
+      },
+      "heading": {
+        "zh": "复测与边界",
+        "en": "Repeats and limits"
+      },
+      "intro": {
+        "zh": "三次独立进程启动仅描述观测波动。",
+        "en": "Three independent starts describe observed variation only."
+      },
+      "notes": [
+        {
+          "zh": "262K 扩窗和一项泊松负载未获测试时间准入；硬件遥测存在 46 分钟缺口。",
+          "en": "The 262K extension and one Poisson point were not admitted within the test budget; hardware telemetry has a 46-minute gap."
+        }
+      ],
+      "table": {
+        "headers": {
+          "zh": [
+            "重启复测负载",
+            "每次N",
+            "三次聚合输出 tok/s",
+            "范围 / 均值"
+          ],
+          "en": [
+            "Repeat workload",
+            "N per start",
+            "Three aggregate outputs tok/s",
+            "Range / mean"
+          ]
+        },
+        "rows": [
+          [
+            "8K512-C1",
+            "16",
+            "83.57 / 82.19 / 82.24",
+            "1.67%"
+          ],
+          [
+            "32K512-C8",
+            "32",
+            "152.55 / 158.43 / 147.09",
+            "7.42%"
+          ]
+        ]
+      }
     }
   ],
   "meta": [
@@ -143,6 +547,16 @@
       "zh": "精度",
       "en": "Precision",
       "value": "W8A8-MXFP8"
+    },
+    {
+      "zh": "服务窗口",
+      "en": "Total window",
+      "value": "133000 tokens"
+    },
+    {
+      "zh": "推测解码",
+      "en": "Speculative decoding",
+      "value": "DSpark 7"
     }
   ],
   "methodIntro": {

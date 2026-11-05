@@ -20,22 +20,68 @@
   "sections": [
     {
       "id": "fixed",
-      "zh": "测试结果",
-      "en": "Results"
+      "zh": "固定长度与并发",
+      "en": "Fixed length and concurrency"
+    },
+    {
+      "id": "context",
+      "zh": "长上下文与满长驻留",
+      "en": "Long context and residency"
+    },
+    {
+      "id": "cache",
+      "zh": "前缀缓存",
+      "en": "Prefix cache"
+    },
+    {
+      "id": "real",
+      "zh": "真实语料",
+      "en": "Real-world workloads"
+    },
+    {
+      "id": "agent",
+      "zh": "Agent 多轮回放",
+      "en": "Agent replay"
+    },
+    {
+      "id": "graph",
+      "zh": "图执行对照",
+      "en": "Graph execution comparison"
     },
     {
       "id": "method",
-      "zh": "方法与边界",
-      "en": "Method and limits"
+      "zh": "测试方法与环境",
+      "en": "Method and environment"
     }
   ],
   "stats": [
     {
-      "zhLabel": "代表测点",
-      "enLabel": "Representative point",
+      "zhLabel": "C1 解码 P50",
+      "enLabel": "C1 decode P50",
+      "value": "74.6 tok/s",
+      "zhNote": "8K / 512 · N128",
+      "enNote": "8K / 512 · N128"
+    },
+    {
+      "zhLabel": "C32 整窗输出",
+      "enLabel": "C32 aggregate output",
       "value": "863.9 tok/s",
-      "zhNote": "8K / 512 · C32",
-      "enNote": "8K / 512 · C32"
+      "zhNote": "8K / 512 · N256",
+      "enNote": "8K / 512 · N256"
+    },
+    {
+      "zhLabel": "满长驻留",
+      "enLabel": "Full-window residency",
+      "value": "8",
+      "zhNote": "133120 总窗口 · 零抢占",
+      "enNote": "133,120 total window · no preemption"
+    },
+    {
+      "zhLabel": "Agent 回放",
+      "enLabel": "Agent replay",
+      "value": "437 / 437",
+      "zhNote": "C8 有 23 轮触顶",
+      "enNote": "C8: 23 turns hit the output cap"
     }
   ],
   "overview": {
@@ -56,69 +102,456 @@
     {
       "id": "fixed",
       "label": {
-        "zh": "测试结果",
-        "en": "RESULTS"
+        "zh": "固定长度与并发",
+        "en": "Fixed length and concurrency"
       },
       "heading": {
-        "zh": "按负载和测量口径解读",
-        "en": "Read each point in its workload context"
+        "zh": "固定长度与并发",
+        "en": "Fixed length and concurrency"
       },
       "intro": {
-        "zh": "下表为报告中的代表性实测点；C 表示客户端并发。",
-        "en": "Representative measured points from the report; C denotes client concurrency."
+        "zh": "8K 输入 / 512 输出，前缀缓存开启；单请求解码与整窗吞吐分开统计。",
+        "en": "8K input / 512 output, with prefix caching enabled; per-request decode and aggregate throughput use different denominators."
       },
+      "notes": [
+        {
+          "zh": "C8 仅 16 条，不报告 P95；C32 是单批观测，不代表峰值容量。",
+          "en": "C8 has only 16 requests, so P95 is omitted; C32 is a single batch and not a capacity claim."
+        }
+      ],
       "table": {
         "headers": {
           "zh": [
-            "输入/输出",
-            "并发",
-            "请求数",
-            "整窗输出 tok/s",
-            "单请求 Decode P50 tok/s",
-            "TTFT P50/P95 s"
+            "指标",
+            "C1",
+            "C8",
+            "C32"
           ],
           "en": [
-            "Input/output",
-            "Concurrency",
-            "Requests",
-            "Aggregate output tok/s",
-            "Per-request decode P50 tok/s",
-            "TTFT P50/P95 s"
+            "Metric",
+            "C1",
+            "C8",
+            "C32"
           ]
         },
         "rows": [
           [
-            "8K / 512",
-            "C1",
+            "有效请求数",
             "128",
-            "65.9",
-            "74.6",
-            "0.931 / 0.976"
-          ],
-          [
-            "8K / 512",
-            "C8",
             "16",
-            "289.8",
-            "54.6",
-            "4.203 / —"
+            "256"
           ],
           [
-            "8K / 512",
-            "C32",
-            "256",
-            "863.9",
-            "37.2",
-            "5.067 / 7.772"
+            "单请求解码速率 P50 (tok/s)",
+            "74.6",
+            "54.6",
+            "37.2"
+          ],
+          [
+            "整窗输出吞吐 (tok/s)",
+            "65.9",
+            "289.8",
+            "863.9"
+          ],
+          [
+            "TTFT P50 (s)",
+            "0.931",
+            "4.203",
+            "5.067"
+          ],
+          [
+            "TTFT P95 (s)",
+            "0.976",
+            "—",
+            "7.772"
+          ],
+          [
+            "完整HTTP E2E P50 (s)",
+            "7.776",
+            "14.107",
+            "18.721"
           ]
         ]
       },
+      "chart": {
+        "title": {
+          "zh": "8K / 512 · 并发输出吞吐",
+          "en": "8K / 512 · output throughput"
+        },
+        "hint": {
+          "zh": "按图中标注的测试条件读取；悬停查看数值。",
+          "en": "Read values with the stated workload; hover for details."
+        },
+        "type": "bar",
+        "labels": {
+          "zh": [
+            "C1",
+            "C8",
+            "C32"
+          ],
+          "en": [
+            "C1",
+            "C8",
+            "C32"
+          ]
+        },
+        "series": [
+          {
+            "zh": "输出吞吐",
+            "en": "Output throughput",
+            "values": [
+              65.9,
+              289.8,
+              863.9
+            ],
+            "color": "blue"
+          }
+        ],
+        "yTitle": {
+          "zh": "整窗输出 tok/s",
+          "en": "Aggregate output tok/s"
+        }
+      }
+    },
+    {
+      "id": "context",
+      "label": {
+        "zh": "长上下文与满长驻留",
+        "en": "Long context and residency"
+      },
+      "heading": {
+        "zh": "长上下文与满长驻留",
+        "en": "Long context and residency"
+      },
+      "intro": {
+        "zh": "131072 输入 / 2048 输出，133120 总窗口，各并发点 8 条。",
+        "en": "131,072 input / 2,048 output in a 133,120-token window, eight requests per point."
+      },
       "notes": [
         {
-          "zh": "133120 总窗口下实测 8 条满长请求同时驻留、零抢占。约 128K 前缀的冷 TTFT 为 14.636 秒，热组中位数 0.771 秒；缓存条件不同。",
-          "en": "Eight full-window requests resided concurrently without preemption at a 133,120-token total window. At approximately 128K prefix, cold TTFT was 14.636 s and warm median 0.771 s under different cache conditions."
+          "zh": "请求同时驻留的证据来自运行状态采样；小样本不支持尾延迟。",
+          "en": "Concurrent residency is based on runtime sampling; these small samples do not support tail latency."
         }
-      ]
+      ],
+      "table": {
+        "headers": {
+          "zh": [
+            "指标",
+            "C2",
+            "C4",
+            "C8"
+          ],
+          "en": [
+            "Metric",
+            "C2",
+            "C4",
+            "C8"
+          ]
+        },
+        "rows": [
+          [
+            "有效请求数",
+            "8",
+            "8",
+            "8"
+          ],
+          [
+            "聚合输出 tok/s",
+            "94.5",
+            "152.4",
+            "244.5"
+          ],
+          [
+            "TTFT P50 秒",
+            "15.889",
+            "17.899",
+            "20.796"
+          ],
+          [
+            "平均 ITL P50 毫秒",
+            "13.48",
+            "14.57",
+            "22.45"
+          ],
+          [
+            "完整HTTP E2E P50 秒",
+            "43.50",
+            "53.72",
+            "66.75"
+          ],
+          [
+            "最长连续驻留采样数（1Hz）",
+            "26",
+            "29",
+            "29"
+          ]
+        ]
+      }
+    },
+    {
+      "id": "cache",
+      "label": {
+        "zh": "前缀缓存",
+        "en": "Prefix cache"
+      },
+      "heading": {
+        "zh": "前缀缓存",
+        "en": "Prefix cache"
+      },
+      "intro": {
+        "zh": "按实际输入长度分别测量冷、暖请求。",
+        "en": "Cold and warm requests are measured separately by actual input length."
+      },
+      "notes": [
+        {
+          "zh": "冷组每档仅 1 条；热缓存与冷流量不可混算。",
+          "en": "Each cold group has only one request; hot-cache and cold traffic are not interchangeable."
+        }
+      ],
+      "table": {
+        "headers": {
+          "zh": [
+            "实际输入tokens",
+            "冷 / 暖N",
+            "冷TTFT秒",
+            "暖TTFT P50秒",
+            "暖命中率"
+          ],
+          "en": [
+            "Input tokens",
+            "Cold / warm N",
+            "Cold TTFT s",
+            "Warm TTFT P50 s",
+            "Warm hit rate"
+          ]
+        },
+        "rows": [
+          [
+            "32665",
+            "1 / 8",
+            "3.589",
+            "0.417",
+            "99.92%"
+          ],
+          [
+            "65433",
+            "1 / 8",
+            "7.240",
+            "0.504",
+            "99.96%"
+          ],
+          [
+            "130969",
+            "1 / 8",
+            "14.636",
+            "0.771",
+            "99.98%"
+          ]
+        ]
+      }
+    },
+    {
+      "id": "real",
+      "label": {
+        "zh": "真实语料",
+        "en": "Real-world workloads"
+      },
+      "heading": {
+        "zh": "真实语料",
+        "en": "Real-world workloads"
+      },
+      "intro": {
+        "zh": "自然 EOS、输出上限 512，分别报告不同语料。",
+        "en": "Natural EOS with a 512-token output cap; datasets are reported separately."
+      },
+      "notes": [
+        {
+          "zh": "传输完成不等于任务质量通过。",
+          "en": "Transport completion does not establish task quality."
+        }
+      ],
+      "table": {
+        "headers": {
+          "zh": [
+            "业务",
+            "平均输入 / 输出tokens",
+            "聚合tok/s",
+            "TTFT P50秒",
+            "完整HTTP E2E P50秒"
+          ],
+          "en": [
+            "Dataset",
+            "Mean input / output tokens",
+            "Aggregate tok/s",
+            "TTFT P50 s",
+            "HTTP E2E P50 s"
+          ]
+        },
+        "rows": [
+          [
+            "ShareGPT短",
+            "3061.9 / 400.8",
+            "329.5",
+            "1.361",
+            "9.30"
+          ],
+          [
+            "ShareGPT长",
+            "12336.1 / 467.2",
+            "246.9",
+            "3.688",
+            "14.21"
+          ],
+          [
+            "RAG短",
+            "11257.3 / 61.8",
+            "59.5",
+            "2.102",
+            "6.44"
+          ],
+          [
+            "RAG长",
+            "41126.1 / 439.9",
+            "160.8",
+            "7.003",
+            "21.87"
+          ]
+        ]
+      }
+    },
+    {
+      "id": "agent",
+      "label": {
+        "zh": "Agent 多轮回放",
+        "en": "Agent replay"
+      },
+      "heading": {
+        "zh": "Agent 多轮回放",
+        "en": "Agent replay"
+      },
+      "intro": {
+        "zh": "16 个录制会话；C 为会话并发。",
+        "en": "Sixteen recorded sessions; C denotes session concurrency."
+      },
+      "notes": [
+        {
+          "zh": "C8 的 23 轮达到输出上限；回放使用录制反馈，未评估真实工具执行或任务准确率。",
+          "en": "At C8, 23 turns reached the output cap; replay uses recorded feedback and does not evaluate live tools or task accuracy."
+        }
+      ],
+      "table": {
+        "headers": {
+          "zh": [
+            "指标",
+            "C1",
+            "C8"
+          ],
+          "en": [
+            "Metric",
+            "C1",
+            "C8"
+          ]
+        },
+        "rows": [
+          [
+            "会话 / 有效轮数",
+            "16 / 437",
+            "16 / 437"
+          ],
+          [
+            "整窗输出吞吐 (tok/s)",
+            "36.1",
+            "94.0"
+          ],
+          [
+            "TTFT P50 (s)",
+            "1.002",
+            "0.831"
+          ],
+          [
+            "平均 ITL P50 (ms)",
+            "11.92",
+            "61.13"
+          ],
+          [
+            "E2E P50 (s)",
+            "2.16",
+            "7.27"
+          ],
+          [
+            "达到512输出上限的轮数",
+            "1",
+            "23"
+          ],
+          [
+            "执行墙钟时间 (min)",
+            "20.9",
+            "10.1"
+          ],
+          [
+            "请求错误率",
+            "0%",
+            "0%"
+          ]
+        ]
+      }
+    },
+    {
+      "id": "graph",
+      "label": {
+        "zh": "图执行对照",
+        "en": "Graph execution comparison"
+      },
+      "heading": {
+        "zh": "图执行对照",
+        "en": "Graph execution comparison"
+      },
+      "intro": {
+        "zh": "小样本对照 PIECEWISE 与 FULL 图执行。",
+        "en": "Small-sample comparison of PIECEWISE and FULL graph execution."
+      },
+      "notes": [
+        {
+          "zh": "每组仅 4 条，不能作为稳定性能差异。",
+          "en": "Only four requests per group; this does not establish a stable performance difference."
+        }
+      ],
+      "table": {
+        "headers": {
+          "zh": [
+            "指标",
+            "PIECEWISE",
+            "FULL"
+          ],
+          "en": [
+            "Metric",
+            "PIECEWISE",
+            "FULL"
+          ]
+        },
+        "rows": [
+          [
+            "有效请求数",
+            "4",
+            "4"
+          ],
+          [
+            "Decoder图",
+            "未捕获",
+            "捕获并回放"
+          ],
+          [
+            "平均 ITL P50 (ms)",
+            "234.17",
+            "13.42"
+          ],
+          [
+            "E2E P50 (s)",
+            "61.40",
+            "4.96"
+          ]
+        ]
+      }
     }
   ],
   "meta": [
@@ -141,6 +574,21 @@
       "zh": "精度",
       "en": "Precision",
       "value": "Mixed MXFP8 / MXFP4"
+    },
+    {
+      "zh": "服务窗口",
+      "en": "Total window",
+      "value": "133120 tokens"
+    },
+    {
+      "zh": "推测解码",
+      "en": "Speculative decoding",
+      "value": "Off"
+    },
+    {
+      "zh": "客户端",
+      "en": "Client",
+      "value": "AIPerf 0.13.0"
     }
   ],
   "methodIntro": {
