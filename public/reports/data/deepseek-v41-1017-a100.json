@@ -1,0 +1,176 @@
+{
+  "title": "DeepSeek-V4.1-Flash-1017 · A100",
+  "breadcrumb": "DeepSeek-V4.1-Flash-1017",
+  "kicker": "SERVING PERFORMANCE BENCHMARK",
+  "lede": {
+    "zh": "8 卡 A100 上的固定长度与自然输出测试；思考开启，实际 effort 75 逐条核验。",
+    "en": "Fixed-length and natural-output measurements on eight A100s, with thinking enabled and effort 75 verified per request."
+  },
+  "chips": [
+    "8× NVIDIA A100 · 80 GB",
+    "Mixed precision",
+    "TP8 · DSpark 5",
+    "vLLM backport · AIPerf 0.13.0",
+    "Measured 2026-11-01"
+  ],
+  "snapshot": {
+    "zh": "实测结果 · 条件和限制见下文",
+    "en": "Measured results · conditions and limits below"
+  },
+  "sections": [
+    {
+      "id": "fixed",
+      "zh": "测试结果",
+      "en": "Results"
+    },
+    {
+      "id": "method",
+      "zh": "方法与边界",
+      "en": "Method and limits"
+    }
+  ],
+  "stats": [
+    {
+      "zhLabel": "代表测点",
+      "enLabel": "Representative point",
+      "value": "100.35 tok/s",
+      "zhNote": "1K / 256 · C1",
+      "enNote": "1K / 256 · C1"
+    }
+  ],
+  "overview": {
+    "heading": {
+      "zh": "测试结论",
+      "en": "Measured results"
+    },
+    "intro": {
+      "zh": "8 卡 A100 上的固定长度与自然输出测试；思考开启，实际 effort 75 逐条核验。",
+      "en": "Fixed-length and natural-output measurements on eight A100s, with thinking enabled and effort 75 verified per request."
+    },
+    "note": {
+      "zh": "固定输出使用 ignore EOS，部分响应只有 reasoning；缓存命中率差异很大。各点为单次起服观测，关键点另有复测；未做任务精度评测。",
+      "en": "Fixed output uses ignore EOS and some responses contain only reasoning. Cache-hit rates vary widely. Points are from one server start, with separate repeats for key points; task accuracy was not assessed."
+    }
+  },
+  "blocks": [
+    {
+      "id": "fixed",
+      "label": {
+        "zh": "测试结果",
+        "en": "RESULTS"
+      },
+      "heading": {
+        "zh": "按负载和测量口径解读",
+        "en": "Read each point in its workload context"
+      },
+      "intro": {
+        "zh": "下表为报告中的代表性实测点；C 表示客户端并发。",
+        "en": "Representative measured points from the report; C denotes client concurrency."
+      },
+      "table": {
+        "headers": {
+          "zh": [
+            "输入/输出",
+            "并发",
+            "请求数",
+            "整窗输出 tok/s",
+            "TTFT P50/P95 ms",
+            "缓存命中"
+          ],
+          "en": [
+            "Input/output",
+            "Concurrency",
+            "Requests",
+            "Aggregate output tok/s",
+            "TTFT P50/P95 ms",
+            "Cache hit"
+          ]
+        },
+        "rows": [
+          [
+            "1K / 256",
+            "C1",
+            "128",
+            "100.35",
+            "278.39 / 305.79",
+            "2.06%"
+          ],
+          [
+            "1K / 256",
+            "C8",
+            "128",
+            "453.55",
+            "265.64 / 650.59",
+            "79.57%"
+          ],
+          [
+            "8K / 512",
+            "C1",
+            "128",
+            "73.66",
+            "1180.62 / 1233.22",
+            "24.48%"
+          ],
+          [
+            "8K / 512",
+            "C8",
+            "128",
+            "394.43",
+            "377.98 / 691.77",
+            "98.15%"
+          ],
+          [
+            "8K / 512",
+            "C32",
+            "128",
+            "778.33",
+            "582.33 / 1629.36",
+            "99.31%"
+          ]
+        ]
+      },
+      "notes": [
+        {
+          "zh": "8K/512 C32 的服务端计数器存在采样告警；固定长度、自然结束和超长专项不可混算，超长结论以逐请求计时补测为准。",
+          "en": "The server counter at 8K/512 C32 had sampling warnings. Fixed-length, natural-EOS and ultra-long tests are separate; use the per-request timing follow-up for ultra-long conclusions."
+        }
+      ]
+    }
+  ],
+  "meta": [
+    {
+      "zh": "硬件",
+      "en": "Hardware",
+      "value": "8× NVIDIA A100 · 80 GB"
+    },
+    {
+      "zh": "并行配置",
+      "en": "Topology",
+      "value": "TP8 · DSpark 5"
+    },
+    {
+      "zh": "引擎",
+      "en": "Engine",
+      "value": "vLLM backport · AIPerf 0.13.0"
+    },
+    {
+      "zh": "精度",
+      "en": "Precision",
+      "value": "Mixed precision"
+    }
+  ],
+  "methodIntro": {
+    "zh": "不同负载、缓存状态和测量分母应分别解读。",
+    "en": "Interpret workloads, cache states and measurement denominators separately."
+  },
+  "methodNotes": [
+    {
+      "zh": "固定输出使用 ignore EOS，部分响应只有 reasoning；缓存命中率差异很大。各点为单次起服观测，关键点另有复测；未做任务精度评测。",
+      "en": "Fixed output uses ignore EOS and some responses contain only reasoning. Cache-hit rates vary widely. Points are from one server start, with separate repeats for key points; task accuracy was not assessed."
+    },
+    {
+      "zh": "8K/512 C32 的服务端计数器存在采样告警；固定长度、自然结束和超长专项不可混算，超长结论以逐请求计时补测为准。",
+      "en": "The server counter at 8K/512 C32 had sampling warnings. Fixed-length, natural-EOS and ultra-long tests are separate; use the per-request timing follow-up for ultra-long conclusions."
+    }
+  ]
+}

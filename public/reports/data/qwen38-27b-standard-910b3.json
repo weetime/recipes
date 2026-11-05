@@ -1,0 +1,168 @@
+{
+  "title": "Qwen3.8-27B · Ascend 910B3",
+  "breadcrumb": "Qwen3.8-27B",
+  "kicker": "SERVING PERFORMANCE BENCHMARK",
+  "lede": {
+    "zh": "真实负载、泊松到达、Agent 回放和 YaRN 长上下文补测。",
+    "en": "Follow-up measurements for real workloads, Poisson arrivals, Agent replay and YaRN long context."
+  },
+  "chips": [
+    "Ascend 910B3 · 64 GB",
+    "W8A8 · MTP3",
+    "TP2 / TP4",
+    "vLLM-Ascend",
+    "Measured 2026-10-30"
+  ],
+  "snapshot": {
+    "zh": "实测结果 · 条件和限制见下文",
+    "en": "Measured results · conditions and limits below"
+  },
+  "sections": [
+    {
+      "id": "fixed",
+      "zh": "测试结果",
+      "en": "Results"
+    },
+    {
+      "id": "method",
+      "zh": "方法与边界",
+      "en": "Method and limits"
+    }
+  ],
+  "stats": [
+    {
+      "zhLabel": "代表测点",
+      "enLabel": "Representative point",
+      "value": "524.90 / 7.05 s",
+      "zhNote": "Near 1M · cold / hot TTFT",
+      "enNote": "Near 1M · cold / hot TTFT"
+    }
+  ],
+  "overview": {
+    "heading": {
+      "zh": "测试结论",
+      "en": "Measured results"
+    },
+    "intro": {
+      "zh": "真实负载、泊松到达、Agent 回放和 YaRN 长上下文补测。",
+      "en": "Follow-up measurements for real workloads, Poisson arrivals, Agent replay and YaRN long context."
+    },
+    "note": {
+      "zh": "近 512K/1M 使用 YaRN 扩展，非原生窗口；近 1M 仅 8 组，不支持尾延迟推断。Agent 回放未评估真实工具执行或任务准确率。",
+      "en": "Near-512K/1M uses YaRN extension, not the native window; the near-1M probe has only eight pairs and does not support tail estimates. Agent replay does not assess live tool execution or task accuracy."
+    }
+  },
+  "blocks": [
+    {
+      "id": "fixed",
+      "label": {
+        "zh": "测试结果",
+        "en": "RESULTS"
+      },
+      "heading": {
+        "zh": "按负载和测量口径解读",
+        "en": "Read each point in its workload context"
+      },
+      "intro": {
+        "zh": "下表为报告中的代表性实测点；C 表示客户端并发。",
+        "en": "Representative measured points from the report; C denotes client concurrency."
+      },
+      "table": {
+        "headers": {
+          "zh": [
+            "场景",
+            "实例",
+            "请求数",
+            "TTFT P50 s",
+            "交付 TPOT P95 ms",
+            "整窗输出 tok/s"
+          ],
+          "en": [
+            "Scenario",
+            "Instance",
+            "Requests",
+            "TTFT P50 s",
+            "Delivered TPOT P95 ms",
+            "Aggregate output tok/s"
+          ]
+        },
+        "rows": [
+          [
+            "32K / 512 · C1",
+            "L0",
+            "128",
+            "6.67",
+            "16.16",
+            "36.74"
+          ],
+          [
+            "32K / 512 · C1",
+            "L1",
+            "128",
+            "6.69",
+            "16.35",
+            "36.41"
+          ],
+          [
+            "32K / 512 · C1",
+            "L2",
+            "128",
+            "6.70",
+            "16.41",
+            "36.71"
+          ],
+          [
+            "32K / 512 · C1",
+            "L3",
+            "128",
+            "6.71",
+            "16.18",
+            "36.64"
+          ]
+        ]
+      },
+      "notes": [
+        {
+          "zh": "近 1M（999000 token）YaRN4 TP4 的 8 组冷热探针，native TTFT 中位数 524.90 / 7.05 秒，热命中 99.79%，检索码均正确。32K/512 C8 交付 TPOT P95 超过实验门限后停止扩档。",
+          "en": "Eight near-1M (999,000-token) YaRN4 TP4 cold/hot probes had native TTFT medians of 524.90 / 7.05 s, 99.79% hot-cache hit and correct retrieval codes. At 32K/512 C8, delivered TPOT P95 crossed the experiment threshold and higher concurrency was stopped."
+        }
+      ]
+    }
+  ],
+  "meta": [
+    {
+      "zh": "硬件",
+      "en": "Hardware",
+      "value": "Ascend 910B3 · 64 GB"
+    },
+    {
+      "zh": "并行配置",
+      "en": "Topology",
+      "value": "TP2 / TP4"
+    },
+    {
+      "zh": "引擎",
+      "en": "Engine",
+      "value": "vLLM-Ascend"
+    },
+    {
+      "zh": "精度",
+      "en": "Precision",
+      "value": "W8A8 · MTP3"
+    }
+  ],
+  "methodIntro": {
+    "zh": "不同负载、缓存状态和测量分母应分别解读。",
+    "en": "Interpret workloads, cache states and measurement denominators separately."
+  },
+  "methodNotes": [
+    {
+      "zh": "近 512K/1M 使用 YaRN 扩展，非原生窗口；近 1M 仅 8 组，不支持尾延迟推断。Agent 回放未评估真实工具执行或任务准确率。",
+      "en": "Near-512K/1M uses YaRN extension, not the native window; the near-1M probe has only eight pairs and does not support tail estimates. Agent replay does not assess live tool execution or task accuracy."
+    },
+    {
+      "zh": "近 1M（999000 token）YaRN4 TP4 的 8 组冷热探针，native TTFT 中位数 524.90 / 7.05 秒，热命中 99.79%，检索码均正确。32K/512 C8 交付 TPOT P95 超过实验门限后停止扩档。",
+      "en": "Eight near-1M (999,000-token) YaRN4 TP4 cold/hot probes had native TTFT medians of 524.90 / 7.05 s, 99.79% hot-cache hit and correct retrieval codes. At 32K/512 C8, delivered TPOT P95 crossed the experiment threshold and higher concurrency was stopped."
+    }
+  ]
+}

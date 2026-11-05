@@ -1,0 +1,162 @@
+{
+  "title": "MiniMax-M3.1-Flash · Ascend 950DT",
+  "breadcrumb": "MiniMax-M3.1-Flash",
+  "kicker": "SERVING PERFORMANCE BENCHMARK",
+  "lede": {
+    "zh": "固定长度、长上下文驻留、Agent、工具协议与泊松排队测试。",
+    "en": "Fixed-length serving, long-context residency, Agent, tool protocol and Poisson-arrival measurements."
+  },
+  "chips": [
+    "8× Ascend 950DT · 96 GB",
+    "W8A8-MXFP8",
+    "TP4 × DP2 · EP · DSpark 7",
+    "vLLM-Ascend",
+    "Measured 2026-10-27"
+  ],
+  "snapshot": {
+    "zh": "实测结果 · 条件和限制见下文",
+    "en": "Measured results · conditions and limits below"
+  },
+  "sections": [
+    {
+      "id": "fixed",
+      "zh": "测试结果",
+      "en": "Results"
+    },
+    {
+      "id": "method",
+      "zh": "方法与边界",
+      "en": "Method and limits"
+    }
+  ],
+  "stats": [
+    {
+      "zhLabel": "代表测点",
+      "enLabel": "Representative point",
+      "value": "688.11 tok/s",
+      "zhNote": "8K / 512 · C64",
+      "enNote": "8K / 512 · C64"
+    }
+  ],
+  "overview": {
+    "heading": {
+      "zh": "测试结论",
+      "en": "Measured results"
+    },
+    "intro": {
+      "zh": "固定长度、长上下文驻留、Agent、工具协议与泊松排队测试。",
+      "en": "Fixed-length serving, long-context residency, Agent, tool protocol and Poisson-arrival measurements."
+    },
+    "note": {
+      "zh": "未评估任务或视觉精度；262K 扩窗未获测试时间准入，硬件遥测存在 46 分钟缺口。各并发点样本量不同。",
+      "en": "Task and vision accuracy were not evaluated; the 262K window was not admitted within the test budget and hardware telemetry has a 46-minute gap. Sample sizes vary by point."
+    }
+  },
+  "blocks": [
+    {
+      "id": "fixed",
+      "label": {
+        "zh": "测试结果",
+        "en": "RESULTS"
+      },
+      "heading": {
+        "zh": "按负载和测量口径解读",
+        "en": "Read each point in its workload context"
+      },
+      "intro": {
+        "zh": "下表为报告中的代表性实测点；C 表示客户端并发。",
+        "en": "Representative measured points from the report; C denotes client concurrency."
+      },
+      "table": {
+        "headers": {
+          "zh": [
+            "输入/输出",
+            "并发",
+            "请求数",
+            "整窗输出 tok/s",
+            "TTFT P50 s"
+          ],
+          "en": [
+            "Input/output",
+            "Concurrency",
+            "Requests",
+            "Aggregate output tok/s",
+            "TTFT P50 s"
+          ]
+        },
+        "rows": [
+          [
+            "8K / 512",
+            "C1",
+            "128",
+            "83.20",
+            "0.90"
+          ],
+          [
+            "8K / 512",
+            "C8",
+            "32",
+            "288.17",
+            "1.47"
+          ],
+          [
+            "8K / 512",
+            "C32",
+            "64",
+            "578.66",
+            "3.63"
+          ],
+          [
+            "8K / 512",
+            "C64",
+            "256",
+            "688.11",
+            "3.14"
+          ]
+        ]
+      },
+      "notes": [
+        {
+          "zh": "133000 总窗口六路满长驻留、零抢占（N=12）。Agent C4 共 437 轮传输有效，436 轮有最终回复；工具控制和截断仍有边界。",
+          "en": "Six full-window requests resided without preemption at a 133,000-token window (N=12). Agent C4 had 437 transport-valid turns and 436 final responses; tool control and truncation remain limitations."
+        }
+      ]
+    }
+  ],
+  "meta": [
+    {
+      "zh": "硬件",
+      "en": "Hardware",
+      "value": "8× Ascend 950DT · 96 GB"
+    },
+    {
+      "zh": "并行配置",
+      "en": "Topology",
+      "value": "TP4 × DP2 · EP · DSpark 7"
+    },
+    {
+      "zh": "引擎",
+      "en": "Engine",
+      "value": "vLLM-Ascend"
+    },
+    {
+      "zh": "精度",
+      "en": "Precision",
+      "value": "W8A8-MXFP8"
+    }
+  ],
+  "methodIntro": {
+    "zh": "不同负载、缓存状态和测量分母应分别解读。",
+    "en": "Interpret workloads, cache states and measurement denominators separately."
+  },
+  "methodNotes": [
+    {
+      "zh": "未评估任务或视觉精度；262K 扩窗未获测试时间准入，硬件遥测存在 46 分钟缺口。各并发点样本量不同。",
+      "en": "Task and vision accuracy were not evaluated; the 262K window was not admitted within the test budget and hardware telemetry has a 46-minute gap. Sample sizes vary by point."
+    },
+    {
+      "zh": "133000 总窗口六路满长驻留、零抢占（N=12）。Agent C4 共 437 轮传输有效，436 轮有最终回复；工具控制和截断仍有边界。",
+      "en": "Six full-window requests resided without preemption at a 133,000-token window (N=12). Agent C4 had 437 transport-valid turns and 436 final responses; tool control and truncation remain limitations."
+    }
+  ]
+}

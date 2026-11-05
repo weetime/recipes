@@ -3,6 +3,126 @@ import path from "node:path";
 
 const REPORTS = [
   {
+    "slug": "deepseek-v41-1017-a100",
+    "modelId": "deepseek-ai/DeepSeek-V4.1-Flash",
+    "modelName": "DeepSeek-V4.1-Flash-1017",
+    "title": "DeepSeek-V4.1-Flash-1017 · A100",
+    "href": "/reports/deepseek-v41-1017-a100/index.html",
+    "date": "2026-11-01",
+    "hardware": "8× NVIDIA A100 · 80 GB",
+    "engine": "vLLM backport · AIPerf 0.13.0",
+    "precision": "Mixed precision",
+    "summary": "Fixed-length and natural-output measurements on eight A100s, with thinking enabled and effort 75 verified per request.",
+    "highlights": [
+      {
+        "value": "100.35",
+        "unit": "tok/s",
+        "label": "1K / 256 · C1"
+      }
+    ],
+    "caveat": "Fixed output uses ignore EOS and some responses contain only reasoning. Cache-hit rates vary widely. Points are from one server start, with separate repeats for key points; task accuracy was not assessed."
+  },
+  {
+    "slug": "deepseek-v41-flash-mixed-950dt",
+    "modelId": "deepseek-ai/DeepSeek-V4.1-Flash",
+    "modelName": "DeepSeek-V4.1-Flash",
+    "title": "DeepSeek-V4.1-Flash · Ascend 950DT",
+    "href": "/reports/deepseek-v41-flash-mixed-950dt/index.html",
+    "date": "2026-10-28",
+    "hardware": "8× Ascend 950DT · 96 GB",
+    "engine": "vLLM-Ascend 0.30.0",
+    "precision": "Mixed MXFP8 / MXFP4",
+    "summary": "Fixed-length, long-context, prefix-cache and Agent replay measurements with native mixed-precision weights.",
+    "highlights": [
+      {
+        "value": "863.9",
+        "unit": "tok/s",
+        "label": "8K / 512 · C32"
+      }
+    ],
+    "caveat": "Each point is a single batch; task accuracy was not assessed and sustained capacity is not established. At Agent C8, 23 of 437 turns reached the 512-token output cap."
+  },
+  {
+    "slug": "minimax-m31-flash-950dt",
+    "modelId": "MiniMaxAI/MiniMax-M3.1-Flash",
+    "modelName": "MiniMax-M3.1-Flash",
+    "title": "MiniMax-M3.1-Flash · Ascend 950DT",
+    "href": "/reports/minimax-m31-flash-950dt/index.html",
+    "date": "2026-10-27",
+    "hardware": "8× Ascend 950DT · 96 GB",
+    "engine": "vLLM-Ascend",
+    "precision": "W8A8-MXFP8",
+    "summary": "Fixed-length serving, long-context residency, Agent, tool protocol and Poisson-arrival measurements.",
+    "highlights": [
+      {
+        "value": "688.11",
+        "unit": "tok/s",
+        "label": "8K / 512 · C64"
+      }
+    ],
+    "caveat": "Task and vision accuracy were not evaluated; the 262K window was not admitted within the test budget and hardware telemetry has a 46-minute gap. Sample sizes vary by point."
+  },
+  {
+    "slug": "minimax-m3-mxfp8-950dt",
+    "modelId": "MiniMaxAI/MiniMax-M3",
+    "modelName": "MiniMax-M3",
+    "title": "MiniMax-M3 MXFP8 · Ascend 950DT",
+    "href": "/reports/minimax-m3-mxfp8-950dt/index.html",
+    "date": "2026-10-26",
+    "hardware": "8× Ascend 950DT · 96 GB",
+    "engine": "vLLM-Ascend 0.30.0rc2 + patches",
+    "precision": "MXFP8",
+    "summary": "Fixed-length, long-context, Agent and capacity measurements, keeping original and separately retested configurations distinct.",
+    "highlights": [
+      {
+        "value": "651.68",
+        "unit": "tok/s",
+        "label": "8K / 512 · C32"
+      }
+    ],
+    "caveat": "The original matrix had 27/42 full-sample rows, 14 separately extended retests, and one capacity hold completed using a new configuration. Coverage does not mean all points passed on the original configuration. Task accuracy was not assessed."
+  },
+  {
+    "slug": "qwen38-27b-standard-910b3",
+    "modelId": "Qwen/Qwen3.8-27B",
+    "modelName": "Qwen3.8-27B",
+    "title": "Qwen3.8-27B · Ascend 910B3",
+    "href": "/reports/qwen38-27b-standard-910b3/index.html",
+    "date": "2026-10-30",
+    "hardware": "Ascend 910B3 · 64 GB",
+    "engine": "vLLM-Ascend",
+    "precision": "W8A8 · MTP3",
+    "summary": "Follow-up measurements for real workloads, Poisson arrivals, Agent replay and YaRN long context.",
+    "highlights": [
+      {
+        "value": "524.90 / 7.05",
+        "unit": "s",
+        "label": "Near 1M · cold / hot TTFT"
+      }
+    ],
+    "caveat": "Near-512K/1M uses YaRN extension, not the native window; the near-1M probe has only eight pairs and does not support tail estimates. Agent replay does not assess live tool execution or task accuracy."
+  },
+  {
+    "slug": "qwen38-27b-mtp-recheck-910b3",
+    "modelId": "Qwen/Qwen3.8-27B",
+    "modelName": "Qwen3.8-27B",
+    "title": "Qwen3.8-27B MTP · Ascend 910B3",
+    "href": "/reports/qwen38-27b-mtp-recheck-910b3/index.html",
+    "date": "2026-10-29",
+    "hardware": "8× Ascend 910B3 · 64 GB",
+    "engine": "vLLM-Ascend",
+    "precision": "W8A8 · MTP",
+    "summary": "Same-host comparison of old and new recipes, swapping card assignments across independent server starts for 8K/512 single-stream traffic.",
+    "highlights": [
+      {
+        "value": "70.25",
+        "unit": "tok/s",
+        "label": "8K / 512 · C1 · NEW"
+      }
+    ],
+    "caveat": "Each recipe has four independent starts with 32 requests per start; 32-request windows do not support tail SLOs. Multiple recipe changes prevent attribution to one factor."
+  },
+  {
     slug: "glm-5-3-flash-rtx-pro-5000",
     modelId: "zai-org/GLM-5.3-Flash",
     modelName: "GLM-5.3-Flash",
