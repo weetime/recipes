@@ -1,0 +1,152 @@
+{
+  "title": "Qwen3.8-27B MTP · Ascend 910B3",
+  "breadcrumb": "Qwen3.8-27B",
+  "kicker": "SERVING PERFORMANCE BENCHMARK",
+  "lede": {
+    "zh": "同机新旧配方复核：交换卡组、独立起服，比较 8K/512 单流性能。",
+    "en": "Same-host comparison of old and new recipes, swapping card assignments across independent server starts for 8K/512 single-stream traffic."
+  },
+  "chips": [
+    "8× Ascend 910B3 · 64 GB",
+    "W8A8 · MTP",
+    "4 × TP2 instances",
+    "vLLM-Ascend",
+    "Measured 2026-10-29"
+  ],
+  "snapshot": {
+    "zh": "实测结果 · 条件和限制见下文",
+    "en": "Measured results · conditions and limits below"
+  },
+  "sections": [
+    {
+      "id": "fixed",
+      "zh": "测试结果",
+      "en": "Results"
+    },
+    {
+      "id": "method",
+      "zh": "方法与边界",
+      "en": "Method and limits"
+    }
+  ],
+  "stats": [
+    {
+      "zhLabel": "代表测点",
+      "enLabel": "Representative point",
+      "value": "70.25 tok/s",
+      "zhNote": "8K / 512 · C1 · NEW",
+      "enNote": "8K / 512 · C1 · NEW"
+    }
+  ],
+  "overview": {
+    "heading": {
+      "zh": "测试结论",
+      "en": "Measured results"
+    },
+    "intro": {
+      "zh": "同机新旧配方复核：交换卡组、独立起服，比较 8K/512 单流性能。",
+      "en": "Same-host comparison of old and new recipes, swapping card assignments across independent server starts for 8K/512 single-stream traffic."
+    },
+    "note": {
+      "zh": "每配方 4 次独立起服、各 32 条请求；32 条窗口不报尾部 SLO。新旧配方同时有多项差异，收益不能归因于单个因素。",
+      "en": "Each recipe has four independent starts with 32 requests per start; 32-request windows do not support tail SLOs. Multiple recipe changes prevent attribution to one factor."
+    }
+  },
+  "blocks": [
+    {
+      "id": "fixed",
+      "label": {
+        "zh": "测试结果",
+        "en": "RESULTS"
+      },
+      "heading": {
+        "zh": "按负载和测量口径解读",
+        "en": "Read each point in its workload context"
+      },
+      "intro": {
+        "zh": "下表为报告中的代表性实测点；C 表示客户端并发。",
+        "en": "Representative measured points from the report; C denotes client concurrency."
+      },
+      "table": {
+        "headers": {
+          "zh": [
+            "配方",
+            "起服 / 请求",
+            "TTFT P50 s",
+            "原生 TPOT 均值 ms",
+            "单流 Decode tok/s",
+            "整窗输出 tok/s"
+          ],
+          "en": [
+            "Recipe",
+            "Starts / requests",
+            "TTFT P50 s",
+            "Mean native TPOT ms",
+            "Single-stream decode tok/s",
+            "Aggregate output tok/s"
+          ]
+        },
+        "rows": [
+          [
+            "OLD",
+            "4 / 128",
+            "1.687",
+            "15.860",
+            "63.09",
+            "52.31"
+          ],
+          [
+            "NEW",
+            "4 / 128",
+            "1.601",
+            "14.237",
+            "70.25",
+            "57.67"
+          ]
+        ]
+      },
+      "notes": [
+        {
+          "zh": "正式窗口冷前缀命中为 0。新配方相对旧配方单流 Decode 高 11.34%、整窗输出吞吐高 10.24%，属于完整配方收益。",
+          "en": "Measured windows had zero cold-prefix hits. The new recipe improved single-stream decode by 11.34% and aggregate output by 10.24% versus the old recipe; these are whole-recipe effects."
+        }
+      ]
+    }
+  ],
+  "meta": [
+    {
+      "zh": "硬件",
+      "en": "Hardware",
+      "value": "8× Ascend 910B3 · 64 GB"
+    },
+    {
+      "zh": "并行配置",
+      "en": "Topology",
+      "value": "4 × TP2 instances"
+    },
+    {
+      "zh": "引擎",
+      "en": "Engine",
+      "value": "vLLM-Ascend"
+    },
+    {
+      "zh": "精度",
+      "en": "Precision",
+      "value": "W8A8 · MTP"
+    }
+  ],
+  "methodIntro": {
+    "zh": "不同负载、缓存状态和测量分母应分别解读。",
+    "en": "Interpret workloads, cache states and measurement denominators separately."
+  },
+  "methodNotes": [
+    {
+      "zh": "每配方 4 次独立起服、各 32 条请求；32 条窗口不报尾部 SLO。新旧配方同时有多项差异，收益不能归因于单个因素。",
+      "en": "Each recipe has four independent starts with 32 requests per start; 32-request windows do not support tail SLOs. Multiple recipe changes prevent attribution to one factor."
+    },
+    {
+      "zh": "正式窗口冷前缀命中为 0。新配方相对旧配方单流 Decode 高 11.34%、整窗输出吞吐高 10.24%，属于完整配方收益。",
+      "en": "Measured windows had zero cold-prefix hits. The new recipe improved single-stream decode by 11.34% and aggregate output by 10.24% versus the old recipe; these are whole-recipe effects."
+    }
+  ]
+}

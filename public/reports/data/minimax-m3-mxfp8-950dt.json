@@ -1,0 +1,168 @@
+{
+  "title": "MiniMax-M3 MXFP8 · Ascend 950DT",
+  "breadcrumb": "MiniMax-M3",
+  "kicker": "SERVING PERFORMANCE BENCHMARK",
+  "lede": {
+    "zh": "固定长度、长上下文、Agent 与容量测试，原配方和独立补测分别记账。",
+    "en": "Fixed-length, long-context, Agent and capacity measurements, keeping original and separately retested configurations distinct."
+  },
+  "chips": [
+    "8× Ascend 950DT · 96 GB",
+    "MXFP8",
+    "Single node · 8 NPUs",
+    "vLLM-Ascend 0.30.0rc2 + patches",
+    "Measured 2026-10-26"
+  ],
+  "snapshot": {
+    "zh": "实测结果 · 条件和限制见下文",
+    "en": "Measured results · conditions and limits below"
+  },
+  "sections": [
+    {
+      "id": "fixed",
+      "zh": "测试结果",
+      "en": "Results"
+    },
+    {
+      "id": "method",
+      "zh": "方法与边界",
+      "en": "Method and limits"
+    }
+  ],
+  "stats": [
+    {
+      "zhLabel": "代表测点",
+      "enLabel": "Representative point",
+      "value": "651.68 tok/s",
+      "zhNote": "8K / 512 · C32",
+      "enNote": "8K / 512 · C32"
+    }
+  ],
+  "overview": {
+    "heading": {
+      "zh": "测试结论",
+      "en": "Measured results"
+    },
+    "intro": {
+      "zh": "固定长度、长上下文、Agent 与容量测试，原配方和独立补测分别记账。",
+      "en": "Fixed-length, long-context, Agent and capacity measurements, keeping original and separately retested configurations distinct."
+    },
+    "note": {
+      "zh": "原主表 27/42 行满样本，14 行独立延时补测，1 行原配方容量 hold 后采用新配方；42 行覆盖不等于原配方全部通过。未做任务精度评测。",
+      "en": "The original matrix had 27/42 full-sample rows, 14 separately extended retests, and one capacity hold completed using a new configuration. Coverage does not mean all points passed on the original configuration. Task accuracy was not assessed."
+    }
+  },
+  "blocks": [
+    {
+      "id": "fixed",
+      "label": {
+        "zh": "测试结果",
+        "en": "RESULTS"
+      },
+      "heading": {
+        "zh": "按负载和测量口径解读",
+        "en": "Read each point in its workload context"
+      },
+      "intro": {
+        "zh": "下表为报告中的代表性实测点；C 表示客户端并发。",
+        "en": "Representative measured points from the report; C denotes client concurrency."
+      },
+      "table": {
+        "headers": {
+          "zh": [
+            "输入/输出",
+            "并发",
+            "请求数",
+            "整窗输出 tok/s",
+            "单请求 Decode P50 tok/s",
+            "TTFT P50/P95 s"
+          ],
+          "en": [
+            "Input/output",
+            "Concurrency",
+            "Requests",
+            "Aggregate output tok/s",
+            "Per-request decode P50 tok/s",
+            "TTFT P50/P95 s"
+          ]
+        },
+        "rows": [
+          [
+            "8K / 512",
+            "C1",
+            "128",
+            "118.74",
+            "147.18",
+            "0.70 / 0.79"
+          ],
+          [
+            "8K / 512",
+            "C8",
+            "128",
+            "411.96",
+            "59.88",
+            "0.67 / 1.88"
+          ],
+          [
+            "8K / 512",
+            "C16",
+            "256",
+            "520.52",
+            "36.07",
+            "0.68 / 1.96"
+          ],
+          [
+            "8K / 512",
+            "C32",
+            "256",
+            "651.68",
+            "22.87",
+            "0.73 / 7.29"
+          ]
+        ]
+      },
+      "notes": [
+        {
+          "zh": "上述固定输出为冷输入压力测试。原配方 C16 长上下文容量受限，混合媒体配置启动失败；近 1M 仅验证 stock 备用算子。",
+          "en": "These fixed-output points use cold-input stress traffic. Original-configuration C16 long-context capacity was held, the mixed-media configuration failed to start, and near-1M used the stock fallback operator."
+        }
+      ]
+    }
+  ],
+  "meta": [
+    {
+      "zh": "硬件",
+      "en": "Hardware",
+      "value": "8× Ascend 950DT · 96 GB"
+    },
+    {
+      "zh": "并行配置",
+      "en": "Topology",
+      "value": "Single node · 8 NPUs"
+    },
+    {
+      "zh": "引擎",
+      "en": "Engine",
+      "value": "vLLM-Ascend 0.30.0rc2 + patches"
+    },
+    {
+      "zh": "精度",
+      "en": "Precision",
+      "value": "MXFP8"
+    }
+  ],
+  "methodIntro": {
+    "zh": "不同负载、缓存状态和测量分母应分别解读。",
+    "en": "Interpret workloads, cache states and measurement denominators separately."
+  },
+  "methodNotes": [
+    {
+      "zh": "原主表 27/42 行满样本，14 行独立延时补测，1 行原配方容量 hold 后采用新配方；42 行覆盖不等于原配方全部通过。未做任务精度评测。",
+      "en": "The original matrix had 27/42 full-sample rows, 14 separately extended retests, and one capacity hold completed using a new configuration. Coverage does not mean all points passed on the original configuration. Task accuracy was not assessed."
+    },
+    {
+      "zh": "上述固定输出为冷输入压力测试。原配方 C16 长上下文容量受限，混合媒体配置启动失败；近 1M 仅验证 stock 备用算子。",
+      "en": "These fixed-output points use cold-input stress traffic. Original-configuration C16 long-context capacity was held, the mixed-media configuration failed to start, and near-1M used the stock fallback operator."
+    }
+  ]
+}
