@@ -20,22 +20,63 @@
   "sections": [
     {
       "id": "fixed",
-      "zh": "测试结果",
-      "en": "Results"
+      "zh": "固定长度与并发",
+      "en": "Fixed length and concurrency"
+    },
+    {
+      "id": "agent",
+      "zh": "Agent 多轮回放",
+      "en": "Agent replay"
+    },
+    {
+      "id": "real",
+      "zh": "自然输出与接口",
+      "en": "Natural output and interfaces"
+    },
+    {
+      "id": "context",
+      "zh": "超长上下文逐请求补测",
+      "en": "Ultra-long per-request follow-up"
+    },
+    {
+      "id": "repeats",
+      "zh": "独立起服复测",
+      "en": "Independent-start repeats"
     },
     {
       "id": "method",
-      "zh": "方法与边界",
-      "en": "Method and limits"
+      "zh": "测试方法与环境",
+      "en": "Method and environment"
     }
   ],
   "stats": [
     {
-      "zhLabel": "代表测点",
-      "enLabel": "Representative point",
+      "zhLabel": "C1 整窗输出",
+      "enLabel": "C1 aggregate output",
       "value": "100.35 tok/s",
-      "zhNote": "1K / 256 · C1",
-      "enNote": "1K / 256 · C1"
+      "zhNote": "1K / 256 · N128",
+      "enNote": "1K / 256 · N128"
+    },
+    {
+      "zhLabel": "C32 整窗输出",
+      "enLabel": "C32 aggregate output",
+      "value": "778.33 tok/s",
+      "zhNote": "8K / 512 · 高缓存命中",
+      "enNote": "8K / 512 · high cache hit"
+    },
+    {
+      "zhLabel": "Agent 回放",
+      "enLabel": "Agent replay",
+      "value": "407 / 408",
+      "zhNote": "C8 自然结束 / 观察",
+      "enNote": "C8 natural / observed"
+    },
+    {
+      "zhLabel": "独立起服",
+      "enLabel": "Independent starts",
+      "value": "3",
+      "zhNote": "关键测点复测",
+      "enNote": "Key points repeated"
     }
   ],
   "overview": {
@@ -56,85 +97,606 @@
     {
       "id": "fixed",
       "label": {
-        "zh": "测试结果",
-        "en": "RESULTS"
+        "zh": "固定长度与并发",
+        "en": "Fixed length and concurrency"
       },
       "heading": {
-        "zh": "按负载和测量口径解读",
-        "en": "Read each point in its workload context"
+        "zh": "固定长度与并发",
+        "en": "Fixed length and concurrency"
       },
       "intro": {
-        "zh": "下表为报告中的代表性实测点；C 表示客户端并发。",
-        "en": "Representative measured points from the report; C denotes client concurrency."
+        "zh": "实际 thinking + effort 75；固定输出使用 ignore EOS。",
+        "en": "Actual thinking + effort 75; fixed outputs use ignore EOS."
       },
+      "notes": [
+        {
+          "zh": "缓存命中跨档差异大；部分响应只有 reasoning。",
+          "en": "Cache hit varies substantially between points; some outputs contain only reasoning."
+        }
+      ],
       "table": {
         "headers": {
           "zh": [
             "输入/输出",
             "并发",
-            "请求数",
-            "整窗输出 tok/s",
+            "采样数",
+            "输出吞吐 token/s",
             "TTFT P50/P95 ms",
+            "TPOT P50/P95 ms",
+            "缓存命中",
+            "状态"
+          ],
+          "en": [
+            "Input / output",
+            "Concurrency",
+            "Samples",
+            "Output tok/s",
+            "TTFT P50/P95 ms",
+            "TPOT P50/P95 ms",
+            "Cache hit",
+            "Status"
+          ]
+        },
+        "rows": [
+          [
+            "1K/256",
+            "1",
+            "128",
+            "100.35",
+            "278.39/305.79",
+            "8.93/10.03",
+            "2.06%",
+            "完成；128条只有 reasoning"
+          ],
+          [
+            "1K/256",
+            "8",
+            "128",
+            "453.55",
+            "265.64/650.59",
+            "16.09/19.01",
+            "79.57%",
+            "完成；128条只有 reasoning"
+          ],
+          [
+            "8K/512",
+            "1",
+            "128",
+            "73.66",
+            "1180.62/1233.22",
+            "11.73/12.38",
+            "24.48%",
+            "完成；15条只有 reasoning"
+          ],
+          [
+            "8K/512",
+            "8",
+            "128",
+            "394.43",
+            "377.98/691.77",
+            "19.51/20.60",
+            "98.15%",
+            "完成；11条只有 reasoning"
+          ],
+          [
+            "8K/512",
+            "16",
+            "128",
+            "556.98",
+            "424.24/1096.81",
+            "27.29/29.78",
+            "99.31%",
+            "完成；9条只有 reasoning"
+          ],
+          [
+            "8K/512",
+            "32",
+            "128",
+            "778.33",
+            "582.33/1629.36",
+            "39.08/42.52",
+            "99.31%",
+            "完成；服务端计数器采样告警，见 Issue"
+          ],
+          [
+            "8K/512",
+            "48",
+            "128",
+            "772.30",
+            "753.42/2265.09",
+            "57.58/64.21",
+            "99.31%",
+            "完成；增长不足10%，停止扩档"
+          ],
+          [
+            "32K/512",
+            "1",
+            "128",
+            "49.75",
+            "4332.45/4439.41",
+            "11.94/12.61",
+            "2.33%",
+            "完成；25条只有 reasoning"
+          ],
+          [
+            "32K/512",
+            "8",
+            "128",
+            "381.51",
+            "554.51/925.00",
+            "19.84/21.59",
+            "99.41%",
+            "完成；18条只有 reasoning"
+          ],
+          [
+            "32K/512",
+            "16",
+            "128",
+            "539.09",
+            "601.02/1562.70",
+            "28.01/30.76",
+            "99.78%",
+            "完成；31条只有 reasoning"
+          ],
+          [
+            "32K/512",
+            "32",
+            "128",
+            "735.48",
+            "863.15/3133.33",
+            "40.68/45.01",
+            "99.78%",
+            "完成；25条只有 reasoning"
+          ],
+          [
+            "32K/512",
+            "48",
+            "128",
+            "728.04",
+            "1189.33/4594.64",
+            "60.81/67.88",
+            "99.78%",
+            "完成；增长不足10%，停止扩档；计数器采样告警见 Issue"
+          ],
+          [
+            "64K/512",
+            "1",
+            "128",
+            "33.38",
+            "9355.28/9462.06",
+            "12.06/12.71",
+            "2.34%",
+            "完成；1条只有 reasoning"
+          ],
+          [
+            "64K/512",
+            "8",
+            "128",
+            "356.57",
+            "850.95/1435.83",
+            "20.49/22.05",
+            "99.78%",
+            "完成；2条只有 reasoning"
+          ],
+          [
+            "128K/512",
+            "1",
+            "128",
+            "18.49",
+            "22045.09/22306.92",
+            "11.89/12.60",
+            "2.34%",
+            "完成；计数器采样告警见 Issue"
+          ]
+        ]
+      },
+      "chart": {
+        "title": {
+          "zh": "8K / 512 · 并发输出吞吐",
+          "en": "8K / 512 · aggregate throughput"
+        },
+        "hint": {
+          "zh": "按图中标注的测试条件读取；悬停查看数值。",
+          "en": "Read values with the stated workload; hover for details."
+        },
+        "type": "bar",
+        "labels": {
+          "zh": [
+            "C1",
+            "C8",
+            "C16",
+            "C32",
+            "C48"
+          ],
+          "en": [
+            "C1",
+            "C8",
+            "C16",
+            "C32",
+            "C48"
+          ]
+        },
+        "series": [
+          {
+            "zh": "输出吞吐",
+            "en": "Output throughput",
+            "values": [
+              73.66,
+              394.43,
+              556.98,
+              778.33,
+              772.3
+            ],
+            "color": "blue"
+          }
+        ],
+        "yTitle": {
+          "zh": "整窗输出 tok/s",
+          "en": "Aggregate output tok/s"
+        }
+      }
+    },
+    {
+      "id": "agent",
+      "label": {
+        "zh": "Agent 多轮回放",
+        "en": "Agent replay"
+      },
+      "heading": {
+        "zh": "Agent 多轮回放",
+        "en": "Agent replay"
+      },
+      "intro": {
+        "zh": "录制反馈回放；分别记录会话完成、截断及未执行轮数。",
+        "en": "Recorded-feedback replay; completed sessions, truncations and unexecuted turns are reported separately."
+      },
+      "notes": [
+        {
+          "zh": "回放吞吐包含客户端恢复和反馈间隔，与固定长度吞吐不可混算；不评价工具选择或任务正确率。",
+          "en": "Replay throughput includes client recovery and feedback intervals and is not comparable to fixed-length throughput; tool selection and task accuracy are not evaluated."
+        }
+      ],
+      "table": {
+        "headers": {
+          "zh": [
+            "档位/配置并发",
+            "会话完整/计划",
+            "请求观察/计划",
+            "自然完成 / 截断 / 未执行",
+            "观察请求 E2E P50",
+            "回放区间输出 token/s",
+            "状态"
+          ],
+          "en": [
+            "Run / concurrency",
+            "Sessions complete / planned",
+            "Requests observed / planned",
+            "Natural / truncated / not run",
+            "Observed E2E P50",
+            "Replay output tok/s",
+            "Status"
+          ]
+        },
+        "rows": [
+          [
+            "快速 C1",
+            "2/4",
+            "80/94",
+            "78 / 2 / 14",
+            "1232.55 ms",
+            "105.37",
+            "部分完成；思考用尽4096上限"
+          ],
+          [
+            "快速 C8（实际最多4会话）",
+            "3/4",
+            "81/94",
+            "80 / 1 / 13",
+            "1758.18 ms",
+            "170.04",
+            "部分完成；思考用尽4096上限"
+          ],
+          [
+            "标准 C1（修复后 retry1）",
+            "15/16",
+            "399/408",
+            "398 / 1 / 9",
+            "1089.33 ms",
+            "88.76",
+            "部分完成；1条截断"
+          ],
+          [
+            "标准 C8",
+            "15/16",
+            "408/408",
+            "407 / 1 / 0",
+            "2210.89 ms",
+            "272.06",
+            "部分完成；1条截断"
+          ]
+        ]
+      }
+    },
+    {
+      "id": "real",
+      "label": {
+        "zh": "自然输出与接口",
+        "en": "Natural output and interfaces"
+      },
+      "heading": {
+        "zh": "自然输出与接口",
+        "en": "Natural output and interfaces"
+      },
+      "intro": {
+        "zh": "RAG、图像问答及工具调用分别记录自然结束和结构检查。",
+        "en": "Natural completion and structure checks are reported separately for RAG, visual QA and tool calls."
+      },
+      "notes": [
+        {
+          "zh": "结构检查不是任务或视觉准确率。不同缓存命中率下的吞吐差异不能仅归因并发。",
+          "en": "Structure checks are not task or vision accuracy. Differences across cache-hit conditions cannot be attributed solely to concurrency."
+        }
+      ],
+      "table": {
+        "headers": {
+          "zh": [
+            "负载",
+            "并发",
+            "请求",
+            "自然结束 / 截断",
+            "输出 tok/s",
             "缓存命中"
           ],
           "en": [
-            "Input/output",
+            "Workload",
             "Concurrency",
             "Requests",
-            "Aggregate output tok/s",
-            "TTFT P50/P95 ms",
+            "Natural / truncated",
+            "Output tok/s",
             "Cache hit"
           ]
         },
         "rows": [
           [
-            "1K / 256",
+            "RAG",
             "C1",
             "128",
-            "100.35",
-            "278.39 / 305.79",
-            "2.06%"
+            "127 / 1",
+            "75.83",
+            "2.48%"
           ],
           [
-            "1K / 256",
+            "RAG",
             "C8",
             "128",
-            "453.55",
-            "265.64 / 650.59",
-            "79.57%"
+            "128 / 0",
+            "455.26",
+            "98.47%"
           ],
           [
-            "8K / 512",
+            "RAG",
+            "C16",
+            "128",
+            "126 / 2",
+            "466.67",
+            "99.17%"
+          ],
+          [
+            "ChartQA",
             "C1",
             "128",
-            "73.66",
-            "1180.62 / 1233.22",
-            "24.48%"
+            "127 / 1",
+            "126.38",
+            "0%"
           ],
           [
-            "8K / 512",
+            "ChartQA",
             "C8",
             "128",
-            "394.43",
-            "377.98 / 691.77",
-            "98.15%"
+            "127 / 1",
+            "443.03",
+            "0%"
           ],
           [
-            "8K / 512",
-            "C32",
+            "BFCL",
+            "C8",
             "128",
-            "778.33",
-            "582.33 / 1629.36",
-            "99.31%"
+            "128 / 0",
+            "475.24",
+            "56.48%"
           ]
         ]
+      }
+    },
+    {
+      "id": "context",
+      "label": {
+        "zh": "超长上下文逐请求补测",
+        "en": "Ultra-long per-request follow-up"
+      },
+      "heading": {
+        "zh": "超长上下文逐请求补测",
+        "en": "Ultra-long per-request follow-up"
+      },
+      "intro": {
+        "zh": "最新逐请求计时补测：首次与重复输入分别列示，每组 8 条。",
+        "en": "Latest per-request timing follow-up: first and repeated inputs are shown separately, eight requests per group."
       },
       "notes": [
         {
-          "zh": "8K/512 C32 的服务端计数器存在采样告警；固定长度、自然结束和超长专项不可混算，超长结论以逐请求计时补测为准。",
-          "en": "The server counter at 8K/512 C32 had sampling warnings. Fixed-length, natural-EOS and ultra-long tests are separate; use the per-request timing follow-up for ultra-long conclusions."
+          "zh": "约 1M 重复组有 1 条截断；服务端与客户端 TPOT 定义不同，不将历史混合均值代替逐请求结果。",
+          "en": "The repeated near-1M group has one truncation; server and client TPOT use different definitions. Historical pooled means do not replace per-request results."
         }
-      ]
+      ],
+      "table": {
+        "headers": {
+          "zh": [
+            "输入",
+            "阶段",
+            "n",
+            "服务端 TPOT P50 (ms)",
+            "服务端 decode P50 (token/s)",
+            "客户端 TPOT P50 (ms)",
+            "客户端 TTFT P50 (s)",
+            "输出 token P50",
+            "stop / length"
+          ],
+          "en": [
+            "Input",
+            "Phase",
+            "N",
+            "Server TPOT P50 ms",
+            "Server decode P50 tok/s",
+            "Client TPOT P50 ms",
+            "Client TTFT P50 s",
+            "Output tokens P50",
+            "Stop / length"
+          ]
+        },
+        "rows": [
+          [
+            "128K",
+            "首次",
+            "8",
+            "7.97",
+            "125.53",
+            "7.11",
+            "21.92",
+            "146.5",
+            "8 / 0"
+          ],
+          [
+            "128K",
+            "重复",
+            "8",
+            "7.97",
+            "125.55",
+            "7.19",
+            "1.14",
+            "113.0",
+            "8 / 0"
+          ],
+          [
+            "512K",
+            "首次",
+            "8",
+            "8.61",
+            "116.15",
+            "6.80",
+            "173.72",
+            "131.0",
+            "8 / 0"
+          ],
+          [
+            "512K",
+            "重复",
+            "8",
+            "9.05",
+            "110.50",
+            "7.14",
+            "3.69",
+            "133.0",
+            "8 / 0"
+          ],
+          [
+            "约 1M",
+            "首次",
+            "8",
+            "10.25",
+            "97.57",
+            "7.96",
+            "576.80",
+            "203.5",
+            "8 / 0"
+          ],
+          [
+            "约 1M",
+            "重复",
+            "8",
+            "10.21",
+            "97.98",
+            "8.69",
+            "6.55",
+            "293.0",
+            "7 / 1"
+          ]
+        ]
+      }
+    },
+    {
+      "id": "repeats",
+      "label": {
+        "zh": "独立起服复测",
+        "en": "Independent-start repeats"
+      },
+      "heading": {
+        "zh": "独立起服复测",
+        "en": "Independent-start repeats"
+      },
+      "intro": {
+        "zh": "关键固定长度点三次独立起服；列出整窗输出吞吐。",
+        "en": "Three independent starts at key fixed-length points; aggregate throughput is shown."
+      },
+      "notes": [
+        {
+          "zh": "不同起服的缓存条件和客户端状态应结合原始测试解释。",
+          "en": "Interpret each start alongside its cache and client conditions."
+        }
+      ],
+      "table": {
+        "headers": {
+          "zh": [
+            "固定输入/输出",
+            "并发",
+            "首次/第二次/第三次吞吐 token/s",
+            "第三次 TTFT P50/P95 ms",
+            "第三次 TPOT P50/P95 ms",
+            "第三次缓存命中"
+          ],
+          "en": [
+            "Input / output",
+            "Concurrency",
+            "Run 1 / 2 / 3 output tok/s",
+            "Run 3 TTFT P50/P95 ms",
+            "Run 3 TPOT P50/P95 ms",
+            "Run 3 cache hit"
+          ]
+        },
+        "rows": [
+          [
+            "8K/512",
+            "1",
+            "73.66 / 73.49 / 73.23",
+            "1177.63 / 1229.72",
+            "11.85 / 12.49",
+            "24.48%"
+          ],
+          [
+            "8K/512",
+            "32",
+            "778.33 / 780.23 / 770.75",
+            "614.62 / 1851.00",
+            "39.13 / 42.53",
+            "98.15%"
+          ],
+          [
+            "32K/512",
+            "1",
+            "49.75 / 50.01 / 50.12",
+            "4325.30 / 4489.64",
+            "11.85 / 12.62",
+            "2.33%"
+          ],
+          [
+            "32K/512",
+            "32",
+            "735.48 / 718.46 / 728.68",
+            "923.02 / 2886.38",
+            "40.88 / 46.12",
+            "99.48%"
+          ]
+        ]
+      }
     }
   ],
   "meta": [
@@ -157,6 +719,26 @@
       "zh": "精度",
       "en": "Precision",
       "value": "Mixed precision"
+    },
+    {
+      "zh": "思考设置",
+      "en": "Thinking",
+      "value": "Enabled · verified effort 75"
+    },
+    {
+      "zh": "最大上下文",
+      "en": "Maximum context",
+      "value": "1048576 tokens"
+    },
+    {
+      "zh": "KV 缓存",
+      "en": "KV cache",
+      "value": "fp8_ds_mla"
+    },
+    {
+      "zh": "推测解码",
+      "en": "Speculative decoding",
+      "value": "DSpark 5"
     }
   ],
   "methodIntro": {

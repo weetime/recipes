@@ -20,22 +20,68 @@
   "sections": [
     {
       "id": "fixed",
-      "zh": "测试结果",
-      "en": "Results"
+      "zh": "固定长度吞吐",
+      "en": "Fixed-length throughput"
+    },
+    {
+      "id": "agent",
+      "zh": "Agent 多轮回放",
+      "en": "Agent replay"
+    },
+    {
+      "id": "cache",
+      "zh": "前缀缓存",
+      "en": "Prefix cache"
+    },
+    {
+      "id": "open-loop",
+      "zh": "泊松到达",
+      "en": "Poisson arrivals"
+    },
+    {
+      "id": "repeats",
+      "zh": "独立起服复测",
+      "en": "Independent-start repeats"
+    },
+    {
+      "id": "limits",
+      "zh": "容量与失败边界",
+      "en": "Capacity and failure boundaries"
     },
     {
       "id": "method",
-      "zh": "方法与边界",
-      "en": "Method and limits"
+      "zh": "测试方法与环境",
+      "en": "Method and environment"
     }
   ],
   "stats": [
     {
-      "zhLabel": "代表测点",
-      "enLabel": "Representative point",
+      "zhLabel": "C1 单请求解码",
+      "enLabel": "C1 per-request decode",
+      "value": "147.18 tok/s",
+      "zhNote": "8K / 512 · N128",
+      "enNote": "8K / 512 · N128"
+    },
+    {
+      "zhLabel": "C32 整窗输出",
+      "enLabel": "C32 aggregate output",
       "value": "651.68 tok/s",
-      "zhNote": "8K / 512 · C32",
-      "enNote": "8K / 512 · C32"
+      "zhNote": "8K / 512 · N256",
+      "enNote": "8K / 512 · N256"
+    },
+    {
+      "zhLabel": "原配方满样本",
+      "enLabel": "Original full-sample rows",
+      "value": "27 / 42",
+      "zhNote": "其余点单独补测或调整配方",
+      "enNote": "Other points separately retested or reconfigured"
+    },
+    {
+      "zhLabel": "独立起服",
+      "enLabel": "Independent starts",
+      "value": "3",
+      "zhNote": "关键点重复观测",
+      "enNote": "Key-point repeat observations"
     }
   ],
   "overview": {
@@ -56,77 +102,550 @@
     {
       "id": "fixed",
       "label": {
-        "zh": "测试结果",
-        "en": "RESULTS"
+        "zh": "固定长度吞吐",
+        "en": "Fixed-length throughput"
       },
       "heading": {
-        "zh": "按负载和测量口径解读",
-        "en": "Read each point in its workload context"
+        "zh": "固定长度吞吐",
+        "en": "Fixed-length throughput"
       },
       "intro": {
-        "zh": "下表为报告中的代表性实测点；C 表示客户端并发。",
-        "en": "Representative measured points from the report; C denotes client concurrency."
+        "zh": "冷输入、固定输出；各点一次起服，部分为独立延时补测。",
+        "en": "Cold inputs and fixed outputs; one server start per point, with some separately extended retests."
       },
+      "notes": [
+        {
+          "zh": "decode 是单请求速率；总输出是整窗吞吐，两者不能混用。",
+          "en": "Decode is a per-request rate; total output is aggregate throughput over the measurement window."
+        }
+      ],
       "table": {
         "headers": {
           "zh": [
-            "输入/输出",
-            "并发",
-            "请求数",
-            "整窗输出 tok/s",
-            "单请求 Decode P50 tok/s",
-            "TTFT P50/P95 s"
+            "I/O · 负载",
+            "有效N",
+            "TTFT p50 / p95，s",
+            "decode p50，tok/s",
+            "总输出，tok/s",
+            "prefix / 抢占"
           ],
           "en": [
-            "Input/output",
-            "Concurrency",
-            "Requests",
+            "I/O · workload",
+            "Valid N",
+            "TTFT P50 / P95 s",
+            "Decode P50 tok/s",
             "Aggregate output tok/s",
-            "Per-request decode P50 tok/s",
-            "TTFT P50/P95 s"
+            "Prefix / preemptions"
           ]
         },
         "rows": [
           [
-            "8K / 512",
-            "C1",
+            "8K/512/C1",
             "128",
-            "118.74",
+            "0.70 / 0.79",
             "147.18",
-            "0.70 / 0.79"
+            "118.74",
+            "0.00% / 0"
           ],
           [
-            "8K / 512",
-            "C8",
+            "128K/512/C1",
             "128",
-            "411.96",
-            "59.88",
-            "0.67 / 1.88"
+            "10.76 / 10.89",
+            "88.36",
+            "30.66",
+            "0.00% / 0"
           ],
           [
-            "8K / 512",
-            "C16",
-            "256",
-            "520.52",
-            "36.07",
-            "0.68 / 1.96"
+            "32K/2048/C1",
+            "128",
+            "2.45 / 2.51",
+            "140.65",
+            "109.66",
+            "0.00% / 0"
           ],
           [
-            "8K / 512",
-            "C32",
+            "32K/512/C32",
             "256",
-            "651.68",
-            "22.87",
-            "0.73 / 7.29"
+            "5.03 / 28.84",
+            "7.37",
+            "207.14",
+            "0.00% / 0"
+          ],
+          [
+            "32K/512/R0.44",
+            "512",
+            "5.36 / 8.35",
+            "10.05",
+            "207.77",
+            "0.00% / 0"
           ]
         ]
       },
+      "chart": {
+        "title": {
+          "zh": "8K / 512 · 并发输出吞吐",
+          "en": "8K / 512 · aggregate throughput"
+        },
+        "hint": {
+          "zh": "按图中标注的测试条件读取；悬停查看数值。",
+          "en": "Read values with the stated workload; hover for details."
+        },
+        "type": "bar",
+        "labels": {
+          "zh": [
+            "C1",
+            "C8",
+            "C16",
+            "C32"
+          ],
+          "en": [
+            "C1",
+            "C8",
+            "C16",
+            "C32"
+          ]
+        },
+        "series": [
+          {
+            "zh": "输出吞吐",
+            "en": "Output throughput",
+            "values": [
+              118.74,
+              411.96,
+              520.52,
+              651.68
+            ],
+            "color": "blue"
+          }
+        ],
+        "yTitle": {
+          "zh": "整窗输出 tok/s",
+          "en": "Aggregate output tok/s"
+        }
+      }
+    },
+    {
+      "id": "agent",
+      "label": {
+        "zh": "Agent 多轮回放",
+        "en": "Agent replay"
+      },
+      "heading": {
+        "zh": "Agent 多轮回放",
+        "en": "Agent replay"
+      },
+      "intro": {
+        "zh": "16 会话及不同输出上限分别记录。",
+        "en": "Sixteen sessions are reported separately by output cap."
+      },
       "notes": [
         {
-          "zh": "上述固定输出为冷输入压力测试。原配方 C16 长上下文容量受限，混合媒体配置启动失败；近 1M 仅验证 stock 备用算子。",
-          "en": "These fixed-output points use cold-input stress traffic. Original-configuration C16 long-context capacity was held, the mixed-media configuration failed to start, and near-1M used the stock fallback operator."
+          "zh": "length 截断和空最终内容均保留；录制反馈不等同任务完成。",
+          "en": "Length truncations and empty final content are retained; recorded feedback does not establish task success."
         }
-      ]
+      ],
+      "table": {
+        "headers": {
+          "zh": [
+            "输出上限 / 并发",
+            "prefix token命中",
+            "草稿token接受",
+            "length / 437",
+            "空最终content / 437",
+            "E2E p50，s"
+          ],
+          "en": [
+            "Output cap / concurrency",
+            "Prefix token hit",
+            "Draft acceptance",
+            "Length / 437",
+            "Empty final content / 437",
+            "E2E P50 s"
+          ]
+        },
+        "rows": [
+          [
+            "512 / C1",
+            "87.61%",
+            "69.91%",
+            "38",
+            "30",
+            "1.04"
+          ],
+          [
+            "512 / C8",
+            "87.97%",
+            "69.34%",
+            "34",
+            "26",
+            "3.52"
+          ],
+          [
+            "2048 / C1",
+            "87.20%",
+            "84.88%",
+            "57",
+            "7",
+            "1.03"
+          ],
+          [
+            "2048 / C8",
+            "88.35%",
+            "69.61%",
+            "5",
+            "4",
+            "3.06"
+          ]
+        ]
+      }
+    },
+    {
+      "id": "cache",
+      "label": {
+        "zh": "前缀缓存",
+        "en": "Prefix cache"
+      },
+      "heading": {
+        "zh": "前缀缓存",
+        "en": "Prefix cache"
+      },
+      "intro": {
+        "zh": "冷、热前缀分别统计，预填充 primer 不进入测量。",
+        "en": "Cold and hot prefixes are reported separately; primer requests are excluded."
+      },
+      "notes": [
+        {
+          "zh": "同源请求相关，不能将热组尾分位视为独立样本。",
+          "en": "Related requests do not form independent samples for tail percentiles."
+        }
+      ],
+      "table": {
+        "headers": {
+          "zh": [
+            "启动",
+            "实际输入范围",
+            "冷 / 热请求",
+            "冷 / 热 TTFT p50，s",
+            "热命中率最低值",
+            "抢占"
+          ],
+          "en": [
+            "Start",
+            "Input range",
+            "Cold / hot requests",
+            "Cold / hot TTFT P50 s",
+            "Minimum hot hit rate",
+            "Preemptions"
+          ]
+        },
+        "rows": [
+          [
+            "1",
+            "32,459–32,461",
+            "4 / 32",
+            "2.19 / 0.51",
+            "99.37%",
+            "0"
+          ],
+          [
+            "1",
+            "65,226–65,229",
+            "4 / 32",
+            "4.47 / 0.64",
+            "99.69%",
+            "0"
+          ],
+          [
+            "1",
+            "130,762–130,765",
+            "4 / 32",
+            "9.55 / 0.92",
+            "99.84%",
+            "0"
+          ],
+          [
+            "2",
+            "32,459–32,461",
+            "4 / 32",
+            "2.20 / 0.54",
+            "99.37%",
+            "0"
+          ],
+          [
+            "2",
+            "65,226–65,229",
+            "4 / 32",
+            "4.53 / 0.68",
+            "99.69%",
+            "0"
+          ],
+          [
+            "2",
+            "130,762–130,765",
+            "4 / 32",
+            "9.59 / 0.96",
+            "99.84%",
+            "0"
+          ],
+          [
+            "3",
+            "32,459–32,461",
+            "4 / 32",
+            "2.20 / 0.53",
+            "99.37%",
+            "0"
+          ],
+          [
+            "3",
+            "65,226–65,229",
+            "4 / 32",
+            "4.52 / 0.67",
+            "99.69%",
+            "0"
+          ],
+          [
+            "3",
+            "130,762–130,765",
+            "4 / 32",
+            "9.62 / 0.97",
+            "99.84%",
+            "0"
+          ]
+        ]
+      }
+    },
+    {
+      "id": "open-loop",
+      "label": {
+        "zh": "泊松到达",
+        "en": "Poisson arrivals"
+      },
+      "heading": {
+        "zh": "泊松到达",
+        "en": "Poisson arrivals"
+      },
+      "intro": {
+        "zh": "输出固定 512；记录名义速率、完成率和延迟。",
+        "en": "Fixed 512-token output, reporting offered rates, completions and latency."
+      },
+      "notes": [
+        {
+          "zh": "到达率是测试条件，不代表生产 SLO 或容量上限。",
+          "en": "Offered arrival rates are test conditions, not production SLO or capacity claims."
+        }
+      ],
+      "table": {
+        "headers": {
+          "zh": [
+            "输入 / 名义RPS",
+            "实测完成率，req/s",
+            "TTFT经验p99，s",
+            "有效N",
+            "抢占"
+          ],
+          "en": [
+            "Input / offered RPS",
+            "Completion rate req/s",
+            "Empirical TTFT P99 s",
+            "Valid N",
+            "Preemptions"
+          ]
+        },
+        "rows": [
+          [
+            "8K / 0.4",
+            "0.40",
+            "1.70",
+            "512",
+            "0"
+          ],
+          [
+            "8K / 0.7",
+            "0.70",
+            "2.16",
+            "512",
+            "0"
+          ],
+          [
+            "8K / 1",
+            "0.96",
+            "2.35",
+            "512",
+            "0"
+          ],
+          [
+            "32K / 0.16",
+            "0.17",
+            "6.02",
+            "512",
+            "0"
+          ],
+          [
+            "32K / 0.3",
+            "0.32",
+            "8.27",
+            "512",
+            "0"
+          ],
+          [
+            "32K / 0.44",
+            "0.41",
+            "9.98",
+            "512",
+            "0"
+          ]
+        ]
+      }
+    },
+    {
+      "id": "repeats",
+      "label": {
+        "zh": "独立起服复测",
+        "en": "Independent-start repeats"
+      },
+      "heading": {
+        "zh": "独立起服复测",
+        "en": "Independent-start repeats"
+      },
+      "intro": {
+        "zh": "三次独立服务启动的观测范围。",
+        "en": "Observed ranges across three independent service starts."
+      },
+      "notes": [
+        {
+          "zh": "实测范围不是置信区间，部分工作点与主矩阵样本数不同。",
+          "en": "Observed ranges are not confidence intervals; some repeat sample sizes differ from the main matrix."
+        }
+      ],
+      "table": {
+        "headers": {
+          "zh": [
+            "锚点",
+            "每启动N",
+            "总输出：启动1 / 2 / 3，tok/s",
+            "decode p50：启动1 / 2 / 3，tok/s"
+          ],
+          "en": [
+            "Anchor",
+            "N per start",
+            "Aggregate output: starts 1 / 2 / 3 tok/s",
+            "Decode P50: starts 1 / 2 / 3 tok/s"
+          ]
+        },
+        "rows": [
+          [
+            "N-8K512-C1",
+            "128",
+            "118.74 / 118.90 / 118.80",
+            "147.18 / 146.54 / 146.88"
+          ],
+          [
+            "N-32K512-C1",
+            "128",
+            "78.27 / 78.26 / 78.30",
+            "132.52 / 133.11 / 133.15"
+          ],
+          [
+            "N-32K2048-C1",
+            "32",
+            "112.29 / 112.22 / 112.25",
+            "151.13 / 150.88 / 150.83"
+          ],
+          [
+            "N-8K512-C128",
+            "512",
+            "894.65 / 897.91 / 888.30",
+            "7.78 / 7.65 / 7.77"
+          ],
+          [
+            "N-32K512-C8",
+            "128",
+            "156.10 / 155.67 / 155.87",
+            "23.10 / 23.52 / 23.85"
+          ],
+          [
+            "N-32K512-C32",
+            "128",
+            "210.22 / 220.56 / 216.82",
+            "7.49 / 7.96 / 8.08"
+          ]
+        ]
+      }
+    },
+    {
+      "id": "limits",
+      "label": {
+        "zh": "容量与失败边界",
+        "en": "Capacity and failure boundaries"
+      },
+      "heading": {
+        "zh": "容量与失败边界",
+        "en": "Capacity and failure boundaries"
+      },
+      "intro": {
+        "zh": "原设计、独立补测和调整配方分开报告。",
+        "en": "Original design, separate retests and adjusted configurations are reported separately."
+      },
+      "notes": [
+        {
+          "zh": "原始配方的容量 hold、混合媒体启动失败以及优化路径未验证均保留。",
+          "en": "Original-configuration capacity hold, mixed-media startup failure and the unverified optimized path remain explicit."
+        }
+      ],
+      "table": {
+        "headers": {
+          "zh": [
+            "项目",
+            "原尝试状态",
+            "当前已支持的结论",
+            "不支持的结论"
+          ],
+          "en": [
+            "Item",
+            "Original status",
+            "Supported conclusion",
+            "Unsupported conclusion"
+          ]
+        },
+        "rows": [
+          [
+            "原C16容量",
+            "准入hold，未强行执行",
+            "新text95/8槽配方三启动均32/32、零抢占",
+            "原配方容量通过；或把hold写成实测OOM"
+          ],
+          [
+            "原混合媒体",
+            "启动profile阶段HcclAllReduce EI0006建连超时；0正式媒体请求",
+            "限定dummy profile后原冻结16请求通过",
+            "原无界profile已修复；或根因已锁定为CANN不匹配"
+          ],
+          [
+            "追加AllReduce mesh诊断",
+            "同样启动失败，0正式媒体请求",
+            "保留失败，成功分支恢复原AG/RS mesh",
+            "该追加项解决了媒体HCCL问题"
+          ],
+          [
+            "1M优化路径",
+            "原vendor/experimental前提未验证",
+            "stock备用路径下近1M输入、固定256输出可完成",
+            "官方优化路径性能验收通过"
+          ],
+          [
+            "客户端与门禁历史失败",
+            "旧输入准备、text-only误做正向图像门禁、提前查backend及短图采样漏检等均保留",
+            "修订harness后，新服务重复门禁并独立测量",
+            "把门禁失败计成正式请求失败，或静默删除失败尝试"
+          ],
+          [
+            "默认/adaptive解析",
+            "reasoning/content分离限制保留",
+            "显式thinking_mode=enabled通过正式功能门",
+            "默认模式全部正确"
+          ]
+        ]
+      }
     }
   ],
   "meta": [
@@ -149,6 +668,16 @@
       "zh": "精度",
       "en": "Precision",
       "value": "MXFP8"
+    },
+    {
+      "zh": "并行与窗口",
+      "en": "Parallelism and window",
+      "value": "TP4 / DP2 / EP · 133000 tokens"
+    },
+    {
+      "zh": "运行时",
+      "en": "Runtime",
+      "value": "CANN 9.2 · vLLM-Ascend patches"
     }
   ],
   "methodIntro": {
