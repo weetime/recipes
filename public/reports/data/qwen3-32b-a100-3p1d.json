@@ -1,0 +1,154 @@
+{
+  "title": "Qwen3-32B BF16 · A100 · 3P1D · TP2",
+  "breadcrumb": "Qwen3-32B",
+  "kicker": "SERVING PERFORMANCE BENCHMARK",
+  "lede": {
+    "zh": "Qwen3-32B BF16 的 3P1D · TP2 在 A100 上的 SLO 测试。",
+    "en": "SLO measurements for Qwen3-32B BF16 using 3P1D · TP2 on A100."
+  },
+  "chips": [
+    "8 × NVIDIA A100 · 80 GB",
+    "BF16",
+    "3P1D · TP2",
+    "vLLM 0.20.0 V1",
+    "Measured 2026-07-18"
+  ],
+  "snapshot": {
+    "zh": "独立实测 · 按负载与采样条件解读",
+    "en": "Independent measurement · interpret with workload and sampling"
+  },
+  "sections": [
+    {
+      "id": "slo",
+      "zh": "C160 SLO 达标",
+      "en": "C160 SLO attainment"
+    },
+    {
+      "id": "method",
+      "zh": "测试方法",
+      "en": "Method"
+    }
+  ],
+  "stats": [],
+  "overview": {
+    "heading": {
+      "zh": "测试结果",
+      "en": "Measured results"
+    },
+    "intro": {
+      "zh": "Qwen3-32B BF16 的 3P1D · TP2 在 A100 上的 SLO 测试。",
+      "en": "SLO measurements for Qwen3-32B BF16 using 3P1D · TP2 on A100."
+    },
+    "note": {
+      "zh": "仅有 C160 汇总点，不能推断其他并发的服务边界；SLO 为 TTFT ≤16 秒且 TPOT ≤60 毫秒。",
+      "en": "Only a C160 summary is available; other concurrency behavior cannot be inferred. SLO: TTFT ≤16 s and TPOT ≤60 ms."
+    }
+  },
+  "blocks": [
+    {
+      "id": "slo",
+      "label": {
+        "zh": "C160 SLO 达标",
+        "en": "C160 SLO attainment"
+      },
+      "heading": {
+        "zh": "C160 SLO 达标",
+        "en": "C160 SLO attainment"
+      },
+      "intro": {
+        "zh": "单一并发的逐请求双门 SLO 观测。",
+        "en": "Per-request dual-gate SLO observation at one concurrency."
+      },
+      "table": {
+        "headers": {
+          "zh": [
+            "并发",
+            "双门达标率",
+            "TTFT 达标率",
+            "TPOT 达标率"
+          ],
+          "en": [
+            "Concurrency",
+            "Dual-gate pass rate",
+            "TTFT pass rate",
+            "TPOT pass rate"
+          ]
+        },
+        "rows": [
+          [
+            "C160",
+            "0%",
+            "100%",
+            "0%"
+          ]
+        ]
+      },
+      "notes": [],
+      "chart": {
+        "type": "bar",
+        "title": {
+          "zh": "双门 SLO 达标率",
+          "en": "Dual-gate SLO pass rate"
+        },
+        "hint": {
+          "zh": "仅显示本配置实测值；缺测点不补零。",
+          "en": "Measured values for this configuration only; missing points are not filled with zero."
+        },
+        "labels": {
+          "zh": [
+            "C160"
+          ],
+          "en": [
+            "C160"
+          ]
+        },
+        "yTitle": {
+          "zh": "%",
+          "en": "%"
+        },
+        "series": [
+          {
+            "zh": "双门 SLO 达标率",
+            "en": "Dual-gate SLO pass rate",
+            "color": "blue",
+            "values": [
+              0
+            ]
+          }
+        ]
+      }
+    }
+  ],
+  "meta": [
+    {
+      "zh": "硬件",
+      "en": "Hardware",
+      "value": "8 × NVIDIA A100 · 80 GB"
+    },
+    {
+      "zh": "配置",
+      "en": "Configuration",
+      "value": "3P1D · TP2"
+    },
+    {
+      "zh": "引擎",
+      "en": "Engine",
+      "value": "vLLM 0.20.0 V1"
+    },
+    {
+      "zh": "精度",
+      "en": "Precision",
+      "value": "BF16"
+    }
+  ],
+  "methodIntro": {
+    "zh": "不同测试阶段的请求形状、样本量和统计口径单独记录。",
+    "en": "Workload shape, sample count, and statistics are stated separately by test phase."
+  },
+  "methodNotes": [
+    {
+      "zh": "仅有 C160 汇总点，不能推断其他并发的服务边界；SLO 为 TTFT ≤16 秒且 TPOT ≤60 毫秒。",
+      "en": "Only a C160 summary is available; other concurrency behavior cannot be inferred. SLO: TTFT ≤16 s and TPOT ≤60 ms."
+    }
+  ]
+}

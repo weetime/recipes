@@ -1,0 +1,475 @@
+{
+  "title": "Qwen3.8-27B W8A8 · 910B3 · MTP OLD",
+  "breadcrumb": "Qwen3.8-27B",
+  "kicker": "SERVING PERFORMANCE BENCHMARK",
+  "lede": {
+    "zh": "Qwen3.8-27B W8A8 的 OLD 配方在 910B3 上的固定长度与资源测试。",
+    "en": "Fixed-length and resource measurements for the OLD Qwen3.8-27B W8A8 recipe on 910B3."
+  },
+  "chips": [
+    "8 × Ascend 910B3 · 64 GB",
+    "W8A8",
+    "4 × TP2 · MTP3",
+    "vLLM 0.23.0 · vLLM-Ascend 0.1.dev4229",
+    "Measured 2026-10-29"
+  ],
+  "snapshot": {
+    "zh": "独立实测 · 按负载与采样条件解读",
+    "en": "Independent measurement · interpret with workload and sampling"
+  },
+  "sections": [
+    {
+      "id": "fixed",
+      "zh": "8K / 512 单流",
+      "en": "8K / 512 single stream"
+    },
+    {
+      "id": "warmup",
+      "zh": "首次请求与预热",
+      "en": "First request and warmup"
+    },
+    {
+      "id": "matrix",
+      "zh": "8K / 512 并发矩阵",
+      "en": "8K / 512 concurrency matrix"
+    },
+    {
+      "id": "draft",
+      "zh": "MTP 接受统计",
+      "en": "MTP acceptance"
+    },
+    {
+      "id": "resources",
+      "zh": "资源和阶段时延",
+      "en": "Resources and stage latency"
+    },
+    {
+      "id": "method",
+      "zh": "测试方法",
+      "en": "Method"
+    }
+  ],
+  "stats": [],
+  "overview": {
+    "heading": {
+      "zh": "测试结果",
+      "en": "Measured results"
+    },
+    "intro": {
+      "zh": "Qwen3.8-27B W8A8 的 OLD 配方在 910B3 上的固定长度与资源测试。",
+      "en": "Fixed-length and resource measurements for the OLD Qwen3.8-27B W8A8 recipe on 910B3."
+    },
+    "note": {
+      "zh": "正式窗口为冷前缀；单个 32 请求窗口不足以估计稳健尾延迟。历史矩阵与独立复核的样本数不同。",
+      "en": "Formal windows use cold prefixes; individual 32-request windows do not support robust tail estimates. Historical-matrix and independent-recheck sample counts differ."
+    }
+  },
+  "blocks": [
+    {
+      "id": "fixed",
+      "label": {
+        "zh": "8K / 512 单流",
+        "en": "8K / 512 single stream"
+      },
+      "heading": {
+        "zh": "8K / 512 单流",
+        "en": "8K / 512 single stream"
+      },
+      "intro": {
+        "zh": "冷前缀正式窗口，四次独立起服，每次 32 条。",
+        "en": "Cold-prefix formal windows, four independent starts with 32 requests each."
+      },
+      "table": {
+        "headers": {
+          "zh": [
+            "独立起服 / 正式请求",
+            "TTFT P50 秒",
+            "客户端ITL P50 ms",
+            "原生TPOT均值 ms",
+            "C1 Decode tok/s",
+            "E2E P50 秒",
+            "总输出 tok/s",
+            "MTP接受率 / 接受长度",
+            "APC命中"
+          ],
+          "en": [
+            "Independent starts / formal requests",
+            "TTFT P50 s",
+            "Client ITL P50 ms",
+            "Mean native TPOT ms",
+            "C1 decode tok/s",
+            "E2E P50 s",
+            "Aggregate output tok/s",
+            "MTP acceptance / length",
+            "APC hit"
+          ]
+        },
+        "rows": [
+          [
+            "4 / 128",
+            "1.687",
+            "15.964",
+            "15.860",
+            "63.09",
+            "9.850",
+            "52.31",
+            "53.46% / 1.604",
+            "0.00%"
+          ]
+        ]
+      },
+      "notes": [],
+      "chart": {
+        "type": "bar",
+        "title": {
+          "zh": "整窗输出吞吐",
+          "en": "Aggregate output throughput"
+        },
+        "hint": {
+          "zh": "仅显示本配置实测值；缺测点不补零。",
+          "en": "Measured values for this configuration only; missing points are not filled with zero."
+        },
+        "labels": {
+          "zh": [
+            "C1"
+          ],
+          "en": [
+            "C1"
+          ]
+        },
+        "yTitle": {
+          "zh": "tok/s",
+          "en": "tok/s"
+        },
+        "series": [
+          {
+            "zh": "整窗输出吞吐",
+            "en": "Aggregate output throughput",
+            "color": "blue",
+            "values": [
+              52.31
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "warmup",
+      "label": {
+        "zh": "首次请求与预热",
+        "en": "First request and warmup"
+      },
+      "heading": {
+        "zh": "首次请求与预热",
+        "en": "First request and warmup"
+      },
+      "intro": {
+        "zh": "首次 8K、代表预热及正式窗口分别记录。",
+        "en": "First 8K, representative warmup, and formal windows are recorded separately."
+      },
+      "table": {
+        "headers": {
+          "zh": [
+            "波次 / 卡对",
+            "首次8K TTFT 秒",
+            "代表预热TTFT P50 秒",
+            "正式TTFT P50 秒",
+            "正式原生TPOT ms"
+          ],
+          "en": [
+            "Wave / card pair",
+            "First 8K TTFT s",
+            "Representative warmup TTFT P50 s",
+            "Formal TTFT P50 s",
+            "Formal native TPOT ms"
+          ]
+        },
+        "rows": [
+          [
+            "D1 / 0,1",
+            "17.978",
+            "1.688",
+            "1.690",
+            "15.925"
+          ],
+          [
+            "D1 / 6,7",
+            "17.299",
+            "1.697",
+            "1.687",
+            "16.102"
+          ],
+          [
+            "D2 / 2,3",
+            "17.789",
+            "1.678",
+            "1.688",
+            "16.230"
+          ],
+          [
+            "D2 / 4,5",
+            "17.658",
+            "1.680",
+            "1.685",
+            "15.183"
+          ]
+        ]
+      },
+      "notes": []
+    },
+    {
+      "id": "matrix",
+      "label": {
+        "zh": "8K / 512 并发矩阵",
+        "en": "8K / 512 concurrency matrix"
+      },
+      "heading": {
+        "zh": "8K / 512 并发矩阵",
+        "en": "8K / 512 concurrency matrix"
+      },
+      "intro": {
+        "zh": "各并发按该配方所记录的窗口统计；各阶段样本数可能不同。",
+        "en": "Each concurrency is summarized using this recipe’s recorded windows; sample counts may differ by phase."
+      },
+      "table": {
+        "headers": {
+          "zh": [
+            "并发",
+            "TTFT P50 秒",
+            "ITL P50 ms",
+            "原生 TPOT 均值 ms",
+            "E2E P50 秒",
+            "整窗输出 tok/s"
+          ],
+          "en": [
+            "Concurrency",
+            "TTFT P50 s",
+            "ITL P50 ms",
+            "Mean native TPOT ms",
+            "E2E P50 s",
+            "Aggregate output tok/s"
+          ]
+        },
+        "rows": [
+          [
+            "C1",
+            "1.70",
+            "15.72",
+            "15.64",
+            "9.74",
+            "52.91"
+          ],
+          [
+            "C8",
+            "1.95",
+            "43.69",
+            "43.30",
+            "24.54",
+            "160.54"
+          ],
+          [
+            "C16",
+            "2.13",
+            "76.01",
+            "74.20",
+            "41.76",
+            "192.50"
+          ],
+          [
+            "C32",
+            "3.91",
+            "138.68",
+            "137.37",
+            "75.90",
+            "199.40"
+          ]
+        ]
+      },
+      "notes": [],
+      "chart": {
+        "type": "line",
+        "title": {
+          "zh": "整窗输出吞吐",
+          "en": "Aggregate output throughput"
+        },
+        "hint": {
+          "zh": "仅显示本配置实测值；缺测点不补零。",
+          "en": "Measured values for this configuration only; missing points are not filled with zero."
+        },
+        "labels": {
+          "zh": [
+            "C1",
+            "C8",
+            "C16",
+            "C32"
+          ],
+          "en": [
+            "C1",
+            "C8",
+            "C16",
+            "C32"
+          ]
+        },
+        "yTitle": {
+          "zh": "tok/s",
+          "en": "tok/s"
+        },
+        "series": [
+          {
+            "zh": "整窗输出吞吐",
+            "en": "Aggregate output throughput",
+            "color": "blue",
+            "values": [
+              52.91,
+              160.54,
+              192.5,
+              199.4
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "draft",
+      "label": {
+        "zh": "MTP 接受统计",
+        "en": "MTP acceptance"
+      },
+      "heading": {
+        "zh": "MTP 接受统计",
+        "en": "MTP acceptance"
+      },
+      "intro": {
+        "zh": "草稿和接受 token 的测量计数。",
+        "en": "Measured draft and accepted token counts."
+      },
+      "table": {
+        "headers": {
+          "zh": [
+            "配方 / 场景",
+            "正式请求",
+            "草稿轮次",
+            "drafted",
+            "accepted",
+            "接受率",
+            "长度不含/含bonus",
+            "accepted/输出",
+            "逐位置接受0/1/2"
+          ],
+          "en": [
+            "Recipe / scenario",
+            "Formal requests",
+            "Draft rounds",
+            "Drafted",
+            "Accepted",
+            "Acceptance",
+            "Length without / with bonus",
+            "Accepted / output",
+            "Accepted by position 0 / 1 / 2"
+          ]
+        },
+        "rows": [
+          [
+            "OLD / DC1",
+            "128",
+            "25174",
+            "75522",
+            "40363",
+            "53.45%",
+            "1.603 / 2.603",
+            "61.59%",
+            "18532/12788/9043"
+          ]
+        ]
+      },
+      "notes": []
+    },
+    {
+      "id": "resources",
+      "label": {
+        "zh": "资源和阶段时延",
+        "en": "Resources and stage latency"
+      },
+      "heading": {
+        "zh": "资源和阶段时延",
+        "en": "Resources and stage latency"
+      },
+      "intro": {
+        "zh": "各窗口资源峰值与阶段平均时延。",
+        "en": "Resource peaks and mean stage latency by window."
+      },
+      "table": {
+        "headers": {
+          "zh": [
+            "配方 / 场景",
+            "窗口",
+            "HBM峰值 MiB/卡",
+            "KV峰值",
+            "running / waiting峰值",
+            "AICore峰值",
+            "温度峰值°C",
+            "功率峰值W/卡",
+            "queue / prefill / decode均值 ms"
+          ],
+          "en": [
+            "Recipe / scenario",
+            "Windows",
+            "Peak HBM MiB / card",
+            "Peak KV",
+            "Peak running / waiting",
+            "Peak AICore",
+            "Peak temperature °C",
+            "Peak power W / card",
+            "Mean queue / prefill / decode ms"
+          ]
+        },
+        "rows": [
+          [
+            "OLD / DC1",
+            "4",
+            "56777.00",
+            "3.21%",
+            "1.00 / 0.00",
+            "90.00%",
+            "52.00",
+            "237.90",
+            "0.03 / 1640.33 / 8104.45"
+          ]
+        ]
+      },
+      "notes": []
+    }
+  ],
+  "meta": [
+    {
+      "zh": "硬件",
+      "en": "Hardware",
+      "value": "8 × Ascend 910B3 · 64 GB"
+    },
+    {
+      "zh": "配置",
+      "en": "Configuration",
+      "value": "4 × TP2 · MTP3"
+    },
+    {
+      "zh": "引擎",
+      "en": "Engine",
+      "value": "vLLM 0.23.0 · vLLM-Ascend 0.1.dev4229"
+    },
+    {
+      "zh": "精度",
+      "en": "Precision",
+      "value": "W8A8"
+    }
+  ],
+  "methodIntro": {
+    "zh": "不同测试阶段的请求形状、样本量和统计口径单独记录。",
+    "en": "Workload shape, sample count, and statistics are stated separately by test phase."
+  },
+  "methodNotes": [
+    {
+      "zh": "正式窗口为冷前缀；单个 32 请求窗口不足以估计稳健尾延迟。历史矩阵与独立复核的样本数不同。",
+      "en": "Formal windows use cold prefixes; individual 32-request windows do not support robust tail estimates. Historical-matrix and independent-recheck sample counts differ."
+    }
+  ]
+}

@@ -24,9 +24,14 @@
       "en": "Concurrency & context"
     },
     {
-      "id": "output-shape",
-      "zh": "输出长度效应",
-      "en": "Output-length effect"
+      "id": "output-64",
+      "zh": "输出 64 tokens",
+      "en": "Output 64 tokens"
+    },
+    {
+      "id": "output-512",
+      "zh": "输出 512 tokens",
+      "en": "Output 512 tokens"
     },
     {
       "id": "method",
@@ -174,29 +179,29 @@
       }
     },
     {
-      "id": "output-shape",
+      "id": "output-64",
       "label": {
-        "zh": "输出长度效应",
-        "en": "Output-length effect"
+        "zh": "输出 64 tokens",
+        "en": "Output 64 tokens"
       },
       "heading": {
-        "zh": "输出 64 使 prefill 占比过高，压低 decode 的 SLO 并发",
-        "en": "A 64-token output makes prefill dominate and lowers decode SLO concurrency"
+        "zh": "输出 64 tokens 的 TPOT",
+        "en": "TPOT with 64 output tokens"
       },
       "intro": {
-        "zh": "对相同输入长度与并发点补测输出 512。输出 64 的压力测试与 512 的 Agent 形状不可合并成同一吞吐曲线。",
-        "en": "Output-512 points were added at matching input lengths and concurrency. The 64-token stress test and 512-token Agent profile are not combined into one throughput curve."
+        "zh": "按输入长度与并发分别记录输出 64 tokens 时的 TPOT。",
+        "en": "TPOT for 64 output tokens is reported separately by input length and concurrency."
       },
       "notes": [
         {
-          "zh": "三个匹配点 TPOT 分别下降约 61%、54%、接近 0%；效应并非所有长度/并发组合都相同。prefill 与 decode 竞争是该矩阵观察到的主要负载形状效应，KV 抢占计数为零。",
-          "en": "At the three matched points, TPOT falls by about 61%, 54%, and nearly 0%; the effect is not uniform across all lengths and concurrency levels. Prefill/decode interference is the main workload-shape effect observed in this matrix, with zero KV preemptions."
+          "zh": "KV 抢占计数为零；结果仅适用于所列输入长度、并发与输出长度。",
+          "en": "KV preemptions were zero; results apply only to the listed input lengths, concurrency levels, and output length."
         }
       ],
       "chart": {
         "title": {
-          "zh": "TPOT：输出 64 与输出 512",
-          "en": "TPOT: 64-token vs 512-token output"
+          "zh": "输出 64 tokens · TPOT",
+          "en": "Output 64 tokens · TPOT"
         },
         "hint": {
           "zh": "悬停查看测量点。",
@@ -224,7 +229,57 @@
               76.8
             ],
             "color": "blue"
-          },
+          }
+        ],
+        "yTitle": {
+          "zh": "TPOT 中位 (ms)",
+          "en": "Median TPOT (ms)"
+        },
+        "type": "line"
+      }
+    },
+    {
+      "id": "output-512",
+      "label": {
+        "zh": "输出 512 tokens",
+        "en": "Output 512 tokens"
+      },
+      "heading": {
+        "zh": "输出 512 tokens 的 TPOT",
+        "en": "TPOT with 512 output tokens"
+      },
+      "intro": {
+        "zh": "按输入长度与并发分别记录输出 512 tokens 时的 TPOT。",
+        "en": "TPOT for 512 output tokens is reported separately by input length and concurrency."
+      },
+      "notes": [
+        {
+          "zh": "KV 抢占计数为零；结果仅适用于所列输入长度、并发与输出长度。",
+          "en": "KV preemptions were zero; results apply only to the listed input lengths, concurrency levels, and output length."
+        }
+      ],
+      "chart": {
+        "title": {
+          "zh": "输出 512 tokens · TPOT",
+          "en": "Output 512 tokens · TPOT"
+        },
+        "hint": {
+          "zh": "悬停查看测量点。",
+          "en": "Hover a point to inspect the measurement."
+        },
+        "labels": {
+          "zh": [
+            "32K · C8",
+            "64K · C4",
+            "128K · C2"
+          ],
+          "en": [
+            "32K · C8",
+            "64K · C4",
+            "128K · C2"
+          ]
+        },
+        "series": [
           {
             "zh": "输出 512",
             "en": "512-token output",

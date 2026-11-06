@@ -1,0 +1,277 @@
+{
+  "title": "GLM-5.2 W4A8 · PPU · TP16 · mem 0.92",
+  "breadcrumb": "GLM-5.2",
+  "kicker": "SERVING PERFORMANCE BENCHMARK",
+  "lede": {
+    "zh": "GLM-5.2 W4A8 在 PPU 上 TP16 · mem 0.92 配置的长上下文结果。",
+    "en": "Long-context results for GLM-5.2 W4A8 on PPU with TP16 · mem 0.92."
+  },
+  "chips": [
+    "16 × PPU ZW810E · 96 GB",
+    "W4A8",
+    "TP16 · mem 0.92",
+    "SGLang 0.5.12",
+    "Measured 2026-08-02"
+  ],
+  "snapshot": {
+    "zh": "独立实测 · 按负载与采样条件解读",
+    "en": "Independent measurement · interpret with workload and sampling"
+  },
+  "sections": [
+    {
+      "id": "cache",
+      "zh": "缓存复用",
+      "en": "Cache reuse"
+    },
+    {
+      "id": "capacity",
+      "zh": "KV 容量",
+      "en": "KV capacity"
+    },
+    {
+      "id": "method",
+      "zh": "测试方法",
+      "en": "Method"
+    }
+  ],
+  "stats": [],
+  "overview": {
+    "heading": {
+      "zh": "测试结果",
+      "en": "Measured results"
+    },
+    "intro": {
+      "zh": "GLM-5.2 W4A8 在 PPU 上 TP16 · mem 0.92 配置的长上下文结果。",
+      "en": "Long-context results for GLM-5.2 W4A8 on PPU with TP16 · mem 0.92."
+    },
+    "note": {
+      "zh": "缓存测试使用同一文档的冷热请求；结果仅适用于高前缀复用场景。",
+      "en": "Cache tests use cold and warm requests on the same document; results apply to high prefix reuse."
+    }
+  },
+  "blocks": [
+    {
+      "id": "cache",
+      "label": {
+        "zh": "缓存复用",
+        "en": "Cache reuse"
+      },
+      "heading": {
+        "zh": "热前缀将重复长文档的 TTFT 降到秒级",
+        "en": "A warm prefix reduces repeated-document TTFT to seconds"
+      },
+      "intro": {
+        "zh": "同一长文档仅改变末尾问题，先测冷请求，再重复提问并通过服务端 cached token 增量确认命中。",
+        "en": "The document stayed the same while the final question changed. A cold request was followed by repeated queries, with cache hits verified from server-side cached-token deltas."
+      },
+      "chart": {
+        "title": {
+          "zh": "冷 / 热 TTFT",
+          "en": "Cold and warm TTFT"
+        },
+        "hint": {
+          "zh": "缓存已命中 token 数由服务端计数器确认。",
+          "en": "Cached-token hits were confirmed by server-side counters."
+        },
+        "labels": {
+          "zh": [
+            "100K",
+            "300K",
+            "500K",
+            "660K"
+          ],
+          "en": [
+            "100K",
+            "300K",
+            "500K",
+            "660K"
+          ]
+        },
+        "series": [
+          {
+            "zh": "冷请求",
+            "en": "Cold request",
+            "values": [
+              57.685300000000005,
+              221.7879,
+              454.8005,
+              896.0395
+            ],
+            "color": "blue"
+          },
+          {
+            "zh": "热请求中位",
+            "en": "Warm request median",
+            "values": [
+              0.3984,
+              0.8431000000000001,
+              1.3175,
+              1.7082
+            ],
+            "color": "green"
+          }
+        ],
+        "yTitle": {
+          "zh": "TTFT (秒)",
+          "en": "TTFT (seconds)"
+        }
+      },
+      "table": {
+        "headers": {
+          "zh": [
+            "文档长度",
+            "冷 TTFT",
+            "热 TTFT 中位",
+            "加速比",
+            "缓存命中 tokens"
+          ],
+          "en": [
+            "Document length",
+            "Cold TTFT",
+            "Warm TTFT median",
+            "Ratio",
+            "Cached tokens"
+          ]
+        },
+        "rows": [
+          [
+            "100K",
+            "57.7 s",
+            "0.40 s",
+            "144.8×",
+            "99,968"
+          ],
+          [
+            "300K",
+            "221.8 s",
+            "0.84 s",
+            "263.0×",
+            "299,968"
+          ],
+          [
+            "500K",
+            "454.8 s",
+            "1.32 s",
+            "345.2×",
+            "499,968"
+          ],
+          [
+            "660K",
+            "896.0 s",
+            "1.71 s",
+            "524.5×",
+            "659,968"
+          ]
+        ]
+      },
+      "notes": [
+        {
+          "zh": "缓存加速只作用于重复前缀的 prefill；长 KV 下 decode TPOT 仍高于短上下文。",
+          "en": "Cache reuse accelerates prefill for the repeated prefix; decode TPOT with a long KV remains higher than short-context TPOT."
+        }
+      ]
+    },
+    {
+      "id": "capacity",
+      "label": {
+        "zh": "KV 容量",
+        "en": "KV capacity"
+      },
+      "heading": {
+        "zh": "KV 容量",
+        "en": "KV capacity"
+      },
+      "intro": {
+        "zh": "记录该配置报告的可分配 KV token 池。",
+        "en": "The allocatable KV token pool is reported for this configuration."
+      },
+      "table": {
+        "headers": {
+          "zh": [
+            "可分配 tokens",
+            "权重 / 卡",
+            "KV / 卡"
+          ],
+          "en": [
+            "Allocatable tokens",
+            "Weights / card",
+            "KV / card"
+          ]
+        },
+        "rows": [
+          [
+            "662,016",
+            "25.29 GB",
+            "61.75 GB"
+          ]
+        ]
+      },
+      "notes": [],
+      "chart": {
+        "type": "bar",
+        "title": {
+          "zh": "可分配 KV tokens",
+          "en": "Allocatable KV tokens"
+        },
+        "hint": {
+          "zh": "仅显示本配置实测值；缺测点不补零。",
+          "en": "Measured values for this configuration only; missing points are not filled with zero."
+        },
+        "labels": {
+          "zh": [
+            "TP16 · mem 0.92"
+          ],
+          "en": [
+            "TP16 · mem 0.92"
+          ]
+        },
+        "yTitle": {
+          "zh": "tokens",
+          "en": "tokens"
+        },
+        "series": [
+          {
+            "zh": "可分配 KV tokens",
+            "en": "Allocatable KV tokens",
+            "color": "blue",
+            "values": [
+              662016
+            ]
+          }
+        ]
+      }
+    }
+  ],
+  "meta": [
+    {
+      "zh": "硬件",
+      "en": "Hardware",
+      "value": "16 × PPU ZW810E · 96 GB"
+    },
+    {
+      "zh": "配置",
+      "en": "Configuration",
+      "value": "TP16 · mem 0.92"
+    },
+    {
+      "zh": "引擎",
+      "en": "Engine",
+      "value": "SGLang 0.5.12"
+    },
+    {
+      "zh": "精度",
+      "en": "Precision",
+      "value": "W4A8"
+    }
+  ],
+  "methodIntro": {
+    "zh": "不同测试阶段的请求形状、样本量和统计口径单独记录。",
+    "en": "Workload shape, sample count, and statistics are stated separately by test phase."
+  },
+  "methodNotes": [
+    {
+      "zh": "缓存测试使用同一文档的冷热请求；结果仅适用于高前缀复用场景。",
+      "en": "Cache tests use cold and warm requests on the same document; results apply to high prefix reuse."
+    }
+  ]
+}

@@ -1,0 +1,223 @@
+{
+  "title": "Qwen3.8-27B W8A8 · 910B3 · YaRN4 · TP4 单实例",
+  "breadcrumb": "Qwen3.8-27B",
+  "kicker": "SERVING PERFORMANCE BENCHMARK",
+  "lede": {
+    "zh": "Qwen3.8-27B 在 910B3 上的 YaRN4 · TP4 单实例 长上下文探测。",
+    "en": "Qwen3.8-27B long-context probes on 910B3 with YaRN4 · TP4 单实例."
+  },
+  "chips": [
+    "8 × Ascend 910B3 · 64 GB",
+    "W8A8",
+    "TP4 · MTP3 · YaRN4 · TP4 单实例",
+    "vLLM-Ascend",
+    "Measured 2026-10-30"
+  ],
+  "snapshot": {
+    "zh": "独立实测 · 按负载与采样条件解读",
+    "en": "Independent measurement · interpret with workload and sampling"
+  },
+  "sections": [
+    {
+      "id": "context",
+      "zh": "长上下文冷热探测",
+      "en": "Long-context cold/hot probes"
+    },
+    {
+      "id": "method",
+      "zh": "测试方法",
+      "en": "Method"
+    }
+  ],
+  "stats": [],
+  "overview": {
+    "heading": {
+      "zh": "测试结果",
+      "en": "Measured results"
+    },
+    "intro": {
+      "zh": "Qwen3.8-27B 在 910B3 上的 YaRN4 · TP4 单实例 长上下文探测。",
+      "en": "Qwen3.8-27B long-context probes on 910B3 with YaRN4 · TP4 单实例."
+    },
+    "note": {
+      "zh": "每个冷热组 8 次，输出长度不同；小样本不支持尾延迟推断，也不代表任务精度。",
+      "en": "Each cold/hot group has eight probes with differing output lengths; small samples do not support tail-latency or task-accuracy claims."
+    }
+  },
+  "blocks": [
+    {
+      "id": "context",
+      "label": {
+        "zh": "长上下文冷热探测",
+        "en": "Long-context cold/hot probes"
+      },
+      "heading": {
+        "zh": "长上下文冷热探测",
+        "en": "Long-context cold/hot probes"
+      },
+      "intro": {
+        "zh": "按输入长度和缓存状态分别记录 native TTFT 与 TPOT。",
+        "en": "Native TTFT and TPOT are reported separately by input length and cache state."
+      },
+      "table": {
+        "headers": {
+          "zh": [
+            "配置",
+            "输入",
+            "冷热",
+            "组数",
+            "native TTFT 中位 s",
+            "native TPOT 中位 ms",
+            "等效 Decode 中位 tok/s",
+            "MTP 接受中位 %",
+            "前缀命中 %",
+            "抢占",
+            "检索码"
+          ],
+          "en": [
+            "Configuration",
+            "Input",
+            "Cold / hot",
+            "Groups",
+            "Native TTFT median s",
+            "Native TPOT median ms",
+            "Equivalent decode median tok/s",
+            "MTP acceptance median %",
+            "Prefix hit %",
+            "Preemptions",
+            "Retrieval code"
+          ]
+        },
+        "rows": [
+          [
+            "4× 单实例",
+            "512k",
+            "COLD",
+            "8",
+            "169.32",
+            "10.69",
+            "93.51",
+            "87.17",
+            "0.00",
+            "0",
+            "8/8"
+          ],
+          [
+            "4× 单实例",
+            "512k",
+            "HOT",
+            "8",
+            "3.96",
+            "10.80",
+            "92.62",
+            "85.39",
+            "99.51",
+            "0",
+            "8/8"
+          ],
+          [
+            "4× 单实例",
+            "999k",
+            "COLD",
+            "8",
+            "524.90",
+            "12.38",
+            "80.80",
+            "87.06",
+            "0.00",
+            "0",
+            "8/8"
+          ],
+          [
+            "4× 单实例",
+            "999k",
+            "HOT",
+            "8",
+            "7.05",
+            "12.50",
+            "79.98",
+            "87.55",
+            "99.79",
+            "0",
+            "8/8"
+          ]
+        ]
+      },
+      "notes": [],
+      "chart": {
+        "type": "bar",
+        "title": {
+          "zh": "native TTFT 中位数",
+          "en": "Median native TTFT"
+        },
+        "hint": {
+          "zh": "仅显示本配置实测值；缺测点不补零。",
+          "en": "Measured values for this configuration only; missing points are not filled with zero."
+        },
+        "labels": {
+          "zh": [
+            "512k COLD",
+            "512k HOT",
+            "999k COLD",
+            "999k HOT"
+          ],
+          "en": [
+            "512k COLD",
+            "512k HOT",
+            "999k COLD",
+            "999k HOT"
+          ]
+        },
+        "yTitle": {
+          "zh": "s",
+          "en": "s"
+        },
+        "series": [
+          {
+            "zh": "native TTFT 中位数",
+            "en": "Median native TTFT",
+            "color": "blue",
+            "values": [
+              169.32,
+              3.96,
+              524.9,
+              7.05
+            ]
+          }
+        ]
+      }
+    }
+  ],
+  "meta": [
+    {
+      "zh": "硬件",
+      "en": "Hardware",
+      "value": "8 × Ascend 910B3 · 64 GB"
+    },
+    {
+      "zh": "配置",
+      "en": "Configuration",
+      "value": "TP4 · MTP3 · YaRN4 · TP4 单实例"
+    },
+    {
+      "zh": "引擎",
+      "en": "Engine",
+      "value": "vLLM-Ascend"
+    },
+    {
+      "zh": "精度",
+      "en": "Precision",
+      "value": "W8A8"
+    }
+  ],
+  "methodIntro": {
+    "zh": "不同测试阶段的请求形状、样本量和统计口径单独记录。",
+    "en": "Workload shape, sample count, and statistics are stated separately by test phase."
+  },
+  "methodNotes": [
+    {
+      "zh": "每个冷热组 8 次，输出长度不同；小样本不支持尾延迟推断，也不代表任务精度。",
+      "en": "Each cold/hot group has eight probes with differing output lengths; small samples do not support tail-latency or task-accuracy claims."
+    }
+  ]
+}

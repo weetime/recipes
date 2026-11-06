@@ -654,9 +654,25 @@ const REPORT_CONCLUSIONS = {
 
 const TEST_IDS = {
   fixed: "fixed",
+  synthetic: "fixed",
+  topology: "fixed",
+  "topology-workloads": "fixed",
+  slo: "fixed",
+  goodput: "fixed",
+  draft: "fixed",
+  warmup: "fixed",
+  matrix: "fixed",
+  resources: "fixed",
+  context: "longContext",
+  cache: "longContext",
+  reuse: "longContext",
+  video: "videoGeneration",
   capacity: "fixed",
   "capacity-slo": "openLoop",
   "output-shape": "fixed",
+  "output-64": "fixed",
+  "output-512": "fixed",
+  throughput: "fixed",
   graph: "fixed",
   arrival: "openLoop",
   interpretation: "openLoop",
@@ -906,7 +922,9 @@ function enrichReport(report, locale = "en") {
 }
 
 export function getPerformanceReports(locale = "en") {
-  return REPORTS.map((report) => enrichReport(report, locale));
+  const splitCatalog = JSON.parse(readFileSync(path.join(process.cwd(), "src/lib/performance-report-splits.json"), "utf8"));
+  return [...REPORTS.filter((report) => !splitCatalog.replaced[report.slug]), ...splitCatalog.reports]
+    .map((report) => enrichReport(report, locale));
 }
 
 export function getPerformanceReportsForModel(modelId, locale = "en") {

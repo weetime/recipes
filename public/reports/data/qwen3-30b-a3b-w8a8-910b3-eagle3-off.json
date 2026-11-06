@@ -1,0 +1,152 @@
+{
+  "title": "Qwen3-30B-A3B W8A8 · 910B3 · EAGLE3 off",
+  "breadcrumb": "Qwen3-30B-A3B",
+  "kicker": "SERVING PERFORMANCE BENCHMARK",
+  "lede": {
+    "zh": "Qwen3-30B-A3B W8A8 在 910B3 上 EAGLE3 off 的服务测试。",
+    "en": "Serving measurements of Qwen3-30B-A3B W8A8 on 910B3 with EAGLE3 off."
+  },
+  "chips": [
+    "4 × Ascend 910B3 · 64 GB",
+    "W8A8",
+    "TP4 · EP · EAGLE3 off",
+    "vLLM-Ascend",
+    "Measured 2026-08-25"
+  ],
+  "snapshot": {
+    "zh": "独立实测 · 按负载与采样条件解读",
+    "en": "Independent measurement · interpret with workload and sampling"
+  },
+  "sections": [
+    {
+      "id": "serving",
+      "zh": "固定长度服务",
+      "en": "Fixed-length serving"
+    },
+    {
+      "id": "method",
+      "zh": "测试方法",
+      "en": "Method"
+    }
+  ],
+  "stats": [],
+  "overview": {
+    "heading": {
+      "zh": "测试结果",
+      "en": "Measured results"
+    },
+    "intro": {
+      "zh": "Qwen3-30B-A3B W8A8 在 910B3 上 EAGLE3 off 的服务测试。",
+      "en": "Serving measurements of Qwen3-30B-A3B W8A8 on 910B3 with EAGLE3 off."
+    },
+    "note": {
+      "zh": "主测点为单次观测；不同并发与到达模型的指标分开解读。",
+      "en": "Primary points are single observations; concurrency and arrival-model results must be interpreted separately."
+    }
+  },
+  "blocks": [
+    {
+      "id": "serving",
+      "label": {
+        "zh": "固定长度服务",
+        "en": "Fixed-length serving"
+      },
+      "heading": {
+        "zh": "固定长度服务",
+        "en": "Fixed-length serving"
+      },
+      "intro": {
+        "zh": "逐项保留本配置已测的单流和并发结果。",
+        "en": "Single-stream and concurrency results are retained only where measured for this configuration."
+      },
+      "table": {
+        "headers": {
+          "zh": [
+            "指标",
+            "实测值"
+          ],
+          "en": [
+            "Metric",
+            "Measured value"
+          ]
+        },
+        "rows": [
+          [
+            "单流 TPOT 中位",
+            "15.08 ms"
+          ],
+          [
+            "单流输出吞吐",
+            "60.32 tok/s"
+          ]
+        ]
+      },
+      "notes": [],
+      "chart": {
+        "type": "bar",
+        "title": {
+          "zh": "单流输出吞吐",
+          "en": "Single-stream output throughput"
+        },
+        "hint": {
+          "zh": "仅显示本配置实测值；缺测点不补零。",
+          "en": "Measured values for this configuration only; missing points are not filled with zero."
+        },
+        "labels": {
+          "zh": [
+            "C1"
+          ],
+          "en": [
+            "C1"
+          ]
+        },
+        "yTitle": {
+          "zh": "tok/s",
+          "en": "tok/s"
+        },
+        "series": [
+          {
+            "zh": "单流输出吞吐",
+            "en": "Single-stream output throughput",
+            "color": "blue",
+            "values": [
+              60.32
+            ]
+          }
+        ]
+      }
+    }
+  ],
+  "meta": [
+    {
+      "zh": "硬件",
+      "en": "Hardware",
+      "value": "4 × Ascend 910B3 · 64 GB"
+    },
+    {
+      "zh": "配置",
+      "en": "Configuration",
+      "value": "TP4 · EP · EAGLE3 off"
+    },
+    {
+      "zh": "引擎",
+      "en": "Engine",
+      "value": "vLLM-Ascend"
+    },
+    {
+      "zh": "精度",
+      "en": "Precision",
+      "value": "W8A8"
+    }
+  ],
+  "methodIntro": {
+    "zh": "不同测试阶段的请求形状、样本量和统计口径单独记录。",
+    "en": "Workload shape, sample count, and statistics are stated separately by test phase."
+  },
+  "methodNotes": [
+    {
+      "zh": "主测点为单次观测；不同并发与到达模型的指标分开解读。",
+      "en": "Primary points are single observations; concurrency and arrival-model results must be interpreted separately."
+    }
+  ]
+}

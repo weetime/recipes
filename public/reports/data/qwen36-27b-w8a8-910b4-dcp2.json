@@ -1,0 +1,195 @@
+{
+  "title": "Qwen3.6-27B W8A8 · 910B4 · DCP 2",
+  "breadcrumb": "Qwen3.6-27B",
+  "kicker": "SERVING PERFORMANCE BENCHMARK",
+  "lede": {
+    "zh": "Qwen3.6-27B W8A8 在 910B4 的 DCP=2 长上下文解码测试。",
+    "en": "Qwen3.6-27B W8A8 long-context decode measurements on 910B4 with DCP=2."
+  },
+  "chips": [
+    "8 × Ascend 910B4 · 32 GB",
+    "W8A8",
+    "TP8 · DCP 2",
+    "vLLM-Ascend 0.24.0",
+    "Measured 2026-08-04"
+  ],
+  "snapshot": {
+    "zh": "独立实测 · 按负载与采样条件解读",
+    "en": "Independent measurement · interpret with workload and sampling"
+  },
+  "sections": [
+    {
+      "id": "long-context",
+      "zh": "长上下文解码延迟",
+      "en": "Long-context decode latency"
+    },
+    {
+      "id": "method",
+      "zh": "测试方法",
+      "en": "Method"
+    }
+  ],
+  "stats": [],
+  "overview": {
+    "heading": {
+      "zh": "测试结果",
+      "en": "Measured results"
+    },
+    "intro": {
+      "zh": "Qwen3.6-27B W8A8 在 910B4 的 DCP=2 长上下文解码测试。",
+      "en": "Qwen3.6-27B W8A8 long-context decode measurements on 910B4 with DCP=2."
+    },
+    "note": {
+      "zh": "本次并发最高为 C4；测量固定工作量延迟，不代表系统饱和吞吐。",
+      "en": "The tested concurrency reaches C4; this measures fixed-work latency, not saturated throughput."
+    }
+  },
+  "blocks": [
+    {
+      "id": "long-context",
+      "label": {
+        "zh": "长上下文解码延迟",
+        "en": "Long-context decode latency"
+      },
+      "heading": {
+        "zh": "长上下文解码延迟",
+        "en": "Long-context decode latency"
+      },
+      "intro": {
+        "zh": "固定输出 512、前缀缓存关闭；按输入长度与并发分别记录 TPOT。",
+        "en": "Fixed 512-token output with prefix cache disabled; TPOT is recorded by input length and concurrency."
+      },
+      "table": {
+        "headers": {
+          "zh": [
+            "输入长度",
+            "并发",
+            "TPOT"
+          ],
+          "en": [
+            "Input length",
+            "Concurrency",
+            "TPOT"
+          ]
+        },
+        "rows": [
+          [
+            "64K",
+            "C1",
+            "38.8 ms"
+          ],
+          [
+            "128K",
+            "C1",
+            "45.8 ms"
+          ],
+          [
+            "250K",
+            "C1",
+            "58.5 ms"
+          ],
+          [
+            "64K",
+            "C4",
+            "77.1 ms"
+          ],
+          [
+            "128K",
+            "C4",
+            "127.4 ms"
+          ],
+          [
+            "250K",
+            "C4",
+            "264.8 ms"
+          ]
+        ]
+      },
+      "notes": [],
+      "chart": {
+        "type": "bar",
+        "title": {
+          "zh": "TPOT",
+          "en": "TPOT"
+        },
+        "hint": {
+          "zh": "仅显示本配置实测值；缺测点不补零。",
+          "en": "Measured values for this configuration only; missing points are not filled with zero."
+        },
+        "labels": {
+          "zh": [
+            "64K · C1",
+            "128K · C1",
+            "250K · C1",
+            "64K · C4",
+            "128K · C4",
+            "250K · C4"
+          ],
+          "en": [
+            "64K · C1",
+            "128K · C1",
+            "250K · C1",
+            "64K · C4",
+            "128K · C4",
+            "250K · C4"
+          ]
+        },
+        "yTitle": {
+          "zh": "ms",
+          "en": "ms"
+        },
+        "series": [
+          {
+            "zh": "TPOT",
+            "en": "TPOT",
+            "color": "blue",
+            "values": [
+              38.8,
+              45.8,
+              58.5,
+              77.1,
+              127.4,
+              264.8
+            ]
+          }
+        ]
+      }
+    }
+  ],
+  "meta": [
+    {
+      "zh": "硬件",
+      "en": "Hardware",
+      "value": "8 × Ascend 910B4 · 32 GB"
+    },
+    {
+      "zh": "配置",
+      "en": "Configuration",
+      "value": "TP8 · DCP 2"
+    },
+    {
+      "zh": "引擎",
+      "en": "Engine",
+      "value": "vLLM-Ascend 0.24.0"
+    },
+    {
+      "zh": "精度",
+      "en": "Precision",
+      "value": "W8A8"
+    }
+  ],
+  "methodIntro": {
+    "zh": "不同测试阶段的请求形状、样本量和统计口径单独记录。",
+    "en": "Workload shape, sample count, and statistics are stated separately by test phase."
+  },
+  "methodNotes": [
+    {
+      "zh": "本次并发最高为 C4；测量固定工作量延迟，不代表系统饱和吞吐。",
+      "en": "The tested concurrency reaches C4; this measures fixed-work latency, not saturated throughput."
+    },
+    {
+      "zh": "重复噪声复测偏差约 ±0.4%；各输入长度和并发的结果单独解读。",
+      "en": "Same-configuration repeat noise was within approximately ±0.4%; interpret each input length and concurrency separately."
+    }
+  ]
+}

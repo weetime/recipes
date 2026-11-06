@@ -1,0 +1,259 @@
+{
+  "title": "Qwen3-32B W8A8 · 910B4 · A · 高吞吐",
+  "breadcrumb": "Qwen3-32B",
+  "kicker": "SERVING PERFORMANCE BENCHMARK",
+  "lede": {
+    "zh": "Qwen3-32B W8A8 在 910B4 使用A · 高吞吐配方的实测。",
+    "en": "Qwen3-32B W8A8 serving measurements on 910B4 with A · 高吞吐."
+  },
+  "chips": [
+    "4 × Ascend 910B4",
+    "W8A8",
+    "TP4 · 5500 · prefix cache off",
+    "vLLM-Ascend nightly · vLLM 0.26.0",
+    "Measured 2026-08-24"
+  ],
+  "snapshot": {
+    "zh": "独立实测 · 按负载与采样条件解读",
+    "en": "Independent measurement · interpret with workload and sampling"
+  },
+  "sections": [
+    {
+      "id": "serving",
+      "zh": "服务测点",
+      "en": "Serving measurements"
+    },
+    {
+      "id": "capacity-slo",
+      "zh": "开放环容量",
+      "en": "Open-loop capacity"
+    },
+    {
+      "id": "method",
+      "zh": "测试方法",
+      "en": "Method"
+    }
+  ],
+  "stats": [],
+  "overview": {
+    "heading": {
+      "zh": "测试结果",
+      "en": "Measured results"
+    },
+    "intro": {
+      "zh": "Qwen3-32B W8A8 在 910B4 使用A · 高吞吐配方的实测。",
+      "en": "Qwen3-32B W8A8 serving measurements on 910B4 with A · 高吞吐."
+    },
+    "note": {
+      "zh": "TTFT 包含客户端排队；样本不足以支持的 P95 保留为“—”。",
+      "en": "TTFT includes client queueing; P95 is shown as “—” where the sample is insufficient."
+    }
+  },
+  "blocks": [
+    {
+      "id": "serving",
+      "label": {
+        "zh": "服务测点",
+        "en": "Serving measurements"
+      },
+      "heading": {
+        "zh": "服务测点",
+        "en": "Serving measurements"
+      },
+      "intro": {
+        "zh": "逐项列示本配方的工作负载和实际请求数。",
+        "en": "Workloads and actual request counts are listed for this configuration."
+      },
+      "table": {
+        "headers": {
+          "zh": [
+            "场景",
+            "并发",
+            "请求数",
+            "TTFT P50 (ms)",
+            "TTFT P95 (ms)",
+            "TPOT P50 (ms)",
+            "输出 tok/s",
+            "输入 tok/s",
+            "前缀命中"
+          ],
+          "en": [
+            "Workload",
+            "Concurrency",
+            "Requests",
+            "TTFT P50 (ms)",
+            "TTFT P95 (ms)",
+            "TPOT P50 (ms)",
+            "Output tok/s",
+            "Input tok/s",
+            "Prefix hit"
+          ]
+        },
+        "rows": [
+          [
+            "延迟 1024/128",
+            "C1",
+            "100",
+            "171.78",
+            "—",
+            "17.68",
+            "52.9",
+            "422.9",
+            "关闭"
+          ],
+          [
+            "高生成量 1024/2048",
+            "C64",
+            "200",
+            "5136.18",
+            "6367.69",
+            "34.02",
+            "1529.3",
+            "764.7",
+            "关闭"
+          ],
+          [
+            "吞吐 1024/512",
+            "不限",
+            "1000",
+            "135223.70",
+            "346138.41",
+            "196.84",
+            "1339.3",
+            "2678.6",
+            "关闭"
+          ]
+        ]
+      },
+      "notes": [],
+      "chart": {
+        "type": "bar",
+        "title": {
+          "zh": "输出吞吐",
+          "en": "Output throughput"
+        },
+        "hint": {
+          "zh": "仅显示本配置实测值；缺测点不补零。",
+          "en": "Measured values for this configuration only; missing points are not filled with zero."
+        },
+        "labels": {
+          "zh": [
+            "延迟 1024/128",
+            "高生成量 1024/2048",
+            "吞吐 1024/512"
+          ],
+          "en": [
+            "延迟 1024/128",
+            "高生成量 1024/2048",
+            "吞吐 1024/512"
+          ]
+        },
+        "yTitle": {
+          "zh": "tok/s",
+          "en": "tok/s"
+        },
+        "series": [
+          {
+            "zh": "输出吞吐",
+            "en": "Output throughput",
+            "color": "blue",
+            "values": [
+              52.9,
+              1529.3,
+              1339.3
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "capacity-slo",
+      "label": {
+        "zh": "开放环容量",
+        "en": "Open-loop capacity"
+      },
+      "heading": {
+        "zh": "SLO 口径改变可接受的请求到达率",
+        "en": "The request rate depends on the selected SLO"
+      },
+      "intro": {
+        "zh": "在 512 输入 / 256 输出请求形状下进行开放环容量测试。safe_rps 是该负载及阈值下的实验边界，不是其他请求长度的服务承诺。",
+        "en": "Open-loop capacity was tested with 512 input / 256 output. safe_rps is specific to this workload and threshold, not a service guarantee for other request lengths."
+      },
+      "notes": [
+        {
+          "zh": "收紧 TPOT P95 后，容量边界从 4.97 降至 2.78 req/s。阈值组合必须随容量数字一并引用。",
+          "en": "Adding a TPOT P95 limit reduces the measured boundary from 4.97 to 2.78 req/s. Quote the threshold together with the rate."
+        }
+      ],
+      "chart": {
+        "title": {
+          "zh": "SLO 阈值与 safe_rps",
+          "en": "SLO threshold and safe_rps"
+        },
+        "hint": {
+          "zh": "悬停查看测量点。",
+          "en": "Hover a point to inspect the measurement."
+        },
+        "labels": {
+          "zh": [
+            "TTFT P95 ≤ 1,000 ms",
+            "TTFT P95 ≤ 1,000 ms + TPOT P95 ≤ 50 ms"
+          ],
+          "en": [
+            "TTFT P95 ≤ 1,000 ms",
+            "TTFT P95 ≤ 1,000 ms + TPOT P95 ≤ 50 ms"
+          ]
+        },
+        "series": [
+          {
+            "zh": "safe_rps",
+            "en": "safe_rps",
+            "values": [
+              4.97,
+              2.78
+            ],
+            "color": "blue"
+          }
+        ],
+        "yTitle": {
+          "zh": "请求 / 秒",
+          "en": "Requests per second"
+        },
+        "type": "line"
+      }
+    }
+  ],
+  "meta": [
+    {
+      "zh": "硬件",
+      "en": "Hardware",
+      "value": "4 × Ascend 910B4"
+    },
+    {
+      "zh": "配置",
+      "en": "Configuration",
+      "value": "TP4 · 5500 · prefix cache off"
+    },
+    {
+      "zh": "引擎",
+      "en": "Engine",
+      "value": "vLLM-Ascend nightly · vLLM 0.26.0"
+    },
+    {
+      "zh": "精度",
+      "en": "Precision",
+      "value": "W8A8"
+    }
+  ],
+  "methodIntro": {
+    "zh": "不同测试阶段的请求形状、样本量和统计口径单独记录。",
+    "en": "Workload shape, sample count, and statistics are stated separately by test phase."
+  },
+  "methodNotes": [
+    {
+      "zh": "TTFT 包含客户端排队；样本不足以支持的 P95 保留为“—”。",
+      "en": "TTFT includes client queueing; P95 is shown as “—” where the sample is insufficient."
+    }
+  ]
+}

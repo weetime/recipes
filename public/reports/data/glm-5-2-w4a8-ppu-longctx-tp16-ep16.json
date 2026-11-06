@@ -1,0 +1,151 @@
+{
+  "title": "GLM-5.2 W4A8 · PPU · TP16 · EP16",
+  "breadcrumb": "GLM-5.2",
+  "kicker": "SERVING PERFORMANCE BENCHMARK",
+  "lede": {
+    "zh": "GLM-5.2 W4A8 在 PPU 上 TP16 · EP16 配置的长上下文结果。",
+    "en": "Long-context results for GLM-5.2 W4A8 on PPU with TP16 · EP16."
+  },
+  "chips": [
+    "16 × PPU ZW810E · 96 GB",
+    "W4A8",
+    "TP16 · EP16",
+    "SGLang 0.5.12",
+    "Measured 2026-08-02"
+  ],
+  "snapshot": {
+    "zh": "独立实测 · 按负载与采样条件解读",
+    "en": "Independent measurement · interpret with workload and sampling"
+  },
+  "sections": [
+    {
+      "id": "capacity",
+      "zh": "KV 容量",
+      "en": "KV capacity"
+    },
+    {
+      "id": "method",
+      "zh": "测试方法",
+      "en": "Method"
+    }
+  ],
+  "stats": [],
+  "overview": {
+    "heading": {
+      "zh": "测试结果",
+      "en": "Measured results"
+    },
+    "intro": {
+      "zh": "GLM-5.2 W4A8 在 PPU 上 TP16 · EP16 配置的长上下文结果。",
+      "en": "Long-context results for GLM-5.2 W4A8 on PPU with TP16 · EP16."
+    },
+    "note": {
+      "zh": "容量是该配置下的分配观测，不代表稳定吞吐或所有上下文场景均已验收。",
+      "en": "Allocation is observed for this configuration; it does not establish stable throughput or validation of every context scenario."
+    }
+  },
+  "blocks": [
+    {
+      "id": "capacity",
+      "label": {
+        "zh": "KV 容量",
+        "en": "KV capacity"
+      },
+      "heading": {
+        "zh": "KV 容量",
+        "en": "KV capacity"
+      },
+      "intro": {
+        "zh": "记录该配置报告的可分配 KV token 池。",
+        "en": "The allocatable KV token pool is reported for this configuration."
+      },
+      "table": {
+        "headers": {
+          "zh": [
+            "可分配 tokens",
+            "权重 / 卡",
+            "KV / 卡"
+          ],
+          "en": [
+            "Allocatable tokens",
+            "Weights / card",
+            "KV / card"
+          ]
+        },
+        "rows": [
+          [
+            "595,328",
+            "24.88 GB",
+            "55.53 GB"
+          ]
+        ]
+      },
+      "notes": [],
+      "chart": {
+        "type": "bar",
+        "title": {
+          "zh": "可分配 KV tokens",
+          "en": "Allocatable KV tokens"
+        },
+        "hint": {
+          "zh": "仅显示本配置实测值；缺测点不补零。",
+          "en": "Measured values for this configuration only; missing points are not filled with zero."
+        },
+        "labels": {
+          "zh": [
+            "TP16 · EP16"
+          ],
+          "en": [
+            "TP16 · EP16"
+          ]
+        },
+        "yTitle": {
+          "zh": "tokens",
+          "en": "tokens"
+        },
+        "series": [
+          {
+            "zh": "可分配 KV tokens",
+            "en": "Allocatable KV tokens",
+            "color": "blue",
+            "values": [
+              595328
+            ]
+          }
+        ]
+      }
+    }
+  ],
+  "meta": [
+    {
+      "zh": "硬件",
+      "en": "Hardware",
+      "value": "16 × PPU ZW810E · 96 GB"
+    },
+    {
+      "zh": "配置",
+      "en": "Configuration",
+      "value": "TP16 · EP16"
+    },
+    {
+      "zh": "引擎",
+      "en": "Engine",
+      "value": "SGLang 0.5.12"
+    },
+    {
+      "zh": "精度",
+      "en": "Precision",
+      "value": "W4A8"
+    }
+  ],
+  "methodIntro": {
+    "zh": "不同测试阶段的请求形状、样本量和统计口径单独记录。",
+    "en": "Workload shape, sample count, and statistics are stated separately by test phase."
+  },
+  "methodNotes": [
+    {
+      "zh": "容量是该配置下的分配观测，不代表稳定吞吐或所有上下文场景均已验收。",
+      "en": "Allocation is observed for this configuration; it does not establish stable throughput or validation of every context scenario."
+    }
+  ]
+}

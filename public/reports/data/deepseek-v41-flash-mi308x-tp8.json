@@ -1,0 +1,195 @@
+{
+  "title": "DeepSeek-V4.1-Flash · MI308X · TP8 × 1",
+  "breadcrumb": "DeepSeek-V4.1-Flash",
+  "kicker": "SERVING PERFORMANCE BENCHMARK",
+  "lede": {
+    "zh": "DeepSeek-V4.1-Flash 在 AMD MI308X 上的 TP8 × 1 服务性能实测。",
+    "en": "DeepSeek-V4.1-Flash serving measurements on AMD MI308X using TP8 × 1."
+  },
+  "chips": [
+    "8 × AMD MI308X · 192 GB",
+    "Mixed checkpoint",
+    "TP8 × 1",
+    "vLLM ROCm nightly",
+    "Measured 2026-09-24"
+  ],
+  "snapshot": {
+    "zh": "独立实测 · 按负载与采样条件解读",
+    "en": "Independent measurement · interpret with workload and sampling"
+  },
+  "sections": [
+    {
+      "id": "topology-workloads",
+      "zh": "固定负载与业务回放",
+      "en": "Fixed workloads and replay"
+    },
+    {
+      "id": "method",
+      "zh": "测试方法",
+      "en": "Method"
+    }
+  ],
+  "stats": [],
+  "overview": {
+    "heading": {
+      "zh": "测试结果",
+      "en": "Measured results"
+    },
+    "intro": {
+      "zh": "DeepSeek-V4.1-Flash 在 AMD MI308X 上的 TP8 × 1 服务性能实测。",
+      "en": "DeepSeek-V4.1-Flash serving measurements on AMD MI308X using TP8 × 1."
+    },
+    "note": {
+      "zh": "主测点为单轮结果；不同请求长度和负载须分别解读。",
+      "en": "Primary points are single runs; request lengths and workloads must be interpreted separately."
+    }
+  },
+  "blocks": [
+    {
+      "id": "topology-workloads",
+      "label": {
+        "zh": "固定负载与业务回放",
+        "en": "Fixed workloads and replay"
+      },
+      "heading": {
+        "zh": "固定负载与业务回放",
+        "en": "Fixed workloads and replay"
+      },
+      "intro": {
+        "zh": "投机解码关闭，分别报告各负载的吞吐与 TPOT。",
+        "en": "Speculative decoding is disabled; throughput and TPOT are reported by workload."
+      },
+      "table": {
+        "headers": {
+          "zh": [
+            "负载",
+            "输出吞吐",
+            "TPOT"
+          ],
+          "en": [
+            "Workload",
+            "Output throughput",
+            "TPOT"
+          ]
+        },
+        "rows": [
+          [
+            "Single stream · 128/128",
+            "58.1 tok/s",
+            "15.8 ms"
+          ],
+          [
+            "Long output · 128/2048",
+            "526.8 tok/s",
+            "29.7 ms"
+          ],
+          [
+            "Mid load · 512/256",
+            "531.0 tok/s",
+            "40.3 ms"
+          ],
+          [
+            "ShareGPT",
+            "366.0 tok/s",
+            "74.4 ms"
+          ],
+          [
+            "Saturated · 512/256",
+            "1,040.7 tok/s",
+            "353.7 ms"
+          ],
+          [
+            "BFCL Agent",
+            "204.2 tok/s",
+            "35.0 ms"
+          ]
+        ]
+      },
+      "notes": [],
+      "chart": {
+        "type": "bar",
+        "title": {
+          "zh": "输出吞吐",
+          "en": "Output throughput"
+        },
+        "hint": {
+          "zh": "仅显示本配置实测值；缺测点不补零。",
+          "en": "Measured values for this configuration only; missing points are not filled with zero."
+        },
+        "labels": {
+          "zh": [
+            "Single stream · 128/128",
+            "Long output · 128/2048",
+            "Mid load · 512/256",
+            "ShareGPT",
+            "Saturated · 512/256",
+            "BFCL Agent"
+          ],
+          "en": [
+            "Single stream · 128/128",
+            "Long output · 128/2048",
+            "Mid load · 512/256",
+            "ShareGPT",
+            "Saturated · 512/256",
+            "BFCL Agent"
+          ]
+        },
+        "yTitle": {
+          "zh": "tok/s",
+          "en": "tok/s"
+        },
+        "series": [
+          {
+            "zh": "输出吞吐",
+            "en": "Output throughput",
+            "color": "blue",
+            "values": [
+              58.1,
+              526.8,
+              531.0,
+              366.0,
+              1040.7,
+              204.2
+            ]
+          }
+        ]
+      }
+    }
+  ],
+  "meta": [
+    {
+      "zh": "硬件",
+      "en": "Hardware",
+      "value": "8 × AMD MI308X · 192 GB"
+    },
+    {
+      "zh": "配置",
+      "en": "Configuration",
+      "value": "TP8 × 1"
+    },
+    {
+      "zh": "引擎",
+      "en": "Engine",
+      "value": "vLLM ROCm nightly"
+    },
+    {
+      "zh": "精度",
+      "en": "Precision",
+      "value": "Mixed checkpoint"
+    }
+  ],
+  "methodIntro": {
+    "zh": "不同测试阶段的请求形状、样本量和统计口径单独记录。",
+    "en": "Workload shape, sample count, and statistics are stated separately by test phase."
+  },
+  "methodNotes": [
+    {
+      "zh": "主测点为单轮结果；不同请求长度和负载须分别解读。",
+      "en": "Primary points are single runs; request lengths and workloads must be interpreted separately."
+    },
+    {
+      "zh": "投机解码关闭；各负载的并发、输入输出和样本量以表内数据为准。",
+      "en": "Speculative decoding is disabled; concurrency, input/output and sample counts follow each measured workload."
+    }
+  ]
+}

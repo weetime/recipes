@@ -1,0 +1,162 @@
+{
+  "title": "Qwen3.8-27B BF16 · 910B3 · effort medium",
+  "breadcrumb": "Qwen3.8-27B",
+  "kicker": "SERVING PERFORMANCE BENCHMARK",
+  "lede": {
+    "zh": "Qwen3.8-27B BF16 在 reasoning_effort=medium 下的服务成本测试。",
+    "en": "Serving cost of Qwen3.8-27B BF16 with reasoning_effort=medium."
+  },
+  "chips": [
+    "8 × Ascend 910B3 · 64 GB",
+    "BF16",
+    "TP4 · reasoning_effort medium",
+    "vLLM-Ascend 0.23.0rc1",
+    "Measured 2026-08-15"
+  ],
+  "snapshot": {
+    "zh": "独立实测 · 按负载与采样条件解读",
+    "en": "Independent measurement · interpret with workload and sampling"
+  },
+  "sections": [
+    {
+      "id": "reasoning-effort",
+      "zh": "Hard 题端到端耗时",
+      "en": "Hard-prompt end-to-end time"
+    },
+    {
+      "id": "method",
+      "zh": "测试方法",
+      "en": "Method"
+    }
+  ],
+  "stats": [],
+  "overview": {
+    "heading": {
+      "zh": "测试结果",
+      "en": "Measured results"
+    },
+    "intro": {
+      "zh": "Qwen3.8-27B BF16 在 reasoning_effort=medium 下的服务成本测试。",
+      "en": "Serving cost of Qwen3.8-27B BF16 with reasoning_effort=medium."
+    },
+    "note": {
+      "zh": "基于 24 条难度平衡提示和三次独立测量；结果不代表回答质量或所有题目的延迟。",
+      "en": "Based on 24 difficulty-balanced prompts and three independent measurements; results do not establish answer quality or latency for all prompts."
+    }
+  },
+  "blocks": [
+    {
+      "id": "reasoning-effort",
+      "label": {
+        "zh": "Hard 题端到端耗时",
+        "en": "Hard-prompt end-to-end time"
+      },
+      "heading": {
+        "zh": "Hard 题端到端耗时",
+        "en": "Hard-prompt end-to-end time"
+      },
+      "intro": {
+        "zh": "按并发分别记录 Hard 题的端到端耗时中位数。",
+        "en": "Median end-to-end time for hard prompts is reported separately by concurrency."
+      },
+      "table": {
+        "headers": {
+          "zh": [
+            "并发",
+            "E2E 中位数"
+          ],
+          "en": [
+            "Concurrency",
+            "Median E2E"
+          ]
+        },
+        "rows": [
+          [
+            "C1",
+            "93.1 s"
+          ],
+          [
+            "C8",
+            "89.1 s"
+          ],
+          [
+            "C32",
+            "119.8 s"
+          ]
+        ]
+      },
+      "notes": [],
+      "chart": {
+        "type": "line",
+        "title": {
+          "zh": "E2E 中位数",
+          "en": "Median E2E"
+        },
+        "hint": {
+          "zh": "仅显示本配置实测值；缺测点不补零。",
+          "en": "Measured values for this configuration only; missing points are not filled with zero."
+        },
+        "labels": {
+          "zh": [
+            "C1",
+            "C8",
+            "C32"
+          ],
+          "en": [
+            "C1",
+            "C8",
+            "C32"
+          ]
+        },
+        "yTitle": {
+          "zh": "s",
+          "en": "s"
+        },
+        "series": [
+          {
+            "zh": "E2E 中位数",
+            "en": "Median E2E",
+            "color": "blue",
+            "values": [
+              93.1,
+              89.1,
+              119.8
+            ]
+          }
+        ]
+      }
+    }
+  ],
+  "meta": [
+    {
+      "zh": "硬件",
+      "en": "Hardware",
+      "value": "8 × Ascend 910B3 · 64 GB"
+    },
+    {
+      "zh": "配置",
+      "en": "Configuration",
+      "value": "TP4 · reasoning_effort medium"
+    },
+    {
+      "zh": "引擎",
+      "en": "Engine",
+      "value": "vLLM-Ascend 0.23.0rc1"
+    },
+    {
+      "zh": "精度",
+      "en": "Precision",
+      "value": "BF16"
+    }
+  ],
+  "methodIntro": {
+    "zh": "不同测试阶段的请求形状、样本量和统计口径单独记录。",
+    "en": "Workload shape, sample count, and statistics are stated separately by test phase."
+  },
+  "methodNotes": [
+    {
+      "zh": "基于 24 条难度平衡提示和三次独立测量；结果不代表回答质量或所有题目的延迟。",
+      "en": "Based on 24 difficulty-balanced prompts and three independent measurements; results do not establish answer quality or latency for all prompts."
+    }
+  ]
+}
