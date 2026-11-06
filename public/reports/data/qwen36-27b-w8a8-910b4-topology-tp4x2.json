@@ -1,0 +1,148 @@
+{
+  "title": "Qwen3.6-27B W8A8 · 910B4 · TP4 × 2 拓扑测试",
+  "breadcrumb": "Qwen3.6-27B",
+  "kicker": "SERVING PERFORMANCE BENCHMARK",
+  "lede": {
+    "zh": "Qwen3.6-27B 在 910B4 上的 TP4 × 2 拓扑阶段测点。",
+    "en": "Qwen3.6-27B topology-phase observation on 910B4 using TP4 × 2."
+  },
+  "chips": [
+    "8 × Ascend 910B4 · 32 GB",
+    "W8A8",
+    "TP4 × 2",
+    "vLLM-Ascend 0.18.0rc1",
+    "Measured 2026-07-23"
+  ],
+  "snapshot": {
+    "zh": "独立实测 · 按负载与采样条件解读",
+    "en": "Independent measurement · interpret with workload and sampling"
+  },
+  "sections": [
+    {
+      "id": "topology",
+      "zh": "拓扑阶段测点",
+      "en": "Topology-phase point"
+    },
+    {
+      "id": "method",
+      "zh": "测试方法",
+      "en": "Method"
+    }
+  ],
+  "stats": [],
+  "overview": {
+    "heading": {
+      "zh": "测试结果",
+      "en": "Measured results"
+    },
+    "intro": {
+      "zh": "Qwen3.6-27B 在 910B4 上的 TP4 × 2 拓扑阶段测点。",
+      "en": "Qwen3.6-27B topology-phase observation on 910B4 using TP4 × 2."
+    },
+    "note": {
+      "zh": "仅有本布局的汇总点；不能由此还原完整并发曲线。",
+      "en": "Only a summary point is available for this layout; a full concurrency curve cannot be reconstructed."
+    }
+  },
+  "blocks": [
+    {
+      "id": "topology",
+      "label": {
+        "zh": "拓扑阶段测点",
+        "en": "Topology-phase point"
+      },
+      "heading": {
+        "zh": "拓扑阶段测点",
+        "en": "Topology-phase point"
+      },
+      "intro": {
+        "zh": "保留该并行布局在拓扑阶段的已归档汇总测点。",
+        "en": "This is the archived summary observation for this parallel layout in the topology phase."
+      },
+      "table": {
+        "headers": {
+          "zh": [
+            "测量项",
+            "实测结果"
+          ],
+          "en": [
+            "Metric",
+            "Observed result"
+          ]
+        },
+        "rows": [
+          [
+            "峰值聚合输出吞吐",
+            "713 tok/s · peak aggregate"
+          ]
+        ]
+      },
+      "notes": [],
+      "chart": {
+        "type": "bar",
+        "title": {
+          "zh": "峰值聚合输出吞吐",
+          "en": "峰值聚合输出吞吐"
+        },
+        "hint": {
+          "zh": "仅显示本配置实测值；缺测点不补零。",
+          "en": "Measured values for this configuration only; missing points are not filled with zero."
+        },
+        "labels": {
+          "zh": [
+            "TP4 × 2"
+          ],
+          "en": [
+            "TP4 × 2"
+          ]
+        },
+        "yTitle": {
+          "zh": "tok/s",
+          "en": "tok/s"
+        },
+        "series": [
+          {
+            "zh": "峰值聚合输出吞吐",
+            "en": "峰值聚合输出吞吐",
+            "color": "blue",
+            "values": [
+              713
+            ]
+          }
+        ]
+      }
+    }
+  ],
+  "meta": [
+    {
+      "zh": "硬件",
+      "en": "Hardware",
+      "value": "8 × Ascend 910B4 · 32 GB"
+    },
+    {
+      "zh": "配置",
+      "en": "Configuration",
+      "value": "TP4 × 2"
+    },
+    {
+      "zh": "引擎",
+      "en": "Engine",
+      "value": "vLLM-Ascend 0.18.0rc1"
+    },
+    {
+      "zh": "精度",
+      "en": "Precision",
+      "value": "W8A8"
+    }
+  ],
+  "methodIntro": {
+    "zh": "不同测试阶段的请求形状、样本量和统计口径单独记录。",
+    "en": "Workload shape, sample count, and statistics are stated separately by test phase."
+  },
+  "methodNotes": [
+    {
+      "zh": "仅有本布局的汇总点；不能由此还原完整并发曲线。",
+      "en": "Only a summary point is available for this layout; a full concurrency curve cannot be reconstructed."
+    }
+  ]
+}

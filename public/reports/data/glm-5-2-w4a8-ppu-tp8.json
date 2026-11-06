@@ -1,0 +1,394 @@
+{
+  "title": "GLM-5.2 W4A8 · PPU · TP8 baseline",
+  "breadcrumb": "GLM-5.2",
+  "kicker": "SERVING PERFORMANCE BENCHMARK",
+  "lede": {
+    "zh": "GLM-5.2 W4A8 在 PPU ZW810E 上的 TP8 baseline 服务性能。",
+    "en": "Serving performance of GLM-5.2 W4A8 on PPU ZW810E using TP8 baseline."
+  },
+  "chips": [
+    "8 × PPU ZW810E",
+    "W4A8",
+    "TP8 baseline",
+    "SGLang 0.5.12",
+    "Measured 2026-07-30"
+  ],
+  "snapshot": {
+    "zh": "独立实测 · 按负载与采样条件解读",
+    "en": "Independent measurement · interpret with workload and sampling"
+  },
+  "sections": [
+    {
+      "id": "capacity",
+      "zh": "256 输出并发",
+      "en": "256-output concurrency"
+    },
+    {
+      "id": "long-output",
+      "zh": "1024 输出并发",
+      "en": "1024-output concurrency"
+    },
+    {
+      "id": "latency",
+      "zh": "256 输出时延",
+      "en": "256-output latency"
+    },
+    {
+      "id": "method",
+      "zh": "测试方法",
+      "en": "Method"
+    }
+  ],
+  "stats": [],
+  "overview": {
+    "heading": {
+      "zh": "测试结果",
+      "en": "Measured results"
+    },
+    "intro": {
+      "zh": "GLM-5.2 W4A8 在 PPU ZW810E 上的 TP8 baseline 服务性能。",
+      "en": "Serving performance of GLM-5.2 W4A8 on PPU ZW810E using TP8 baseline."
+    },
+    "note": {
+      "zh": "部分高并发点首 token 延迟较高；压测结果不代表生产并发建议。",
+      "en": "Some high-concurrency points have high time to first token; stress results are not production concurrency recommendations."
+    }
+  },
+  "blocks": [
+    {
+      "id": "capacity",
+      "label": {
+        "zh": "256 输出并发",
+        "en": "256-output concurrency"
+      },
+      "heading": {
+        "zh": "256 输出并发",
+        "en": "256-output concurrency"
+      },
+      "intro": {
+        "zh": "ShareGPT English，thinking 关闭；保留已测并发及缺测点。",
+        "en": "ShareGPT English with thinking disabled; measured and missing concurrency points are retained."
+      },
+      "table": {
+        "headers": {
+          "zh": [
+            "并发",
+            "输出 tok/s"
+          ],
+          "en": [
+            "Concurrency",
+            "Output tok/s"
+          ]
+        },
+        "rows": [
+          [
+            "C1",
+            "21.4"
+          ],
+          [
+            "C4",
+            "73.6"
+          ],
+          [
+            "C8",
+            "135.6"
+          ],
+          [
+            "C16",
+            "241.9"
+          ],
+          [
+            "C32",
+            "368.9"
+          ],
+          [
+            "C48",
+            "269.5"
+          ],
+          [
+            "C64",
+            "272.9"
+          ],
+          [
+            "C96",
+            "—"
+          ],
+          [
+            "C128",
+            "—"
+          ]
+        ]
+      },
+      "notes": [],
+      "chart": {
+        "type": "line",
+        "title": {
+          "zh": "输出吞吐",
+          "en": "Output throughput"
+        },
+        "hint": {
+          "zh": "仅显示本配置实测值；缺测点不补零。",
+          "en": "Measured values for this configuration only; missing points are not filled with zero."
+        },
+        "labels": {
+          "zh": [
+            "C1",
+            "C4",
+            "C8",
+            "C16",
+            "C32",
+            "C48",
+            "C64",
+            "C96",
+            "C128"
+          ],
+          "en": [
+            "C1",
+            "C4",
+            "C8",
+            "C16",
+            "C32",
+            "C48",
+            "C64",
+            "C96",
+            "C128"
+          ]
+        },
+        "yTitle": {
+          "zh": "tok/s",
+          "en": "tok/s"
+        },
+        "series": [
+          {
+            "zh": "输出吞吐",
+            "en": "Output throughput",
+            "color": "blue",
+            "values": [
+              21.36,
+              73.63,
+              135.58,
+              241.88,
+              368.93,
+              269.5,
+              272.87,
+              null,
+              null
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "long-output",
+      "label": {
+        "zh": "1024 输出并发",
+        "en": "1024-output concurrency"
+      },
+      "heading": {
+        "zh": "1024 输出并发",
+        "en": "1024-output concurrency"
+      },
+      "intro": {
+        "zh": "固定输出长度 1024，吞吐和延迟按并发列示。",
+        "en": "Fixed output length 1024; throughput and latency are listed by concurrency."
+      },
+      "table": {
+        "headers": {
+          "zh": [
+            "并发",
+            "整体输出 tok/s",
+            "TTFT (ms)",
+            "TPOT (ms)"
+          ],
+          "en": [
+            "Concurrency",
+            "Aggregate output tok/s",
+            "TTFT (ms)",
+            "TPOT (ms)"
+          ]
+        },
+        "rows": [
+          [
+            "4",
+            "75.6",
+            "661.7",
+            "49.1"
+          ],
+          [
+            "8",
+            "138.8",
+            "493.0",
+            "52.5"
+          ],
+          [
+            "16",
+            "251.2",
+            "393.1",
+            "57.3"
+          ],
+          [
+            "32",
+            "418.7",
+            "515.3",
+            "66.2"
+          ]
+        ]
+      },
+      "notes": [],
+      "chart": {
+        "type": "line",
+        "title": {
+          "zh": "输出吞吐",
+          "en": "Output throughput"
+        },
+        "hint": {
+          "zh": "仅显示本配置实测值；缺测点不补零。",
+          "en": "Measured values for this configuration only; missing points are not filled with zero."
+        },
+        "labels": {
+          "zh": [
+            "C4",
+            "C8",
+            "C16",
+            "C32"
+          ],
+          "en": [
+            "C4",
+            "C8",
+            "C16",
+            "C32"
+          ]
+        },
+        "yTitle": {
+          "zh": "tok/s",
+          "en": "tok/s"
+        },
+        "series": [
+          {
+            "zh": "输出吞吐",
+            "en": "Output throughput",
+            "color": "blue",
+            "values": [
+              75.6,
+              138.8,
+              251.2,
+              418.7
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "latency",
+      "label": {
+        "zh": "256 输出时延",
+        "en": "256-output latency"
+      },
+      "heading": {
+        "zh": "256 输出时延",
+        "en": "256-output latency"
+      },
+      "intro": {
+        "zh": "不同并发下记录 TPOT 和 TTFT；缺测点未补齐。",
+        "en": "TPOT and TTFT by concurrency; missing points are not interpolated."
+      },
+      "table": {
+        "headers": {
+          "zh": [
+            "并发",
+            "输出吞吐",
+            "TPOT",
+            "TTFT P50"
+          ],
+          "en": [
+            "Concurrency",
+            "Output throughput",
+            "TPOT",
+            "TTFT P50"
+          ]
+        },
+        "rows": [
+          [
+            "C1",
+            "21.4 tok/s",
+            "44.67 ms",
+            "0.58 s"
+          ],
+          [
+            "C4",
+            "73.6 tok/s",
+            "51.30 ms",
+            "0.56 s"
+          ],
+          [
+            "C8",
+            "135.6 tok/s",
+            "54.12 ms",
+            "0.44 s"
+          ],
+          [
+            "C16",
+            "241.9 tok/s",
+            "59.28 ms",
+            "0.49 s"
+          ],
+          [
+            "C32",
+            "368.9 tok/s",
+            "67.18 ms",
+            "0.66 s"
+          ],
+          [
+            "C48",
+            "269.5 tok/s",
+            "105.04 ms",
+            "14.95 s"
+          ],
+          [
+            "C64",
+            "272.9 tok/s",
+            "104.09 ms",
+            "30.45 s"
+          ]
+        ]
+      },
+      "notes": []
+    }
+  ],
+  "meta": [
+    {
+      "zh": "硬件",
+      "en": "Hardware",
+      "value": "8 × PPU ZW810E"
+    },
+    {
+      "zh": "配置",
+      "en": "Configuration",
+      "value": "TP8 baseline"
+    },
+    {
+      "zh": "引擎",
+      "en": "Engine",
+      "value": "SGLang 0.5.12"
+    },
+    {
+      "zh": "精度",
+      "en": "Precision",
+      "value": "W4A8"
+    }
+  ],
+  "methodIntro": {
+    "zh": "不同测试阶段的请求形状、样本量和统计口径单独记录。",
+    "en": "Workload shape, sample count, and statistics are stated separately by test phase."
+  },
+  "methodNotes": [
+    {
+      "zh": "部分高并发点首 token 延迟较高；压测结果不代表生产并发建议。",
+      "en": "Some high-concurrency points have high time to first token; stress results are not production concurrency recommendations."
+    },
+    {
+      "zh": "部分补充点为单轮观测，不能将其视为多轮稳定性结论。",
+      "en": "Some supplementary points are single-run observations and do not establish repeatability."
+    }
+  ]
+}

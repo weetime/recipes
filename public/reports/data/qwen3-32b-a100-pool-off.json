@@ -1,0 +1,208 @@
+{
+  "title": "Qwen3-32B BF16 · A100 · 共享池关闭",
+  "breadcrumb": "Qwen3-32B",
+  "kicker": "SERVING PERFORMANCE BENCHMARK",
+  "lede": {
+    "zh": "Qwen3-32B 在 A100 上使用共享池关闭的长上下文多轮测试。",
+    "en": "Long-context multi-turn measurements for Qwen3-32B on A100 with shared pool off."
+  },
+  "chips": [
+    "8 × NVIDIA A100 · 80 GB",
+    "BF16",
+    "4 × TP2 · 共享池关闭",
+    "vLLM 0.20.0 · LMCache 0.4.4",
+    "Measured 2026-07-21"
+  ],
+  "snapshot": {
+    "zh": "独立实测 · 按负载与采样条件解读",
+    "en": "Independent measurement · interpret with workload and sampling"
+  },
+  "sections": [
+    {
+      "id": "goodput",
+      "zh": "长上下文 SLO 测试",
+      "en": "Long-context SLO measurement"
+    },
+    {
+      "id": "reuse",
+      "zh": "前缀缓存复用",
+      "en": "Prefix-cache reuse"
+    },
+    {
+      "id": "method",
+      "zh": "测试方法",
+      "en": "Method"
+    }
+  ],
+  "stats": [],
+  "overview": {
+    "heading": {
+      "zh": "测试结果",
+      "en": "Measured results"
+    },
+    "intro": {
+      "zh": "Qwen3-32B 在 A100 上使用共享池关闭的长上下文多轮测试。",
+      "en": "Long-context multi-turn measurements for Qwen3-32B on A100 with shared pool off."
+    },
+    "note": {
+      "zh": "SLO 为 TTFT ≤2 秒、TPOT ≤100 毫秒；仅适用于该批次的会话和缓存工作集。",
+      "en": "The SLO is TTFT ≤2 s and TPOT ≤100 ms; results apply to the tested sessions and cache working set."
+    }
+  },
+  "blocks": [
+    {
+      "id": "goodput",
+      "label": {
+        "zh": "长上下文 SLO 测试",
+        "en": "Long-context SLO measurement"
+      },
+      "heading": {
+        "zh": "长上下文 SLO 测试",
+        "en": "Long-context SLO measurement"
+      },
+      "intro": {
+        "zh": "120 个多轮会话，约 18K token 上下文；C10 与 C30 分别统计。",
+        "en": "120 multi-turn sessions with approximately 18K-token context; C10 and C30 are reported separately."
+      },
+      "table": {
+        "headers": {
+          "zh": [
+            "并发",
+            "TTFT P50",
+            "SLO goodput",
+            "完成吞吐"
+          ],
+          "en": [
+            "Concurrency",
+            "TTFT P50",
+            "SLO goodput",
+            "Completion throughput"
+          ]
+        },
+        "rows": [
+          [
+            "C10",
+            "3957 ms",
+            "0.36 req/s",
+            "0.96 req/s"
+          ],
+          [
+            "C30",
+            "4289 ms",
+            "0.18 req/s",
+            "0.83 req/s"
+          ]
+        ]
+      },
+      "notes": [],
+      "chart": {
+        "type": "line",
+        "title": {
+          "zh": "SLO goodput",
+          "en": "SLO goodput"
+        },
+        "hint": {
+          "zh": "仅显示本配置实测值；缺测点不补零。",
+          "en": "Measured values for this configuration only; missing points are not filled with zero."
+        },
+        "labels": {
+          "zh": [
+            "C10",
+            "C30"
+          ],
+          "en": [
+            "C10",
+            "C30"
+          ]
+        },
+        "yTitle": {
+          "zh": "req/s",
+          "en": "req/s"
+        },
+        "series": [
+          {
+            "zh": "SLO goodput",
+            "en": "SLO goodput",
+            "color": "blue",
+            "values": [
+              0.36,
+              0.18
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "reuse",
+      "label": {
+        "zh": "前缀缓存复用",
+        "en": "Prefix-cache reuse"
+      },
+      "heading": {
+        "zh": "前缀缓存复用",
+        "en": "Prefix-cache reuse"
+      },
+      "intro": {
+        "zh": "分别记录本地缓存和共享池服务的前缀比例。",
+        "en": "Local and shared-pool served-prefix fractions are recorded separately."
+      },
+      "table": {
+        "headers": {
+          "zh": [
+            "本地命中",
+            "共享池命中",
+            "服务前缀总计",
+            "共享池大小"
+          ],
+          "en": [
+            "Local hit",
+            "Shared-pool hit",
+            "Total served prefix",
+            "Pool size"
+          ]
+        },
+        "rows": [
+          [
+            "30%",
+            "0%",
+            "约 30%",
+            "—"
+          ]
+        ]
+      },
+      "notes": []
+    }
+  ],
+  "meta": [
+    {
+      "zh": "硬件",
+      "en": "Hardware",
+      "value": "8 × NVIDIA A100 · 80 GB"
+    },
+    {
+      "zh": "配置",
+      "en": "Configuration",
+      "value": "4 × TP2 · 共享池关闭"
+    },
+    {
+      "zh": "引擎",
+      "en": "Engine",
+      "value": "vLLM 0.20.0 · LMCache 0.4.4"
+    },
+    {
+      "zh": "精度",
+      "en": "Precision",
+      "value": "BF16"
+    }
+  ],
+  "methodIntro": {
+    "zh": "不同测试阶段的请求形状、样本量和统计口径单独记录。",
+    "en": "Workload shape, sample count, and statistics are stated separately by test phase."
+  },
+  "methodNotes": [
+    {
+      "zh": "SLO 为 TTFT ≤2 秒、TPOT ≤100 毫秒；仅适用于该批次的会话和缓存工作集。",
+      "en": "The SLO is TTFT ≤2 s and TPOT ≤100 ms; results apply to the tested sessions and cache working set."
+    }
+  ]
+}

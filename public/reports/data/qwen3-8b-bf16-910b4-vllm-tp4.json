@@ -1,0 +1,295 @@
+{
+  "title": "Qwen3-8B BF16 · vLLM-Ascend · 910B4 TP4",
+  "breadcrumb": "Qwen3-8B",
+  "kicker": "SERVING PERFORMANCE BENCHMARK",
+  "lede": {
+    "zh": "Qwen3-8B BF16 在 910B4 四卡使用 vLLM-Ascend 的 Agent 形状和 ShareGPT 负载测试。",
+    "en": "Agent-shaped and ShareGPT serving measurements for Qwen3-8B BF16 on four Ascend 910B4 using vLLM-Ascend."
+  },
+  "chips": [
+    "4 × Ascend 910B4 · 32 GB",
+    "BF16",
+    "TP4",
+    "vLLM-Ascend 0.18.0rc1",
+    "Measured 2026-05-25"
+  ],
+  "snapshot": {
+    "zh": "独立实测 · 按负载与采样条件解读",
+    "en": "Independent measurement · interpret with workload and sampling"
+  },
+  "sections": [
+    {
+      "id": "agent",
+      "zh": "Agent 形状请求",
+      "en": "Agent-shaped traffic"
+    },
+    {
+      "id": "sharegpt",
+      "zh": "ShareGPT 回放",
+      "en": "ShareGPT replay"
+    },
+    {
+      "id": "method",
+      "zh": "测试方法",
+      "en": "Method"
+    }
+  ],
+  "stats": [],
+  "overview": {
+    "heading": {
+      "zh": "测试结果",
+      "en": "Measured results"
+    },
+    "intro": {
+      "zh": "Qwen3-8B BF16 在 910B4 四卡使用 vLLM-Ascend 的 Agent 形状和 ShareGPT 负载测试。",
+      "en": "Agent-shaped and ShareGPT serving measurements for Qwen3-8B BF16 on four Ascend 910B4 using vLLM-Ascend."
+    },
+    "note": {
+      "zh": "Agent 形状请求与 ShareGPT 使用不同负载；未记录的数据以“—”标示。",
+      "en": "Agent-shaped requests and ShareGPT are distinct workloads; unavailable values are shown as “—”."
+    }
+  },
+  "blocks": [
+    {
+      "id": "agent",
+      "label": {
+        "zh": "Agent 形状请求",
+        "en": "Agent-shaped traffic"
+      },
+      "heading": {
+        "zh": "Agent 形状请求",
+        "en": "Agent-shaped traffic"
+      },
+      "intro": {
+        "zh": "四卡 TP4，展示七种请求形状在 C32 下的观测；原始表中未记录的时延保留缺失。",
+        "en": "Four-card TP4; observations for seven request shapes at C32. Latency values absent from the source table remain missing."
+      },
+      "table": {
+        "headers": {
+          "zh": [
+            "请求形状",
+            "请求 / 秒",
+            "TPOT"
+          ],
+          "en": [
+            "Request shape",
+            "Requests / s",
+            "TPOT"
+          ]
+        },
+        "rows": [
+          [
+            "Chat cold",
+            "21.13",
+            "16.8 ms"
+          ],
+          [
+            "Chat warm",
+            "13.35",
+            "29.5 ms"
+          ],
+          [
+            "Chat hot",
+            "13.51",
+            "30.0 ms"
+          ],
+          [
+            "Mid",
+            "6.07",
+            "—"
+          ],
+          [
+            "Agent cold",
+            "10.54",
+            "—"
+          ],
+          [
+            "Agent warm",
+            "7.26",
+            "70 ms"
+          ],
+          [
+            "Long",
+            "2.29",
+            "—"
+          ]
+        ]
+      },
+      "notes": [],
+      "chart": {
+        "type": "bar",
+        "title": {
+          "zh": "Agent 形状 · C32 请求速率",
+          "en": "Agent-shaped traffic · C32 request rate"
+        },
+        "hint": {
+          "zh": "仅显示本配置实测值；缺测点不补零。",
+          "en": "Measured values for this configuration only; missing points are not filled with zero."
+        },
+        "labels": {
+          "zh": [
+            "Chat cold",
+            "Chat warm",
+            "Chat hot",
+            "Mid",
+            "Agent cold",
+            "Agent warm",
+            "Long"
+          ],
+          "en": [
+            "Chat cold",
+            "Chat warm",
+            "Chat hot",
+            "Mid",
+            "Agent cold",
+            "Agent warm",
+            "Long"
+          ]
+        },
+        "yTitle": {
+          "zh": "req/s",
+          "en": "req/s"
+        },
+        "series": [
+          {
+            "zh": "C32 请求速率",
+            "en": "C32 request rate",
+            "color": "blue",
+            "values": [
+              21.13,
+              13.35,
+              13.51,
+              6.07,
+              10.54,
+              7.26,
+              2.29
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "sharegpt",
+      "label": {
+        "zh": "ShareGPT 回放",
+        "en": "ShareGPT replay"
+      },
+      "heading": {
+        "zh": "ShareGPT 回放",
+        "en": "ShareGPT replay"
+      },
+      "intro": {
+        "zh": "四卡 TP4，C32，500 条提示词；未记录的指标保留为空缺。",
+        "en": "Four-card TP4 at C32 using 500 prompts; unavailable metrics remain missing."
+      },
+      "table": {
+        "headers": {
+          "zh": [
+            "指标 · C32",
+            "测量值"
+          ],
+          "en": [
+            "Metric · C32",
+            "Measured value"
+          ]
+        },
+        "rows": [
+          [
+            "RPS",
+            "4.52"
+          ],
+          [
+            "输出吞吐",
+            "1,233 tok/s"
+          ],
+          [
+            "TTFT P50",
+            "326 ms"
+          ],
+          [
+            "TTFT P95",
+            "550 ms"
+          ],
+          [
+            "TPOT P50",
+            "23.6 ms"
+          ],
+          [
+            "E2E P50",
+            "6.06 s"
+          ]
+        ]
+      },
+      "notes": [],
+      "chart": {
+        "type": "bar",
+        "title": {
+          "zh": "请求完成速率",
+          "en": "Request completion rate"
+        },
+        "hint": {
+          "zh": "仅显示本配置实测值；缺测点不补零。",
+          "en": "Measured values for this configuration only; missing points are not filled with zero."
+        },
+        "labels": {
+          "zh": [
+            "C32"
+          ],
+          "en": [
+            "C32"
+          ]
+        },
+        "yTitle": {
+          "zh": "req/s",
+          "en": "req/s"
+        },
+        "series": [
+          {
+            "zh": "请求完成速率",
+            "en": "Request completion rate",
+            "color": "blue",
+            "values": [
+              4.52
+            ]
+          }
+        ]
+      }
+    }
+  ],
+  "meta": [
+    {
+      "zh": "硬件",
+      "en": "Hardware",
+      "value": "4 × Ascend 910B4 · 32 GB"
+    },
+    {
+      "zh": "配置",
+      "en": "Configuration",
+      "value": "TP4"
+    },
+    {
+      "zh": "引擎",
+      "en": "Engine",
+      "value": "vLLM-Ascend 0.18.0rc1"
+    },
+    {
+      "zh": "精度",
+      "en": "Precision",
+      "value": "BF16"
+    }
+  ],
+  "methodIntro": {
+    "zh": "不同测试阶段的请求形状、样本量和统计口径单独记录。",
+    "en": "Workload shape, sample count, and statistics are stated separately by test phase."
+  },
+  "methodNotes": [
+    {
+      "zh": "Agent 形状请求与 ShareGPT 使用不同负载；未记录的数据以“—”标示。",
+      "en": "Agent-shaped requests and ShareGPT are distinct workloads; unavailable values are shown as “—”."
+    },
+    {
+      "zh": "工具结果和真实任务质量不由请求完成速率证明。",
+      "en": "Request completion rate does not establish live-tool results or task accuracy."
+    }
+  ]
+}

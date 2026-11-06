@@ -1,0 +1,160 @@
+{
+  "title": "DeepSeek-V4-Flash INT8 · PPU · Agent 8K",
+  "breadcrumb": "DeepSeek-V4-Flash",
+  "kicker": "SERVING PERFORMANCE BENCHMARK",
+  "lede": {
+    "zh": "DeepSeek-V4-Flash 在 PPU、8K 窗口下的 Agent 轨迹回放。",
+    "en": "DeepSeek-V4-Flash Agent trace replay on PPU using a 8K context window."
+  },
+  "chips": [
+    "8 × PPU ZW810E · 96 GB",
+    "INT8 W8A8",
+    "TP8 · EAGLE · MRR32 · 8K",
+    "SGLang 0.5.12",
+    "Measured 2026-07-12"
+  ],
+  "snapshot": {
+    "zh": "独立实测 · 按负载与采样条件解读",
+    "en": "Independent measurement · interpret with workload and sampling"
+  },
+  "sections": [
+    {
+      "id": "agent",
+      "zh": "Agent 轨迹回放",
+      "en": "Agent trace replay"
+    },
+    {
+      "id": "method",
+      "zh": "测试方法",
+      "en": "Method"
+    }
+  ],
+  "stats": [],
+  "overview": {
+    "heading": {
+      "zh": "测试结果",
+      "en": "Measured results"
+    },
+    "intro": {
+      "zh": "DeepSeek-V4-Flash 在 PPU、8K 窗口下的 Agent 轨迹回放。",
+      "en": "DeepSeek-V4-Flash Agent trace replay on PPU using a 8K context window."
+    },
+    "note": {
+      "zh": "本次 Agent 负载为单次观测，使用近似 tokenizer；完成请求速率不等于任务成功率。",
+      "en": "The Agent workload is a single observation with an approximate tokenizer; achieved request rate does not establish task success."
+    }
+  },
+  "blocks": [
+    {
+      "id": "agent",
+      "label": {
+        "zh": "Agent 轨迹回放",
+        "en": "Agent trace replay"
+      },
+      "heading": {
+        "zh": "Agent 轨迹回放",
+        "en": "Agent trace replay"
+      },
+      "intro": {
+        "zh": "单实例默认 MRR32，开放环到达；上下文窗口固定为 8K。",
+        "en": "Single-instance default MRR32 with open-loop arrivals and a 8K context window."
+      },
+      "table": {
+        "headers": {
+          "zh": [
+            "上下文配置",
+            "平均输入 tokens",
+            "请求数",
+            "TTFT P50",
+            "实际速率",
+            "输入到达率"
+          ],
+          "en": [
+            "Context",
+            "Mean input tokens",
+            "Requests",
+            "TTFT P50",
+            "Achieved req/s",
+            "Offered arrival rate"
+          ]
+        },
+        "rows": [
+          [
+            "8K",
+            "4,807",
+            "232",
+            "65.1 s",
+            "1.65 req/s",
+            "3.9 req/s"
+          ]
+        ]
+      },
+      "notes": [],
+      "chart": {
+        "type": "bar",
+        "title": {
+          "zh": "完成请求速率",
+          "en": "Achieved request rate"
+        },
+        "hint": {
+          "zh": "仅显示本配置实测值；缺测点不补零。",
+          "en": "Measured values for this configuration only; missing points are not filled with zero."
+        },
+        "labels": {
+          "zh": [
+            "8K"
+          ],
+          "en": [
+            "8K"
+          ]
+        },
+        "yTitle": {
+          "zh": "req/s",
+          "en": "req/s"
+        },
+        "series": [
+          {
+            "zh": "完成请求速率",
+            "en": "Achieved request rate",
+            "color": "blue",
+            "values": [
+              1.65
+            ]
+          }
+        ]
+      }
+    }
+  ],
+  "meta": [
+    {
+      "zh": "硬件",
+      "en": "Hardware",
+      "value": "8 × PPU ZW810E · 96 GB"
+    },
+    {
+      "zh": "配置",
+      "en": "Configuration",
+      "value": "TP8 · EAGLE · MRR32 · 8K"
+    },
+    {
+      "zh": "引擎",
+      "en": "Engine",
+      "value": "SGLang 0.5.12"
+    },
+    {
+      "zh": "精度",
+      "en": "Precision",
+      "value": "INT8 W8A8"
+    }
+  ],
+  "methodIntro": {
+    "zh": "不同测试阶段的请求形状、样本量和统计口径单独记录。",
+    "en": "Workload shape, sample count, and statistics are stated separately by test phase."
+  },
+  "methodNotes": [
+    {
+      "zh": "本次 Agent 负载为单次观测，使用近似 tokenizer；完成请求速率不等于任务成功率。",
+      "en": "The Agent workload is a single observation with an approximate tokenizer; achieved request rate does not establish task success."
+    }
+  ]
+}

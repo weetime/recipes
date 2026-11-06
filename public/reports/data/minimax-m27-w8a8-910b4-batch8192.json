@@ -1,0 +1,152 @@
+{
+  "title": "MiniMax-M2.7 W8A8 · 910B4 · batched tokens 8192",
+  "breadcrumb": "MiniMax-M2.7",
+  "kicker": "SERVING PERFORMANCE BENCHMARK",
+  "lede": {
+    "zh": "MiniMax-M2.7 的 8192 batch token 预算下的长输入 ITL 测试。",
+    "en": "Long-input ITL observations for MiniMax-M2.7 with an 8192 batched-token budget."
+  },
+  "chips": [
+    "8 × Ascend 910B4 · 64 GB",
+    "W8A8 QuaRot",
+    "TP8 · EP · EAGLE3 k=3 · max batched tokens 8192",
+    "vLLM-Ascend 0.23.0rc1",
+    "Measured 2026-08-25"
+  ],
+  "snapshot": {
+    "zh": "独立实测 · 按负载与采样条件解读",
+    "en": "Independent measurement · interpret with workload and sampling"
+  },
+  "sections": [
+    {
+      "id": "latency",
+      "zh": "32K 输入 ITL 分布",
+      "en": "32K input ITL distribution"
+    },
+    {
+      "id": "method",
+      "zh": "测试方法",
+      "en": "Method"
+    }
+  ],
+  "stats": [],
+  "overview": {
+    "heading": {
+      "zh": "测试结果",
+      "en": "Measured results"
+    },
+    "intro": {
+      "zh": "MiniMax-M2.7 的 8192 batch token 预算下的长输入 ITL 测试。",
+      "en": "Long-input ITL observations for MiniMax-M2.7 with an 8192 batched-token budget."
+    },
+    "note": {
+      "zh": "这是分布形态的汇总观测；现有汇总未提供独立的绝对吞吐值。",
+      "en": "This is a summary observation of distribution shape; the source summary does not provide an independent absolute throughput value."
+    }
+  },
+  "blocks": [
+    {
+      "id": "latency",
+      "label": {
+        "zh": "32K 输入 ITL 分布",
+        "en": "32K input ITL distribution"
+      },
+      "heading": {
+        "zh": "32K 输入 ITL 分布",
+        "en": "32K input ITL distribution"
+      },
+      "intro": {
+        "zh": "32K 输入 / 128 输出，C16；该配置下记录的 ITL 分布形态。",
+        "en": "32K input / 128 output at C16; recorded ITL distribution under this configuration."
+      },
+      "table": {
+        "headers": {
+          "zh": [
+            "指标",
+            "观测值"
+          ],
+          "en": [
+            "Metric",
+            "Observation"
+          ]
+        },
+        "rows": [
+          [
+            "ITL 分布",
+            "双峰"
+          ],
+          [
+            "尾比",
+            "约 30.7×"
+          ]
+        ]
+      },
+      "notes": [],
+      "chart": {
+        "type": "bar",
+        "title": {
+          "zh": "ITL 尾比",
+          "en": "ITL tail ratio"
+        },
+        "hint": {
+          "zh": "仅显示该测试配置的已测数据。",
+          "en": "Only measured points for this configuration are shown."
+        },
+        "labels": {
+          "zh": [
+            "32K / 128 · C16"
+          ],
+          "en": [
+            "32K / 128 · C16"
+          ]
+        },
+        "yTitle": {
+          "zh": "×",
+          "en": "×"
+        },
+        "series": [
+          {
+            "zh": "ITL 尾比",
+            "en": "ITL tail ratio",
+            "color": "blue",
+            "values": [
+              30.7
+            ]
+          }
+        ]
+      }
+    }
+  ],
+  "meta": [
+    {
+      "zh": "硬件",
+      "en": "Hardware",
+      "value": "8 × Ascend 910B4 · 64 GB"
+    },
+    {
+      "zh": "配置",
+      "en": "Configuration",
+      "value": "TP8 · EP · EAGLE3 k=3 · max batched tokens 8192"
+    },
+    {
+      "zh": "引擎",
+      "en": "Engine",
+      "value": "vLLM-Ascend 0.23.0rc1"
+    },
+    {
+      "zh": "精度",
+      "en": "Precision",
+      "value": "W8A8 QuaRot"
+    }
+  ],
+  "methodIntro": {
+    "zh": "不同测试阶段的请求形状、样本量和统计口径单独记录。",
+    "en": "Workload shape, sample count, and statistics are stated separately by test phase."
+  },
+  "methodNotes": [
+    {
+      "zh": "这是分布形态的汇总观测；现有汇总未提供独立的绝对吞吐值。",
+      "en": "This is a summary observation of distribution shape; the source summary does not provide an independent absolute throughput value."
+    }
+  ]
+}

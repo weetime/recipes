@@ -45,8 +45,8 @@
     },
     {
       "id": "graph",
-      "zh": "图执行对照",
-      "en": "Graph execution comparison"
+      "zh": "图执行验证",
+      "en": "Graph execution validation"
     },
     {
       "id": "method",
@@ -499,55 +499,49 @@
     {
       "id": "graph",
       "label": {
-        "zh": "图执行对照",
-        "en": "Graph execution comparison"
+        "zh": "图执行验证",
+        "en": "Graph execution validation"
       },
       "heading": {
-        "zh": "图执行对照",
-        "en": "Graph execution comparison"
+        "zh": "图执行验证",
+        "en": "Graph execution validation"
       },
       "intro": {
-        "zh": "小样本对照 PIECEWISE 与 FULL 图执行。",
-        "en": "Small-sample comparison of PIECEWISE and FULL graph execution."
+        "zh": "1024 输入、256 输出、C1，共 4 条；FULL_DECODE_ONLY 已捕获并回放 decoder 图。",
+        "en": "1024 input, 256 output at C1, four requests; decoder graph capture and replay were observed for FULL_DECODE_ONLY."
       },
       "notes": [
         {
-          "zh": "每组仅 4 条，不能作为稳定性能差异。",
-          "en": "Only four requests per group; this does not establish a stable performance difference."
+          "zh": "仅有 4 条请求，不支持稳健尾延迟或长期容量结论。",
+          "en": "Only four requests were measured; robust tail-latency and sustained-capacity claims are unsupported."
         }
       ],
       "table": {
         "headers": {
           "zh": [
             "指标",
-            "PIECEWISE",
             "FULL"
           ],
           "en": [
             "Metric",
-            "PIECEWISE",
             "FULL"
           ]
         },
         "rows": [
           [
             "有效请求数",
-            "4",
             "4"
           ],
           [
             "Decoder图",
-            "未捕获",
             "捕获并回放"
           ],
           [
             "平均 ITL P50 (ms)",
-            "234.17",
             "13.42"
           ],
           [
             "E2E P50 (s)",
-            "61.40",
             "4.96"
           ]
         ]

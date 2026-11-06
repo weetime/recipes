@@ -1,0 +1,318 @@
+{
+  "title": "Qwen3-32B BF16 · vLLM-Ascend · 910B4",
+  "breadcrumb": "Qwen3-32B",
+  "kicker": "SERVING PERFORMANCE BENCHMARK",
+  "lede": {
+    "zh": "Qwen3-32B BF16 在昇腾 910B4 上使用 vLLM-Ascend 的 ShareGPT 服务测试。",
+    "en": "ShareGPT serving measurements for Qwen3-32B BF16 using vLLM-Ascend on Ascend 910B4."
+  },
+  "chips": [
+    "4 × Ascend 910B4",
+    "BF16",
+    "TP4",
+    "vLLM-Ascend 0.18.0rc1",
+    "Measured 2026-06-30"
+  ],
+  "snapshot": {
+    "zh": "独立实测 · 按负载与采样条件解读",
+    "en": "Independent measurement · interpret with workload and sampling"
+  },
+  "sections": [
+    {
+      "id": "capacity",
+      "zh": "ShareGPT 并发测试",
+      "en": "ShareGPT concurrency"
+    },
+    {
+      "id": "latency",
+      "zh": "高并发时延",
+      "en": "High-concurrency latency"
+    },
+    {
+      "id": "method",
+      "zh": "测试方法",
+      "en": "Method"
+    }
+  ],
+  "stats": [
+    {
+      "zhLabel": "C128 输出吞吐",
+      "enLabel": "C128 output throughput",
+      "value": "1228.0 tok/s",
+      "zhNote": "三轮中位数",
+      "enNote": "Median of three runs"
+    },
+    {
+      "zhLabel": "C128 TTFT P50 / P95",
+      "enLabel": "C128 TTFT P50 / P95",
+      "value": "1200 / 11482 ms",
+      "zhNote": "三轮中位数",
+      "enNote": "Median of three runs"
+    },
+    {
+      "zhLabel": "C128 ITL P50 / P95",
+      "enLabel": "C128 ITL P50 / P95",
+      "value": "100.2 / 102.1 ms",
+      "zhNote": "三轮中位数",
+      "enNote": "Median of three runs"
+    }
+  ],
+  "overview": {
+    "heading": {
+      "zh": "测试结果",
+      "en": "Measured results"
+    },
+    "intro": {
+      "zh": "Qwen3-32B BF16 在昇腾 910B4 上使用 vLLM-Ascend 的 ShareGPT 服务测试。",
+      "en": "ShareGPT serving measurements for Qwen3-32B BF16 using vLLM-Ascend on Ascend 910B4."
+    },
+    "note": {
+      "zh": "每个并发点为三轮中位数；结果只对应该引擎、TP4 和本次 ShareGPT 请求分布。",
+      "en": "Each concurrency point is the median of three runs and applies to this engine, TP4, and the tested ShareGPT request distribution."
+    }
+  },
+  "blocks": [
+    {
+      "id": "capacity",
+      "label": {
+        "zh": "ShareGPT 并发测试",
+        "en": "ShareGPT concurrency"
+      },
+      "heading": {
+        "zh": "ShareGPT 并发测试",
+        "en": "ShareGPT concurrency"
+      },
+      "intro": {
+        "zh": "同一服务配置下测量五档并发；每点三轮，表中为三轮中位数。",
+        "en": "Five concurrency points on one serving configuration; each summarizes the median of three runs."
+      },
+      "table": {
+        "headers": {
+          "zh": [
+            "并发",
+            "输出 tok/s",
+            "请求 / 秒",
+            "TTFT P50 / P95 (ms)",
+            "ITL P50 / P95 (ms)",
+            "重复次数",
+            "错误率"
+          ],
+          "en": [
+            "Concurrency",
+            "Output tok/s",
+            "Requests / s",
+            "TTFT P50 / P95 (ms)",
+            "ITL P50 / P95 (ms)",
+            "Runs",
+            "Error rate"
+          ]
+        },
+        "rows": [
+          [
+            "C8",
+            "145.3",
+            "0.290",
+            "283 / 545",
+            "52.1 / 52.6",
+            "3",
+            "0%"
+          ],
+          [
+            "C16",
+            "279.7",
+            "0.556",
+            "803 / 1963",
+            "54.5 / 56.1",
+            "3",
+            "0%"
+          ],
+          [
+            "C32",
+            "526.7",
+            "1.044",
+            "952 / 2511",
+            "57.7 / 59.9",
+            "3",
+            "0%"
+          ],
+          [
+            "C64",
+            "827.9",
+            "1.636",
+            "863 / 5386",
+            "71.8 / 73.7",
+            "3",
+            "0%"
+          ],
+          [
+            "C128",
+            "1228.0",
+            "2.426",
+            "1200 / 11482",
+            "100.2 / 102.1",
+            "3",
+            "0%"
+          ]
+        ]
+      },
+      "notes": [],
+      "chart": {
+        "type": "line",
+        "title": {
+          "zh": "输出吞吐",
+          "en": "Output throughput"
+        },
+        "hint": {
+          "zh": "仅显示本配置实测值；缺测点不补零。",
+          "en": "Measured values for this configuration only; missing points are not filled with zero."
+        },
+        "labels": {
+          "zh": [
+            "C8",
+            "C16",
+            "C32",
+            "C64",
+            "C128"
+          ],
+          "en": [
+            "C8",
+            "C16",
+            "C32",
+            "C64",
+            "C128"
+          ]
+        },
+        "yTitle": {
+          "zh": "tok/s",
+          "en": "tok/s"
+        },
+        "series": [
+          {
+            "zh": "输出吞吐",
+            "en": "Output throughput",
+            "color": "blue",
+            "values": [
+              145.3,
+              279.7,
+              526.7,
+              827.9,
+              1228.0
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "latency",
+      "label": {
+        "zh": "高并发时延",
+        "en": "High-concurrency latency"
+      },
+      "heading": {
+        "zh": "高并发时延",
+        "en": "High-concurrency latency"
+      },
+      "intro": {
+        "zh": "TTFT 与 ITL 分别展示；与上表为相同测点。",
+        "en": "TTFT and ITL are reported separately for the same points as the table above."
+      },
+      "table": {
+        "headers": {
+          "zh": [
+            "C64 TTFT P95 ms",
+            "C128 TTFT P95 ms",
+            "C64 ITL P95 ms",
+            "C128 ITL P95 ms"
+          ],
+          "en": [
+            "C64 TTFT P95 ms",
+            "C128 TTFT P95 ms",
+            "C64 ITL P95 ms",
+            "C128 ITL P95 ms"
+          ]
+        },
+        "rows": [
+          [
+            "5386",
+            "11482",
+            "73.7",
+            "102.1"
+          ]
+        ]
+      },
+      "notes": [],
+      "chart": {
+        "type": "line",
+        "title": {
+          "zh": "TTFT P95",
+          "en": "TTFT P95"
+        },
+        "hint": {
+          "zh": "仅显示本配置实测值；缺测点不补零。",
+          "en": "Measured values for this configuration only; missing points are not filled with zero."
+        },
+        "labels": {
+          "zh": [
+            "C64",
+            "C128"
+          ],
+          "en": [
+            "C64",
+            "C128"
+          ]
+        },
+        "yTitle": {
+          "zh": "ms",
+          "en": "ms"
+        },
+        "series": [
+          {
+            "zh": "TTFT P95",
+            "en": "TTFT P95",
+            "color": "blue",
+            "values": [
+              5386.0,
+              11482.0
+            ]
+          }
+        ]
+      }
+    }
+  ],
+  "meta": [
+    {
+      "zh": "硬件",
+      "en": "Hardware",
+      "value": "4 × Ascend 910B4"
+    },
+    {
+      "zh": "配置",
+      "en": "Configuration",
+      "value": "TP4"
+    },
+    {
+      "zh": "引擎",
+      "en": "Engine",
+      "value": "vLLM-Ascend 0.18.0rc1"
+    },
+    {
+      "zh": "精度",
+      "en": "Precision",
+      "value": "BF16"
+    }
+  ],
+  "methodIntro": {
+    "zh": "不同测试阶段的请求形状、样本量和统计口径单独记录。",
+    "en": "Workload shape, sample count, and statistics are stated separately by test phase."
+  },
+  "methodNotes": [
+    {
+      "zh": "每个并发点为三轮中位数；结果只对应该引擎、TP4 和本次 ShareGPT 请求分布。",
+      "en": "Each concurrency point is the median of three runs and applies to this engine, TP4, and the tested ShareGPT request distribution."
+    },
+    {
+      "zh": "ShareGPT English；最大输出 512，thinking 关闭。",
+      "en": "ShareGPT English; maximum output 512, thinking disabled."
+    }
+  ]
+}

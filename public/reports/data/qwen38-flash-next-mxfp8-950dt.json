@@ -77,8 +77,8 @@
       "en": "For synthetic text with a fixed 512-token output, C8 raises aggregate output throughput while increasing TTFT and TPOT. At C8, coding-trace replay completed 437 turns at 116.2 tok/s aggregate; this measures serving behavior, not coding task success. Image-text and long-context results are separate workloads."
     },
     "note": {
-      "zh": "最终批次使用 8,192 max-num-batched-tokens 和 QSA960 切分适配。8192 与历史 4096 配置的三次独立启动对照同时改变两个因素，不能归因于单一改动。长上下文仅是检索探测，512K 的 n=8 不支持尾延迟结论。",
-      "en": "The final batch uses an 8,192 max-num-batched-tokens setting and a QSA960 splitting adaptation. The three-start comparison with the historical 4,096 configuration changes two factors together, so the effect cannot be attributed to one change. Long-context results are retrieval probes; n=8 at 512K does not support tail-latency claims."
+      "zh": "本批次使用 8,192 max-num-batched-tokens 和 QSA960 切分适配。长上下文仅为检索探测；512K 的 n=8 不支持稳健尾延迟结论。",
+      "en": "This batch uses 8,192 max-num-batched-tokens and a QSA960 splitting adaptation. Long-context points are retrieval probes; n=8 at 512K does not support robust tail-latency conclusions."
     }
   },
   "blocks": [

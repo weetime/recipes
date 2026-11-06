@@ -1,0 +1,160 @@
+{
+  "title": "DeepSeek-V4.1-Flash · 950DT · PIECEWISE",
+  "breadcrumb": "DeepSeek-V4.1-Flash",
+  "kicker": "SERVING PERFORMANCE BENCHMARK",
+  "lede": {
+    "zh": "DeepSeek-V4.1-Flash 在 950DT 上的 PIECEWISE 图执行诊断测点。",
+    "en": "DeepSeek-V4.1-Flash PIECEWISE graph-execution diagnostic point on 950DT."
+  },
+  "chips": [
+    "8 × Ascend 950DT · 96 GB",
+    "Mixed MXFP8 / MXFP4",
+    "TP1 / DP8 / EP8 · PIECEWISE",
+    "vLLM-Ascend 0.30.0",
+    "Measured 2026-10-28"
+  ],
+  "snapshot": {
+    "zh": "独立实测 · 按负载与采样条件解读",
+    "en": "Independent measurement · interpret with workload and sampling"
+  },
+  "sections": [
+    {
+      "id": "graph",
+      "zh": "图执行测点",
+      "en": "Graph execution point"
+    },
+    {
+      "id": "method",
+      "zh": "测试方法",
+      "en": "Method"
+    }
+  ],
+  "stats": [],
+  "overview": {
+    "heading": {
+      "zh": "测试结果",
+      "en": "Measured results"
+    },
+    "intro": {
+      "zh": "DeepSeek-V4.1-Flash 在 950DT 上的 PIECEWISE 图执行诊断测点。",
+      "en": "DeepSeek-V4.1-Flash PIECEWISE graph-execution diagnostic point on 950DT."
+    },
+    "note": {
+      "zh": "仅有 4 条请求，不支持稳健尾延迟或长期容量结论。",
+      "en": "Only four requests were measured; robust tail-latency and sustained-capacity claims are unsupported."
+    }
+  },
+  "blocks": [
+    {
+      "id": "graph",
+      "label": {
+        "zh": "图执行测点",
+        "en": "Graph execution point"
+      },
+      "heading": {
+        "zh": "图执行测点",
+        "en": "Graph execution point"
+      },
+      "intro": {
+        "zh": "1024 输入、256 输出、C1，共 4 条；该路径未捕获 decoder 图。",
+        "en": "1024 input, 256 output at C1, four requests; decoder graph capture did not occur on this path."
+      },
+      "table": {
+        "headers": {
+          "zh": [
+            "指标",
+            "PIECEWISE"
+          ],
+          "en": [
+            "Metric",
+            "PIECEWISE"
+          ]
+        },
+        "rows": [
+          [
+            "有效请求数",
+            "4"
+          ],
+          [
+            "Decoder图",
+            "未捕获"
+          ],
+          [
+            "平均 ITL P50 (ms)",
+            "234.17"
+          ],
+          [
+            "E2E P50 (s)",
+            "61.40"
+          ]
+        ]
+      },
+      "notes": [],
+      "chart": {
+        "type": "bar",
+        "title": {
+          "zh": "平均 ITL P50",
+          "en": "Mean ITL P50"
+        },
+        "hint": {
+          "zh": "仅显示该测试配置的已测数据。",
+          "en": "Only measured points for this configuration are shown."
+        },
+        "labels": {
+          "zh": [
+            "1024 / 256 · C1"
+          ],
+          "en": [
+            "1024 / 256 · C1"
+          ]
+        },
+        "yTitle": {
+          "zh": "ms",
+          "en": "ms"
+        },
+        "series": [
+          {
+            "zh": "平均 ITL P50",
+            "en": "Mean ITL P50",
+            "color": "blue",
+            "values": [
+              234.17
+            ]
+          }
+        ]
+      }
+    }
+  ],
+  "meta": [
+    {
+      "zh": "硬件",
+      "en": "Hardware",
+      "value": "8 × Ascend 950DT · 96 GB"
+    },
+    {
+      "zh": "配置",
+      "en": "Configuration",
+      "value": "TP1 / DP8 / EP8 · PIECEWISE"
+    },
+    {
+      "zh": "引擎",
+      "en": "Engine",
+      "value": "vLLM-Ascend 0.30.0"
+    },
+    {
+      "zh": "精度",
+      "en": "Precision",
+      "value": "Mixed MXFP8 / MXFP4"
+    }
+  ],
+  "methodIntro": {
+    "zh": "不同测试阶段的请求形状、样本量和统计口径单独记录。",
+    "en": "Workload shape, sample count, and statistics are stated separately by test phase."
+  },
+  "methodNotes": [
+    {
+      "zh": "仅有 4 条请求，不支持稳健尾延迟或长期容量结论。",
+      "en": "Only four requests were measured; robust tail-latency and sustained-capacity claims are unsupported."
+    }
+  ]
+}

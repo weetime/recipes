@@ -20,13 +20,13 @@
   "sections": [
     {
       "id": "videoGeneration",
-      "zh": "生成耗时",
-      "en": "Generation time"
+      "zh": "T2VA 生成",
+      "en": "T2VA generation"
     },
     {
-      "id": "breakdown",
-      "zh": "阶段拆解",
-      "en": "Phase breakdown"
+      "id": "generation",
+      "zh": "Ref2VA 生成",
+      "en": "Ref2VA generation"
     },
     {
       "id": "method",
@@ -59,69 +59,60 @@
   ],
   "overview": {
     "heading": {
-      "zh": "参考条件主要增加逐步去噪时间",
-      "en": "Reference conditioning primarily increases denoising time"
+      "zh": "测试结果",
+      "en": "Measured results"
     },
     "intro": {
-      "zh": "Ref2VA 比 T2VA 多 311.85 秒；阶段计时中去噪增加 269.63 秒。参考素材编码约 3.7 秒，并非总差值的主要来源。",
-      "en": "Ref2VA takes 311.85 s longer than T2VA; phase timings show 269.63 s of additional denoising. Reference-media encoding takes about 3.7 s and is not the main source of the difference."
+      "zh": "同一 4 卡部署分别测试 T2VA 与 Ref2VA 两种生成任务。",
+      "en": "T2VA and Ref2VA are measured as separate workloads on the same four-card deployment."
     },
     "note": {
-      "zh": "这是同一硬件与引擎配置下两种任务的自测，不是跨模型权重对比。",
-      "en": "These are two workloads measured on the same hardware and engine configuration, not a comparison across model checkpoints."
+      "zh": "每类任务各有 10 个串行有效样本；未进行跨启动复测。",
+      "en": "Each task has ten valid serial samples; cross-start reproducibility was not measured."
     }
   },
   "blocks": [
     {
       "id": "videoGeneration",
       "label": {
-        "zh": "任务耗时",
-        "en": "Task timings"
+        "zh": "T2VA 生成",
+        "en": "T2VA generation"
       },
       "heading": {
-        "zh": "Ref2VA 中位耗时为 T2VA 的 1.70 倍",
-        "en": "Ref2VA median time is 1.70× T2VA"
+        "zh": "T2VA 视频生成",
+        "en": "T2VA video generation"
       },
       "intro": {
-        "zh": "两类任务均使用 1344×768、5 秒、124 帧、24 fps、50 步、BF16，串行并发为 1。各有 10 个有效样本。",
-        "en": "Both tasks used 1344×768, 5 seconds, 124 frames, 24 fps, 50 steps, BF16, and serial concurrency 1. Each has ten valid samples."
+        "zh": "1344×768、5 秒、124 帧、24 fps、50 步；并发 1，10 个有效样本。",
+        "en": "1344×768, 5 seconds, 124 frames, 24 fps and 50 steps; concurrency 1 with 10 valid samples."
       },
-      "notes": [
-        {
-          "zh": "T2VA 范围 443.20–443.22 秒；Ref2VA 范围 755.03–755.08 秒。",
-          "en": "T2VA range was 443.20–443.22 s; Ref2VA range was 755.03–755.08 s."
-        },
-        {
-          "zh": "样本量 n=10，不报告尾部分位数；极小范围只表示该次启动内测量稳定。",
-          "en": "At n=10, tail percentiles are omitted; the narrow range describes this startup only."
-        }
-      ],
       "chart": {
+        "type": "bar",
         "title": {
-          "zh": "视频生成任务中位耗时",
-          "en": "Median time by video task"
+          "zh": "T2VA 耗时",
+          "en": "T2VA timings"
         },
         "hint": {
-          "zh": "每类任务 n=10；越低越快。",
-          "en": "n=10 per task; lower is faster."
+          "zh": "去噪阶段包含在总耗时内。",
+          "en": "Denoising is included in the total time."
         },
         "labels": {
           "zh": [
-            "T2VA",
-            "Ref2VA"
+            "总耗时",
+            "去噪阶段"
           ],
           "en": [
-            "T2VA",
-            "Ref2VA"
+            "Total",
+            "Denoising"
           ]
         },
         "series": [
           {
-            "zh": "中位耗时",
-            "en": "Median time",
+            "zh": "耗时",
+            "en": "Time",
             "values": [
               443.2,
-              755.05
+              384.47
             ],
             "color": "blue"
           }
@@ -129,93 +120,88 @@
         "yTitle": {
           "zh": "秒",
           "en": "Seconds"
-        },
-        "type": "bar"
+        }
       },
       "table": {
         "headers": {
           "zh": [
-            "任务",
             "中位数",
             "均值",
             "最小–最大",
-            "样本"
+            "样本",
+            "去噪耗时",
+            "每步均值",
+            "去噪外"
           ],
           "en": [
-            "Task",
             "Median",
             "Mean",
             "Min–max",
-            "Samples"
+            "Samples",
+            "Denoising",
+            "Mean per step",
+            "Outside denoising"
           ]
         },
         "rows": [
           [
-            "T2VA",
             "443.20 s",
             "443.21 s",
             "443.20–443.22 s",
-            "10"
-          ],
-          [
-            "Ref2VA",
-            "755.05 s",
-            "755.05 s",
-            "755.03–755.08 s",
-            "10"
+            "10",
+            "384.47 s",
+            "7.85 s",
+            "约 58.7 s"
           ]
         ]
-      }
-    },
-    {
-      "id": "breakdown",
-      "label": {
-        "zh": "阶段拆解",
-        "en": "Phase breakdown"
-      },
-      "heading": {
-        "zh": "额外耗时主要出现在去噪循环",
-        "en": "Most additional time is spent in denoising"
-      },
-      "intro": {
-        "zh": "T2VA 去噪 384.47 秒，Ref2VA 去噪 654.10 秒；平均单步分别为 7.85 与 13.35 秒。",
-        "en": "T2VA denoising took 384.47 s and Ref2VA 654.10 s; mean step times were 7.85 s and 13.35 s respectively."
       },
       "notes": [
         {
-          "zh": "Ref2VA 比 T2VA 去噪多 269.63 秒；素材编码合计约 3.7 秒。",
-          "en": "Ref2VA adds 269.63 s of denoising over T2VA; media encoding totals about 3.7 s."
-        },
-        {
-          "zh": "不得把约 312 秒的端到端差值都归因于参考素材编码。",
-          "en": "Do not attribute the roughly 312 s end-to-end difference to reference encoding."
+          "zh": "样本量 n=10，不报告尾部分位数；该次启动内范围不能替代跨启动复测。",
+          "en": "At n=10, tail percentiles are omitted; within-start variation does not establish cross-start reproducibility."
         }
-      ],
+      ]
+    },
+    {
+      "id": "generation",
+      "label": {
+        "zh": "Ref2VA 生成",
+        "en": "Ref2VA generation"
+      },
+      "heading": {
+        "zh": "Ref2VA 视频生成",
+        "en": "Ref2VA video generation"
+      },
+      "intro": {
+        "zh": "1344×768、5 秒、124 帧、24 fps、50 步；并发 1，10 个有效样本。",
+        "en": "1344×768, 5 seconds, 124 frames, 24 fps and 50 steps; concurrency 1 with 10 valid samples."
+      },
       "chart": {
+        "type": "bar",
         "title": {
-          "zh": "去噪阶段耗时",
-          "en": "Denoising phase time"
+          "zh": "Ref2VA 耗时",
+          "en": "Ref2VA timings"
         },
         "hint": {
-          "zh": "服务端阶段计时。",
-          "en": "Server-side phase timing."
+          "zh": "去噪阶段包含在总耗时内。",
+          "en": "Denoising is included in the total time."
         },
         "labels": {
           "zh": [
-            "T2VA",
-            "Ref2VA"
+            "总耗时",
+            "去噪阶段"
           ],
           "en": [
-            "T2VA",
-            "Ref2VA"
+            "Total",
+            "Denoising"
           ]
         },
         "series": [
           {
-            "zh": "去噪耗时",
-            "en": "Denoising time",
+            "zh": "耗时",
+            "en": "Time",
             "values": [
-              384.47,
+              755.05,
               654.1
             ],
             "color": "blue"
@@ -224,19 +210,24 @@
         "yTitle": {
           "zh": "秒",
           "en": "Seconds"
-        },
-        "type": "bar"
+        }
       },
       "table": {
         "headers": {
           "zh": [
-            "任务",
-            "去噪",
+            "中位数",
+            "均值",
+            "最小–最大",
+            "样本",
+            "去噪耗时",
             "每步均值",
             "去噪外"
           ],
           "en": [
-            "Task",
+            "Median",
+            "Mean",
+            "Min–max",
+            "Samples",
             "Denoising",
             "Mean per step",
             "Outside denoising"
@@ -244,19 +235,22 @@
         },
         "rows": [
           [
-            "T2VA",
-            "384.47 s",
-            "7.85 s",
-            "约 58.7 s"
-          ],
-          [
-            "Ref2VA",
+            "755.05 s",
+            "755.05 s",
+            "755.03–755.08 s",
+            "10",
             "654.10 s",
             "13.35 s",
             "约 38.6 s"
           ]
         ]
-      }
+      },
+      "notes": [
+        {
+          "zh": "样本量 n=10，不报告尾部分位数；该次启动内范围不能替代跨启动复测。",
+          "en": "At n=10, tail percentiles are omitted; within-start variation does not establish cross-start reproducibility."
+        }
+      ]
     },
     {
       "id": "method",

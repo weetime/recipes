@@ -1,0 +1,181 @@
+{
+  "title": "Qwen3-8B BF16 · vLLM-Ascend · 910B4 TP1",
+  "breadcrumb": "Qwen3-8B",
+  "kicker": "SERVING PERFORMANCE BENCHMARK",
+  "lede": {
+    "zh": "Qwen3-8B BF16 在 910B4 单卡使用 vLLM-Ascend 的固定长度测试。",
+    "en": "Fixed-length serving measurements for Qwen3-8B BF16 on one Ascend 910B4 using vLLM-Ascend."
+  },
+  "chips": [
+    "1 × Ascend 910B4 · 32 GB",
+    "BF16",
+    "TP1",
+    "vLLM-Ascend 0.18.0rc1",
+    "Measured 2026-05-25"
+  ],
+  "snapshot": {
+    "zh": "独立实测 · 按负载与采样条件解读",
+    "en": "Independent measurement · interpret with workload and sampling"
+  },
+  "sections": [
+    {
+      "id": "synthetic",
+      "zh": "固定长度负载",
+      "en": "Fixed-length workloads"
+    },
+    {
+      "id": "method",
+      "zh": "测试方法",
+      "en": "Method"
+    }
+  ],
+  "stats": [],
+  "overview": {
+    "heading": {
+      "zh": "测试结果",
+      "en": "Measured results"
+    },
+    "intro": {
+      "zh": "Qwen3-8B BF16 在 910B4 单卡使用 vLLM-Ascend 的固定长度测试。",
+      "en": "Fixed-length serving measurements for Qwen3-8B BF16 on one Ascend 910B4 using vLLM-Ascend."
+    },
+    "note": {
+      "zh": "不同形状的输入输出长度不同，吞吐受负载形状影响；表中值为对应测点结果。",
+      "en": "Input and output lengths differ by workload; throughput is specific to each measured point."
+    }
+  },
+  "blocks": [
+    {
+      "id": "synthetic",
+      "label": {
+        "zh": "固定长度负载",
+        "en": "Fixed-length workloads"
+      },
+      "heading": {
+        "zh": "固定长度负载",
+        "en": "Fixed-length workloads"
+      },
+      "intro": {
+        "zh": "单卡 TP1、8K 上下文；展示三种固定输入 / 输出形状在 C64 下的已测结果。",
+        "en": "Single-card TP1 with an 8K context; results show three fixed input/output shapes at C64."
+      },
+      "table": {
+        "headers": {
+          "zh": [
+            "负载形状",
+            "输出吞吐",
+            "TTFT P50",
+            "TPOT"
+          ],
+          "en": [
+            "Workload shape",
+            "Output throughput",
+            "TTFT P50",
+            "TPOT"
+          ]
+        },
+        "rows": [
+          [
+            "Chat · 128/64",
+            "865 tok/s",
+            "519 ms",
+            "64 ms"
+          ],
+          [
+            "Mid · 512/256",
+            "781 tok/s",
+            "678 ms",
+            "76 ms"
+          ],
+          [
+            "Long · 2048/512",
+            "361 tok/s",
+            "46.3 s",
+            "88 ms"
+          ]
+        ]
+      },
+      "notes": [
+        {
+          "zh": "C64 为高压点，长输入的首 token 等待达到数十秒。",
+          "en": "C64 is a high-load point; time to first token reaches tens of seconds for long input."
+        }
+      ],
+      "chart": {
+        "type": "bar",
+        "title": {
+          "zh": "C64 输出吞吐",
+          "en": "C64 output throughput"
+        },
+        "hint": {
+          "zh": "仅显示本配置实测值；缺测点不补零。",
+          "en": "Measured values for this configuration only; missing points are not filled with zero."
+        },
+        "labels": {
+          "zh": [
+            "Chat · 128/64",
+            "Mid · 512/256",
+            "Long · 2048/512"
+          ],
+          "en": [
+            "Chat · 128/64",
+            "Mid · 512/256",
+            "Long · 2048/512"
+          ]
+        },
+        "yTitle": {
+          "zh": "tok/s",
+          "en": "tok/s"
+        },
+        "series": [
+          {
+            "zh": "C64 输出吞吐",
+            "en": "C64 output throughput",
+            "color": "blue",
+            "values": [
+              865,
+              781,
+              361
+            ]
+          }
+        ]
+      }
+    }
+  ],
+  "meta": [
+    {
+      "zh": "硬件",
+      "en": "Hardware",
+      "value": "1 × Ascend 910B4 · 32 GB"
+    },
+    {
+      "zh": "配置",
+      "en": "Configuration",
+      "value": "TP1"
+    },
+    {
+      "zh": "引擎",
+      "en": "Engine",
+      "value": "vLLM-Ascend 0.18.0rc1"
+    },
+    {
+      "zh": "精度",
+      "en": "Precision",
+      "value": "BF16"
+    }
+  ],
+  "methodIntro": {
+    "zh": "不同测试阶段的请求形状、样本量和统计口径单独记录。",
+    "en": "Workload shape, sample count, and statistics are stated separately by test phase."
+  },
+  "methodNotes": [
+    {
+      "zh": "不同形状的输入输出长度不同，吞吐受负载形状影响；表中值为对应测点结果。",
+      "en": "Input and output lengths differ by workload; throughput is specific to each measured point."
+    },
+    {
+      "zh": "单卡阶段与多卡阶段使用不同工作负载和工具。",
+      "en": "The single-card and multi-card phases use different workloads and tools."
+    }
+  ]
+}

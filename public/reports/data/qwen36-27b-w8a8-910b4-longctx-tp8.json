@@ -1,0 +1,157 @@
+{
+  "title": "Qwen3.6-27B W8A8 · 910B4 · TP8 × 1",
+  "breadcrumb": "Qwen3.6-27B",
+  "kicker": "SERVING PERFORMANCE BENCHMARK",
+  "lede": {
+    "zh": "Qwen3.6-27B W8A8 的 TP8 × 1 910B4 服务测试。",
+    "en": "Qwen3.6-27B W8A8 serving measurements on 910B4 with TP8 × 1."
+  },
+  "chips": [
+    "8 × Ascend 910B4 · 32 GB",
+    "W8A8",
+    "TP8 × 1",
+    "vLLM-Ascend 0.18.0rc1",
+    "Measured 2026-07-27"
+  ],
+  "snapshot": {
+    "zh": "独立实测 · 按负载与采样条件解读",
+    "en": "Independent measurement · interpret with workload and sampling"
+  },
+  "sections": [
+    {
+      "id": "layout",
+      "zh": "250K 输入测点",
+      "en": "250K input measurements"
+    },
+    {
+      "id": "method",
+      "zh": "测试方法",
+      "en": "Method"
+    }
+  ],
+  "stats": [],
+  "overview": {
+    "heading": {
+      "zh": "测试结果",
+      "en": "Measured results"
+    },
+    "intro": {
+      "zh": "Qwen3.6-27B W8A8 的 TP8 × 1 910B4 服务测试。",
+      "en": "Qwen3.6-27B W8A8 serving measurements on 910B4 with TP8 × 1."
+    },
+    "note": {
+      "zh": "250K 输入的并发点样本量较小；P99 为本轮观测，不代表稳定尾延迟。",
+      "en": "The 250K-input concurrency points use small samples; P99 is a run observation, not a stable tail estimate."
+    }
+  },
+  "blocks": [
+    {
+      "id": "layout",
+      "label": {
+        "zh": "250K 输入测点",
+        "en": "250K input measurements"
+      },
+      "heading": {
+        "zh": "250K 输入测点",
+        "en": "250K input measurements"
+      },
+      "intro": {
+        "zh": "250K 输入工作点记录 KV 池、首 token 和 TPOT。",
+        "en": "The 250K-input point records KV pool size, time to first token, and TPOT."
+      },
+      "table": {
+        "headers": {
+          "zh": [
+            "KV pool / 卡",
+            "KV tokens",
+            "C1 TTFT (s)",
+            "C1 TPOT (ms)",
+            "C2 总吞吐 (tok/s)"
+          ],
+          "en": [
+            "KV pool / card",
+            "KV pool tokens",
+            "C1 TTFT (s)",
+            "C1 TPOT (ms)",
+            "C2 aggregate throughput (tok/s)"
+          ]
+        },
+        "rows": [
+          [
+            "20.47 GiB",
+            "331,776",
+            "56.40",
+            "81.4",
+            "4,159"
+          ]
+        ]
+      },
+      "notes": [],
+      "chart": {
+        "type": "bar",
+        "title": {
+          "zh": "TTFT",
+          "en": "TTFT"
+        },
+        "hint": {
+          "zh": "仅显示本配置实测值；缺测点不补零。",
+          "en": "Measured values for this configuration only; missing points are not filled with zero."
+        },
+        "labels": {
+          "zh": [
+            "C1"
+          ],
+          "en": [
+            "C1"
+          ]
+        },
+        "yTitle": {
+          "zh": "s",
+          "en": "s"
+        },
+        "series": [
+          {
+            "zh": "TTFT",
+            "en": "TTFT",
+            "color": "blue",
+            "values": [
+              56.4
+            ]
+          }
+        ]
+      }
+    }
+  ],
+  "meta": [
+    {
+      "zh": "硬件",
+      "en": "Hardware",
+      "value": "8 × Ascend 910B4 · 32 GB"
+    },
+    {
+      "zh": "配置",
+      "en": "Configuration",
+      "value": "TP8 × 1"
+    },
+    {
+      "zh": "引擎",
+      "en": "Engine",
+      "value": "vLLM-Ascend 0.18.0rc1"
+    },
+    {
+      "zh": "精度",
+      "en": "Precision",
+      "value": "W8A8"
+    }
+  ],
+  "methodIntro": {
+    "zh": "不同测试阶段的请求形状、样本量和统计口径单独记录。",
+    "en": "Workload shape, sample count, and statistics are stated separately by test phase."
+  },
+  "methodNotes": [
+    {
+      "zh": "250K 输入的并发点样本量较小；P99 为本轮观测，不代表稳定尾延迟。",
+      "en": "The 250K-input concurrency points use small samples; P99 is a run observation, not a stable tail estimate."
+    }
+  ]
+}

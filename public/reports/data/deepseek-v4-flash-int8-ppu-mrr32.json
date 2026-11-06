@@ -1,0 +1,154 @@
+{
+  "title": "DeepSeek-V4-Flash INT8 · PPU · MRR32",
+  "breadcrumb": "DeepSeek-V4-Flash",
+  "kicker": "SERVING PERFORMANCE BENCHMARK",
+  "lede": {
+    "zh": "DeepSeek-V4-Flash 在 PPU 上 MRR32 配置的 Chat 服务测点。",
+    "en": "DeepSeek-V4-Flash Chat serving points on PPU with MRR32."
+  },
+  "chips": [
+    "8 × PPU ZW810E · 96 GB",
+    "INT8 W8A8",
+    "TP8 · EAGLE · MRR32",
+    "SGLang 0.5.12",
+    "Measured 2026-07-12"
+  ],
+  "snapshot": {
+    "zh": "独立实测 · 按负载与采样条件解读",
+    "en": "Independent measurement · interpret with workload and sampling"
+  },
+  "sections": [
+    {
+      "id": "chat",
+      "zh": "Chat 服务测点",
+      "en": "Chat serving points"
+    },
+    {
+      "id": "method",
+      "zh": "测试方法",
+      "en": "Method"
+    }
+  ],
+  "stats": [],
+  "overview": {
+    "heading": {
+      "zh": "测试结果",
+      "en": "Measured results"
+    },
+    "intro": {
+      "zh": "DeepSeek-V4-Flash 在 PPU 上 MRR32 配置的 Chat 服务测点。",
+      "en": "DeepSeek-V4-Flash Chat serving points on PPU with MRR32."
+    },
+    "note": {
+      "zh": "MRR 与图捕获配置同步变化；单次点不代表稳定容量。",
+      "en": "MRR and graph capture settings change together; single-run points do not establish stable capacity."
+    }
+  },
+  "blocks": [
+    {
+      "id": "chat",
+      "label": {
+        "zh": "Chat 服务测点",
+        "en": "Chat serving points"
+      },
+      "heading": {
+        "zh": "Chat 服务测点",
+        "en": "Chat serving points"
+      },
+      "intro": {
+        "zh": "按该配置保留峰值及已有的低并发结果。",
+        "en": "Peak and available low-concurrency observations are retained for this setting."
+      },
+      "table": {
+        "headers": {
+          "zh": [
+            "并发",
+            "输出 tok/s",
+            "KV 峰值",
+            "重复"
+          ],
+          "en": [
+            "Concurrency",
+            "Output tok/s",
+            "Peak KV",
+            "Repeats"
+          ]
+        },
+        "rows": [
+          [
+            "C32",
+            "568",
+            "30%",
+            "3x median"
+          ]
+        ]
+      },
+      "notes": [],
+      "chart": {
+        "type": "bar",
+        "title": {
+          "zh": "输出吞吐",
+          "en": "Output throughput"
+        },
+        "hint": {
+          "zh": "仅显示本配置实测值；缺测点不补零。",
+          "en": "Measured values for this configuration only; missing points are not filled with zero."
+        },
+        "labels": {
+          "zh": [
+            "C32"
+          ],
+          "en": [
+            "C32"
+          ]
+        },
+        "yTitle": {
+          "zh": "tok/s",
+          "en": "tok/s"
+        },
+        "series": [
+          {
+            "zh": "输出吞吐",
+            "en": "Output throughput",
+            "color": "blue",
+            "values": [
+              568.0
+            ]
+          }
+        ]
+      }
+    }
+  ],
+  "meta": [
+    {
+      "zh": "硬件",
+      "en": "Hardware",
+      "value": "8 × PPU ZW810E · 96 GB"
+    },
+    {
+      "zh": "配置",
+      "en": "Configuration",
+      "value": "TP8 · EAGLE · MRR32"
+    },
+    {
+      "zh": "引擎",
+      "en": "Engine",
+      "value": "SGLang 0.5.12"
+    },
+    {
+      "zh": "精度",
+      "en": "Precision",
+      "value": "INT8 W8A8"
+    }
+  ],
+  "methodIntro": {
+    "zh": "不同测试阶段的请求形状、样本量和统计口径单独记录。",
+    "en": "Workload shape, sample count, and statistics are stated separately by test phase."
+  },
+  "methodNotes": [
+    {
+      "zh": "MRR 与图捕获配置同步变化；单次点不代表稳定容量。",
+      "en": "MRR and graph capture settings change together; single-run points do not establish stable capacity."
+    }
+  ]
+}

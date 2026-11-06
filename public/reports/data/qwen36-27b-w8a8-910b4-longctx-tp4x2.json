@@ -1,0 +1,377 @@
+{
+  "title": "Qwen3.6-27B W8A8 · 910B4 · TP4 × 2",
+  "breadcrumb": "Qwen3.6-27B",
+  "kicker": "SERVING PERFORMANCE BENCHMARK",
+  "lede": {
+    "zh": "Qwen3.6-27B W8A8 的 TP4 × 2 910B4 服务测试。",
+    "en": "Qwen3.6-27B W8A8 serving measurements on 910B4 with TP4 × 2."
+  },
+  "chips": [
+    "8 × Ascend 910B4 · 32 GB",
+    "W8A8",
+    "TP4 × 2",
+    "vLLM-Ascend 0.18.0rc1",
+    "Measured 2026-07-27"
+  ],
+  "snapshot": {
+    "zh": "独立实测 · 按负载与采样条件解读",
+    "en": "Independent measurement · interpret with workload and sampling"
+  },
+  "sections": [
+    {
+      "id": "long-context",
+      "zh": "长上下文",
+      "en": "LONG CONTEXT"
+    },
+    {
+      "id": "layout",
+      "zh": "250K 输入测点",
+      "en": "250K input measurements"
+    },
+    {
+      "id": "sharegpt",
+      "zh": "自然请求分布",
+      "en": "NATURAL REQUEST MIX"
+    },
+    {
+      "id": "method",
+      "zh": "测试方法",
+      "en": "Method"
+    }
+  ],
+  "stats": [],
+  "overview": {
+    "heading": {
+      "zh": "测试结果",
+      "en": "Measured results"
+    },
+    "intro": {
+      "zh": "Qwen3.6-27B W8A8 的 TP4 × 2 910B4 服务测试。",
+      "en": "Qwen3.6-27B W8A8 serving measurements on 910B4 with TP4 × 2."
+    },
+    "note": {
+      "zh": "250K 输入的并发点样本量较小；P99 为本轮观测，不代表稳定尾延迟。",
+      "en": "The 250K-input concurrency points use small samples; P99 is a run observation, not a stable tail estimate."
+    }
+  },
+  "blocks": [
+    {
+      "id": "long-context",
+      "label": {
+        "zh": "长上下文",
+        "en": "LONG CONTEXT"
+      },
+      "heading": {
+        "zh": "250K 输入下并发提升先增加吞吐，随后进入延迟拐点",
+        "en": "Concurrency raises throughput at 250K input, then reaches a latency knee"
+      },
+      "intro": {
+        "zh": "固定输入 250,000 tokens、输出 128 tokens；TP4×2，MNB token block 8,192。每个并发档分别执行 2/4/8 个请求。",
+        "en": "Fixed 250,000-token input and 128-token output; TP4×2 with an 8,192-token MNB block. The three concurrency points ran 2/4/8 requests."
+      },
+      "notes": [
+        {
+          "zh": "C1→C2 输出吞吐约翻倍；C4 时 TTFT P99 与 TPOT 明显上升，不能把 C4 视为低延迟容量点。",
+          "en": "Output throughput nearly doubles from C1 to C2; TTFT P99 and TPOT rise sharply at C4, so C4 is not a low-latency capacity point."
+        },
+        {
+          "zh": "样本量很小，P99 仅作为本轮观测，不足以形成稳定尾延迟承诺。",
+          "en": "Sample counts are small; P99 is a run observation, not a stable tail-latency guarantee."
+        }
+      ],
+      "chart": {
+        "title": {
+          "zh": "250K 输入：并发与吞吐",
+          "en": "250K input: concurrency and throughput"
+        },
+        "hint": {
+          "zh": "悬停查看实测点。",
+          "en": "Hover a point to inspect the measurement."
+        },
+        "labels": {
+          "zh": [
+            "C1",
+            "C2",
+            "C4"
+          ],
+          "en": [
+            "C1",
+            "C2",
+            "C4"
+          ]
+        },
+        "series": [
+          {
+            "zh": "整体输出吞吐",
+            "en": "Aggregate output throughput",
+            "color": "orange",
+            "values": [
+              2454,
+              4908,
+              4411
+            ]
+          }
+        ],
+        "yTitle": {
+          "zh": "总吞吐 (tok/s)",
+          "en": "Aggregate throughput (tok/s)"
+        },
+        "type": "line"
+      },
+      "table": {
+        "headers": {
+          "zh": [
+            "并发",
+            "请求数",
+            "TTFT 中位 (s)",
+            "TTFT P99 (s)",
+            "TPOT (ms)",
+            "总吞吐 (tok/s)",
+            "成功 / 失败"
+          ],
+          "en": [
+            "Concurrency",
+            "Requests",
+            "TTFT median (s)",
+            "TTFT P99 (s)",
+            "TPOT (ms)",
+            "Aggregate throughput (tok/s)",
+            "Success / failed"
+          ]
+        },
+        "rows": [
+          [
+            "C1",
+            "2",
+            "89.11",
+            "89.19",
+            "101.0",
+            "2,454",
+            "2 / 0"
+          ],
+          [
+            "C2",
+            "4",
+            "88.54",
+            "89.09",
+            "100.2",
+            "4,908",
+            "4 / 0"
+          ],
+          [
+            "C4",
+            "8",
+            "118.96",
+            "222.13",
+            "521.2",
+            "4,411",
+            "8 / 0"
+          ]
+        ]
+      },
+      "side": {
+        "title": {
+          "zh": "并发 4 的延迟变化",
+          "en": "Latency at concurrency 4"
+        },
+        "body": {
+          "zh": "C4 的 P99 TTFT 达到 222.13 s，TPOT 为 521.2 ms；吞吐反而低于 C2。这一档提示排队/资源压力已成为主要因素。",
+          "en": "At C4, TTFT P99 reaches 222.13 s and TPOT is 521.2 ms; throughput is lower than C2, indicating queuing/resource pressure dominates."
+        }
+      }
+    },
+    {
+      "id": "layout",
+      "label": {
+        "zh": "250K 输入测点",
+        "en": "250K input measurements"
+      },
+      "heading": {
+        "zh": "250K 输入测点",
+        "en": "250K input measurements"
+      },
+      "intro": {
+        "zh": "250K 输入工作点记录 KV 池、首 token 和 TPOT。",
+        "en": "The 250K-input point records KV pool size, time to first token, and TPOT."
+      },
+      "table": {
+        "headers": {
+          "zh": [
+            "KV pool / 卡",
+            "KV tokens",
+            "C1 TTFT (s)",
+            "C1 TPOT (ms)",
+            "C2 总吞吐 (tok/s)"
+          ],
+          "en": [
+            "KV pool / card",
+            "KV pool tokens",
+            "C1 TTFT (s)",
+            "C1 TPOT (ms)",
+            "C2 aggregate throughput (tok/s)"
+          ]
+        },
+        "rows": [
+          [
+            "16.30 GiB",
+            "264,192",
+            "89.11",
+            "101.0",
+            "4,908"
+          ]
+        ]
+      },
+      "notes": [],
+      "chart": {
+        "type": "bar",
+        "title": {
+          "zh": "TTFT",
+          "en": "TTFT"
+        },
+        "hint": {
+          "zh": "仅显示本配置实测值；缺测点不补零。",
+          "en": "Measured values for this configuration only; missing points are not filled with zero."
+        },
+        "labels": {
+          "zh": [
+            "C1"
+          ],
+          "en": [
+            "C1"
+          ]
+        },
+        "yTitle": {
+          "zh": "s",
+          "en": "s"
+        },
+        "series": [
+          {
+            "zh": "TTFT",
+            "en": "TTFT",
+            "color": "blue",
+            "values": [
+              89.11
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "sharegpt",
+      "label": {
+        "zh": "自然请求分布",
+        "en": "NATURAL REQUEST MIX"
+      },
+      "heading": {
+        "zh": "ShareGPT 下并发增长伴随首 token 与解码延迟增加",
+        "en": "Under ShareGPT, higher concurrency raises first-token and decode latency"
+      },
+      "intro": {
+        "zh": "ShareGPT 输入约 220、输出约 440 tokens；TP4×2、vLLM-Ascend v0.18.0rc1。每点两次测量，表中为原始两次观测，不做误差外推。",
+        "en": "ShareGPT prompts average about 220 input and 440 output tokens; TP4×2 on vLLM-Ascend v0.18.0rc1. Each point has two runs; both observations are shown without extrapolating uncertainty."
+      },
+      "notes": [
+        {
+          "zh": "并发 64 时输出吞吐达到约 634 tok/s，但 TTFT P99 两次观测分别为 3.16 s 和 3.87 s。",
+          "en": "At C64, output throughput is about 634 tok/s, while TTFT P99 observations are 3.16 s and 3.87 s."
+        }
+      ],
+      "table": {
+        "headers": {
+          "zh": [
+            "并发",
+            "请求数",
+            "输出吞吐 (tok/s)",
+            "TTFT P50 (ms)",
+            "TTFT P99 (ms)",
+            "TPOT P50 (ms)"
+          ],
+          "en": [
+            "Concurrency",
+            "Requests",
+            "Output throughput (tok/s)",
+            "TTFT P50 (ms)",
+            "TTFT P99 (ms)",
+            "TPOT P50 (ms)"
+          ]
+        },
+        "rows": [
+          [
+            "1",
+            "12",
+            "19.9",
+            "449.2",
+            "735.1",
+            "49.2"
+          ],
+          [
+            "4",
+            "12",
+            "70.9",
+            "526.9",
+            "1067.5",
+            "50.6"
+          ],
+          [
+            "16",
+            "32",
+            "238.1",
+            "946.1",
+            "1557.6",
+            "56.2"
+          ],
+          [
+            "64",
+            "128",
+            "633.7",
+            "1318.7",
+            "3514.4",
+            "84.6"
+          ]
+        ]
+      },
+      "side": {
+        "title": {
+          "zh": "负载性质",
+          "en": "Workload characteristics"
+        },
+        "body": {
+          "zh": "这是自然长度的 ShareGPT 请求分布，不等同固定输入/输出容量压测；结果依赖数据集长度分布与服务配置。",
+          "en": "This is a natural-length ShareGPT request mix, not a fixed-length capacity benchmark; results depend on prompt lengths and serving configuration."
+        }
+      }
+    }
+  ],
+  "meta": [
+    {
+      "zh": "硬件",
+      "en": "Hardware",
+      "value": "8 × Ascend 910B4 · 32 GB"
+    },
+    {
+      "zh": "配置",
+      "en": "Configuration",
+      "value": "TP4 × 2"
+    },
+    {
+      "zh": "引擎",
+      "en": "Engine",
+      "value": "vLLM-Ascend 0.18.0rc1"
+    },
+    {
+      "zh": "精度",
+      "en": "Precision",
+      "value": "W8A8"
+    }
+  ],
+  "methodIntro": {
+    "zh": "不同测试阶段的请求形状、样本量和统计口径单独记录。",
+    "en": "Workload shape, sample count, and statistics are stated separately by test phase."
+  },
+  "methodNotes": [
+    {
+      "zh": "250K 输入的并发点样本量较小；P99 为本轮观测，不代表稳定尾延迟。",
+      "en": "The 250K-input concurrency points use small samples; P99 is a run observation, not a stable tail estimate."
+    }
+  ]
+}

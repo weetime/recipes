@@ -73,8 +73,8 @@
       "zhLabel": "原配方满样本",
       "enLabel": "Original full-sample rows",
       "value": "27 / 42",
-      "zhNote": "其余点单独补测或调整配方",
-      "enNote": "Other points separately retested or reconfigured"
+      "zhNote": "14 项独立延时补测 · 1 项容量 hold",
+      "enNote": "14 extended retests · 1 capacity hold"
     },
     {
       "zhLabel": "独立起服",
@@ -94,8 +94,8 @@
       "en": "Fixed-length, long-context, Agent and capacity measurements, keeping original and separately retested configurations distinct."
     },
     "note": {
-      "zh": "原主表 27/42 行满样本，14 行独立延时补测，1 行原配方容量 hold 后采用新配方；42 行覆盖不等于原配方全部通过。未做任务精度评测。",
-      "en": "The original matrix had 27/42 full-sample rows, 14 separately extended retests, and one capacity hold completed using a new configuration. Coverage does not mean all points passed on the original configuration. Task accuracy was not assessed."
+      "zh": "原主表 27/42 行达到目标样本，另有 14 行独立延时补测，1 行受容量准入限制未执行。未做任务精度评测。",
+      "en": "The original matrix had 27/42 rows at full sample count, 14 separate extended retests, and one point held at capacity admission. Task accuracy was not assessed."
     }
   },
   "blocks": [
@@ -122,20 +122,20 @@
       "table": {
         "headers": {
           "zh": [
-            "I/O · 负载",
-            "有效N",
-            "TTFT p50 / p95，s",
-            "decode p50，tok/s",
-            "总输出，tok/s",
-            "prefix / 抢占"
+            "输入/输出 · 并发",
+            "有效 N",
+            "TTFT P50 / P95 (s)",
+            "Decode P50 (tok/s)",
+            "整体输出 (tok/s)",
+            "前缀命中 / 接受率"
           ],
           "en": [
-            "I/O · workload",
+            "Input/output · concurrency",
             "Valid N",
-            "TTFT P50 / P95 s",
-            "Decode P50 tok/s",
-            "Aggregate output tok/s",
-            "Prefix / preemptions"
+            "TTFT P50 / P95 (s)",
+            "Decode P50 (tok/s)",
+            "Aggregate output (tok/s)",
+            "Prefix hit / acceptance"
           ]
         },
         "rows": [
@@ -145,39 +145,31 @@
             "0.70 / 0.79",
             "147.18",
             "118.74",
-            "0.00% / 0"
+            "0.00% / 51.52%"
           ],
           [
-            "128K/512/C1",
+            "8K/512/C8",
             "128",
-            "10.76 / 10.89",
-            "88.36",
-            "30.66",
-            "0.00% / 0"
+            "0.67 / 1.88",
+            "59.88",
+            "411.96",
+            "0.00% / 50.05%"
           ],
           [
-            "32K/2048/C1",
-            "128",
-            "2.45 / 2.51",
-            "140.65",
-            "109.66",
-            "0.00% / 0"
-          ],
-          [
-            "32K/512/C32",
+            "8K/512/C16",
             "256",
-            "5.03 / 28.84",
-            "7.37",
-            "207.14",
-            "0.00% / 0"
+            "0.68 / 1.96",
+            "36.07",
+            "520.52",
+            "0.00% / 47.32%"
           ],
           [
-            "32K/512/R0.44",
-            "512",
-            "5.36 / 8.35",
-            "10.05",
-            "207.77",
-            "0.00% / 0"
+            "8K/512/C32",
+            "256",
+            "0.73 / 7.29",
+            "22.87",
+            "651.68",
+            "0.00% / 48.34%"
           ]
         ]
       },
@@ -583,8 +575,8 @@
         "en": "Capacity and failure boundaries"
       },
       "intro": {
-        "zh": "原设计、独立补测和调整配方分开报告。",
-        "en": "Original design, separate retests and adjusted configurations are reported separately."
+        "zh": "仅列出本配方的未验证或失败项。",
+        "en": "Only unresolved or failed items for this configuration are listed."
       },
       "notes": [
         {
@@ -596,53 +588,37 @@
         "headers": {
           "zh": [
             "项目",
-            "原尝试状态",
-            "当前已支持的结论",
-            "不支持的结论"
+            "本配方状态"
           ],
           "en": [
             "Item",
-            "Original status",
-            "Supported conclusion",
-            "Unsupported conclusion"
+            "Status for this configuration"
           ]
         },
         "rows": [
           [
             "原C16容量",
-            "准入hold，未强行执行",
-            "新text95/8槽配方三启动均32/32、零抢占",
-            "原配方容量通过；或把hold写成实测OOM"
+            "准入hold，未强行执行"
           ],
           [
             "原混合媒体",
-            "启动profile阶段HcclAllReduce EI0006建连超时；0正式媒体请求",
-            "限定dummy profile后原冻结16请求通过",
-            "原无界profile已修复；或根因已锁定为CANN不匹配"
+            "启动profile阶段HcclAllReduce EI0006建连超时；0正式媒体请求"
           ],
           [
             "追加AllReduce mesh诊断",
-            "同样启动失败，0正式媒体请求",
-            "保留失败，成功分支恢复原AG/RS mesh",
-            "该追加项解决了媒体HCCL问题"
+            "同样启动失败，0正式媒体请求"
           ],
           [
             "1M优化路径",
-            "原vendor/experimental前提未验证",
-            "stock备用路径下近1M输入、固定256输出可完成",
-            "官方优化路径性能验收通过"
+            "原vendor/experimental前提未验证"
           ],
           [
             "客户端与门禁历史失败",
-            "旧输入准备、text-only误做正向图像门禁、提前查backend及短图采样漏检等均保留",
-            "修订harness后，新服务重复门禁并独立测量",
-            "把门禁失败计成正式请求失败，或静默删除失败尝试"
+            "旧输入准备、text-only误做正向图像门禁、提前查backend及短图采样漏检等均保留"
           ],
           [
             "默认/adaptive解析",
-            "reasoning/content分离限制保留",
-            "显式thinking_mode=enabled通过正式功能门",
-            "默认模式全部正确"
+            "reasoning/content分离限制保留"
           ]
         ]
       }
@@ -686,8 +662,8 @@
   },
   "methodNotes": [
     {
-      "zh": "原主表 27/42 行满样本，14 行独立延时补测，1 行原配方容量 hold 后采用新配方；42 行覆盖不等于原配方全部通过。未做任务精度评测。",
-      "en": "The original matrix had 27/42 full-sample rows, 14 separately extended retests, and one capacity hold completed using a new configuration. Coverage does not mean all points passed on the original configuration. Task accuracy was not assessed."
+      "zh": "原主表 27/42 行达到目标样本，另有 14 行独立延时补测，1 行受容量准入限制未执行。未做任务精度评测。",
+      "en": "The original matrix had 27/42 rows at full sample count, 14 separate extended retests, and one point held at capacity admission. Task accuracy was not assessed."
     },
     {
       "zh": "上述固定输出为冷输入压力测试。原配方 C16 长上下文容量受限，混合媒体配置启动失败；近 1M 仅验证 stock 备用算子。",

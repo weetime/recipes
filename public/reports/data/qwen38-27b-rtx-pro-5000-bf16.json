@@ -63,8 +63,8 @@
       "zhLabel": "Agent 长上下文回放",
       "enLabel": "Agent long-context replay",
       "value": "1,311",
-      "zhNote": "每轮记录请求完成数；不代表工具任务成功率",
-      "enNote": "completed requests per run; not live-tool task success"
+      "zhNote": "3 轮合计完成轮数；不代表工具任务成功率",
+      "enNote": "Completed turns across 3 runs; not live-tool task success"
     }
   ],
   "overview": {

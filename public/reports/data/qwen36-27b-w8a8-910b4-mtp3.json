@@ -1,0 +1,183 @@
+{
+  "title": "Qwen3.6-27B W8A8 · 910B4 · MTP k=3",
+  "breadcrumb": "Qwen3.6-27B",
+  "kicker": "SERVING PERFORMANCE BENCHMARK",
+  "lede": {
+    "zh": "Qwen3.6-27B 在 910B4 上的 MTP k=3 服务并发测试。",
+    "en": "Qwen3.6-27B concurrency measurements on 910B4 with MTP k=3."
+  },
+  "chips": [
+    "8 × Ascend 910B4 · 32 GB",
+    "W8A8",
+    "TP4 × 2 · MTP k=3",
+    "vLLM-Ascend 0.18.0rc1",
+    "Measured 2026-07-23"
+  ],
+  "snapshot": {
+    "zh": "独立实测 · 按负载与采样条件解读",
+    "en": "Independent measurement · interpret with workload and sampling"
+  },
+  "sections": [
+    {
+      "id": "concurrency",
+      "zh": "并发吞吐",
+      "en": "Concurrency throughput"
+    },
+    {
+      "id": "method",
+      "zh": "测试方法",
+      "en": "Method"
+    }
+  ],
+  "stats": [],
+  "overview": {
+    "heading": {
+      "zh": "测试结果",
+      "en": "Measured results"
+    },
+    "intro": {
+      "zh": "Qwen3.6-27B 在 910B4 上的 MTP k=3 服务并发测试。",
+      "en": "Qwen3.6-27B concurrency measurements on 910B4 with MTP k=3."
+    },
+    "note": {
+      "zh": "吞吐为对应并发的实测结果；没有根据未测条件推断业务容量。",
+      "en": "Throughput applies to the measured concurrency and does not establish capacity under untested conditions."
+    }
+  },
+  "blocks": [
+    {
+      "id": "concurrency",
+      "label": {
+        "zh": "并发吞吐",
+        "en": "Concurrency throughput"
+      },
+      "heading": {
+        "zh": "并发吞吐",
+        "en": "Concurrency throughput"
+      },
+      "intro": {
+        "zh": "同一会话的复测数据，按已测并发列示。",
+        "en": "Same-session retest values are listed by measured concurrency."
+      },
+      "table": {
+        "headers": {
+          "zh": [
+            "并发",
+            "输出 tok/s",
+            "接受长度"
+          ],
+          "en": [
+            "Concurrency",
+            "Output tok/s",
+            "Acceptance length"
+          ]
+        },
+        "rows": [
+          [
+            "C1",
+            "33.2",
+            "2.58"
+          ],
+          [
+            "C16",
+            "327.0",
+            "2.68"
+          ],
+          [
+            "C32",
+            "455.0",
+            "2.72"
+          ],
+          [
+            "C64",
+            "467.4",
+            "2.72"
+          ],
+          [
+            "C96",
+            "487.4",
+            "2.74"
+          ]
+        ]
+      },
+      "notes": [],
+      "chart": {
+        "type": "line",
+        "title": {
+          "zh": "输出吞吐",
+          "en": "Output throughput"
+        },
+        "hint": {
+          "zh": "仅显示本配置实测值；缺测点不补零。",
+          "en": "Measured values for this configuration only; missing points are not filled with zero."
+        },
+        "labels": {
+          "zh": [
+            "C1",
+            "C16",
+            "C32",
+            "C64",
+            "C96"
+          ],
+          "en": [
+            "C1",
+            "C16",
+            "C32",
+            "C64",
+            "C96"
+          ]
+        },
+        "yTitle": {
+          "zh": "tok/s",
+          "en": "tok/s"
+        },
+        "series": [
+          {
+            "zh": "输出吞吐",
+            "en": "Output throughput",
+            "color": "blue",
+            "values": [
+              33.2,
+              327.0,
+              455.0,
+              467.4,
+              487.4
+            ]
+          }
+        ]
+      }
+    }
+  ],
+  "meta": [
+    {
+      "zh": "硬件",
+      "en": "Hardware",
+      "value": "8 × Ascend 910B4 · 32 GB"
+    },
+    {
+      "zh": "配置",
+      "en": "Configuration",
+      "value": "TP4 × 2 · MTP k=3"
+    },
+    {
+      "zh": "引擎",
+      "en": "Engine",
+      "value": "vLLM-Ascend 0.18.0rc1"
+    },
+    {
+      "zh": "精度",
+      "en": "Precision",
+      "value": "W8A8"
+    }
+  ],
+  "methodIntro": {
+    "zh": "不同测试阶段的请求形状、样本量和统计口径单独记录。",
+    "en": "Workload shape, sample count, and statistics are stated separately by test phase."
+  },
+  "methodNotes": [
+    {
+      "zh": "吞吐为对应并发的实测结果；没有根据未测条件推断业务容量。",
+      "en": "Throughput applies to the measured concurrency and does not establish capacity under untested conditions."
+    }
+  ]
+}

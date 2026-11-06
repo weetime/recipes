@@ -1,0 +1,171 @@
+{
+  "title": "MiniMax-H3 BF16 · RTX PRO 6000 · SGLang · 8 GPU · TP2 × SP4",
+  "breadcrumb": "MiniMax-H3",
+  "kicker": "SERVING PERFORMANCE BENCHMARK",
+  "lede": {
+    "zh": "MiniMax-H3 使用 SGLang 在 RTX PRO 6000 的 8 卡视频生成测试。",
+    "en": "MiniMax-H3 video-generation measurements using SGLang on 8 RTX PRO 6000 GPUs."
+  },
+  "chips": [
+    "8 × RTX PRO 6000 Blackwell · 96 GB",
+    "BF16",
+    "TP2 × SP4",
+    "SGLang",
+    "Measured 2026-09-01"
+  ],
+  "snapshot": {
+    "zh": "独立实测 · 按负载与采样条件解读",
+    "en": "Independent measurement · interpret with workload and sampling"
+  },
+  "sections": [
+    {
+      "id": "video",
+      "zh": "视频生成实测",
+      "en": "Video-generation measurements"
+    },
+    {
+      "id": "method",
+      "zh": "测试方法",
+      "en": "Method"
+    }
+  ],
+  "stats": [],
+  "overview": {
+    "heading": {
+      "zh": "测试结果",
+      "en": "Measured results"
+    },
+    "intro": {
+      "zh": "MiniMax-H3 使用 SGLang 在 RTX PRO 6000 的 8 卡视频生成测试。",
+      "en": "MiniMax-H3 video-generation measurements using SGLang on 8 RTX PRO 6000 GPUs."
+    },
+    "note": {
+      "zh": "耗时为服务端 inference_time_s；每点 3 次，单并发，不能由此推算 QPS。",
+      "en": "Timing uses server inference_time_s; three runs per point at concurrency 1 do not establish QPS."
+    }
+  },
+  "blocks": [
+    {
+      "id": "video",
+      "label": {
+        "zh": "视频生成实测",
+        "en": "Video-generation measurements"
+      },
+      "heading": {
+        "zh": "视频生成实测",
+        "en": "Video-generation measurements"
+      },
+      "intro": {
+        "zh": "并发 1；按任务与分辨率列示生成耗时。",
+        "en": "Concurrency 1; render time is listed by task and resolution."
+      },
+      "table": {
+        "headers": {
+          "zh": [
+            "任务",
+            "分辨率",
+            "时长 / 帧",
+            "步数",
+            "耗时",
+            "峰值显存 / 卡"
+          ],
+          "en": [
+            "Task",
+            "Resolution",
+            "Duration / frames",
+            "Steps",
+            "Render time",
+            "Peak memory / GPU"
+          ]
+        },
+        "rows": [
+          [
+            "t2va",
+            "1344×768",
+            "5.0s / 124",
+            "50",
+            "120.1 s",
+            "51.8 GB"
+          ],
+          [
+            "ref2va",
+            "1344×768",
+            "5.0s / 124",
+            "50",
+            "189.4 s",
+            "52.9 GB"
+          ]
+        ]
+      },
+      "notes": [],
+      "chart": {
+        "type": "bar",
+        "title": {
+          "zh": "单条生成耗时",
+          "en": "Single-request render time"
+        },
+        "hint": {
+          "zh": "仅显示本配置实测值；缺测点不补零。",
+          "en": "Measured values for this configuration only; missing points are not filled with zero."
+        },
+        "labels": {
+          "zh": [
+            "t2va · 1344×768",
+            "ref2va · 1344×768"
+          ],
+          "en": [
+            "t2va · 1344×768",
+            "ref2va · 1344×768"
+          ]
+        },
+        "yTitle": {
+          "zh": "s",
+          "en": "s"
+        },
+        "series": [
+          {
+            "zh": "单条生成耗时",
+            "en": "Single-request render time",
+            "color": "blue",
+            "values": [
+              120.1,
+              189.4
+            ]
+          }
+        ]
+      }
+    }
+  ],
+  "meta": [
+    {
+      "zh": "硬件",
+      "en": "Hardware",
+      "value": "8 × RTX PRO 6000 Blackwell · 96 GB"
+    },
+    {
+      "zh": "配置",
+      "en": "Configuration",
+      "value": "TP2 × SP4"
+    },
+    {
+      "zh": "引擎",
+      "en": "Engine",
+      "value": "SGLang"
+    },
+    {
+      "zh": "精度",
+      "en": "Precision",
+      "value": "BF16"
+    }
+  ],
+  "methodIntro": {
+    "zh": "不同测试阶段的请求形状、样本量和统计口径单独记录。",
+    "en": "Workload shape, sample count, and statistics are stated separately by test phase."
+  },
+  "methodNotes": [
+    {
+      "zh": "耗时为服务端 inference_time_s；每点 3 次，单并发，不能由此推算 QPS。",
+      "en": "Timing uses server inference_time_s; three runs per point at concurrency 1 do not establish QPS."
+    }
+  ]
+}

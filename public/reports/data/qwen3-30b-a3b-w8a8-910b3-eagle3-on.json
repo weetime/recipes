@@ -1,0 +1,218 @@
+{
+  "title": "Qwen3-30B-A3B W8A8 · 910B3 · EAGLE3 on",
+  "breadcrumb": "Qwen3-30B-A3B",
+  "kicker": "SERVING PERFORMANCE BENCHMARK",
+  "lede": {
+    "zh": "Qwen3-30B-A3B W8A8 在 910B3 上 EAGLE3 on 的服务测试。",
+    "en": "Serving measurements of Qwen3-30B-A3B W8A8 on 910B3 with EAGLE3 on."
+  },
+  "chips": [
+    "4 × Ascend 910B3 · 64 GB",
+    "W8A8",
+    "TP4 · EP · EAGLE3 on",
+    "vLLM-Ascend",
+    "Measured 2026-08-25"
+  ],
+  "snapshot": {
+    "zh": "独立实测 · 按负载与采样条件解读",
+    "en": "Independent measurement · interpret with workload and sampling"
+  },
+  "sections": [
+    {
+      "id": "serving",
+      "zh": "固定长度服务",
+      "en": "Fixed-length serving"
+    },
+    {
+      "id": "capacity",
+      "zh": "开放环与场景覆盖",
+      "en": "Open-loop & workload coverage"
+    },
+    {
+      "id": "method",
+      "zh": "测试方法",
+      "en": "Method"
+    }
+  ],
+  "stats": [],
+  "overview": {
+    "heading": {
+      "zh": "测试结果",
+      "en": "Measured results"
+    },
+    "intro": {
+      "zh": "Qwen3-30B-A3B W8A8 在 910B3 上 EAGLE3 on 的服务测试。",
+      "en": "Serving measurements of Qwen3-30B-A3B W8A8 on 910B3 with EAGLE3 on."
+    },
+    "note": {
+      "zh": "主测点为单次观测；不同并发与到达模型的指标分开解读。",
+      "en": "Primary points are single observations; concurrency and arrival-model results must be interpreted separately."
+    }
+  },
+  "blocks": [
+    {
+      "id": "serving",
+      "label": {
+        "zh": "固定长度服务",
+        "en": "Fixed-length serving"
+      },
+      "heading": {
+        "zh": "固定长度服务",
+        "en": "Fixed-length serving"
+      },
+      "intro": {
+        "zh": "逐项保留本配置已测的单流和并发结果。",
+        "en": "Single-stream and concurrency results are retained only where measured for this configuration."
+      },
+      "table": {
+        "headers": {
+          "zh": [
+            "指标",
+            "实测值"
+          ],
+          "en": [
+            "Metric",
+            "Measured value"
+          ]
+        },
+        "rows": [
+          [
+            "单流 TPOT 中位",
+            "12.77 ms"
+          ],
+          [
+            "单流输出吞吐",
+            "70.01 tok/s"
+          ],
+          [
+            "并发 64 输出吞吐",
+            "2,715.16 tok/s"
+          ]
+        ]
+      },
+      "notes": [],
+      "chart": {
+        "type": "bar",
+        "title": {
+          "zh": "单流输出吞吐",
+          "en": "Single-stream output throughput"
+        },
+        "hint": {
+          "zh": "仅显示本配置实测值；缺测点不补零。",
+          "en": "Measured values for this configuration only; missing points are not filled with zero."
+        },
+        "labels": {
+          "zh": [
+            "C1"
+          ],
+          "en": [
+            "C1"
+          ]
+        },
+        "yTitle": {
+          "zh": "tok/s",
+          "en": "tok/s"
+        },
+        "series": [
+          {
+            "zh": "单流输出吞吐",
+            "en": "Single-stream output throughput",
+            "color": "blue",
+            "values": [
+              70.01
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "capacity",
+      "label": {
+        "zh": "开放环与场景覆盖",
+        "en": "Open-loop & workload coverage"
+      },
+      "heading": {
+        "zh": "严格延迟约束下的到达率低于只约束 TTFT 的结果",
+        "en": "The rate is lower when both TTFT and TPOT are constrained"
+      },
+      "intro": {
+        "zh": "开放环使用 512/256 固定请求形状。其他数据包括高生成量、长上下文、ShareGPT 和 8 轮 Agent 回放。",
+        "en": "Open-loop traffic uses a fixed 512/256 request shape. Other measurements cover long generation, long context, ShareGPT, and an eight-turn Agent replay."
+      },
+      "notes": [
+        {
+          "zh": "所有主要固定场景为单轮测量；EAGLE3 的单流对照方向明确，但不能由此推导跨版本或跨权重的普遍收益。",
+          "en": "Primary fixed workloads are single-run measurements. The single-stream EAGLE3 direction is clear for this setup, but it does not establish a general gain across versions or checkpoints."
+        }
+      ],
+      "chart": {
+        "title": {
+          "zh": "容量边界随 SLO 变化",
+          "en": "Capacity boundary by SLO"
+        },
+        "hint": {
+          "zh": "悬停查看测量点。",
+          "en": "Hover a point to inspect the measurement."
+        },
+        "labels": {
+          "zh": [
+            "TTFT P95 ≤ 1 s",
+            "TTFT P95 ≤ 1 s + TPOT P95 ≤ 50 ms"
+          ],
+          "en": [
+            "TTFT P95 ≤ 1 s",
+            "TTFT P95 ≤ 1 s + TPOT P95 ≤ 50 ms"
+          ]
+        },
+        "series": [
+          {
+            "zh": "safe_rps",
+            "en": "safe_rps",
+            "values": [
+              2.8,
+              1.86
+            ],
+            "color": "blue"
+          }
+        ],
+        "yTitle": {
+          "zh": "请求 / 秒",
+          "en": "Requests per second"
+        },
+        "type": "line"
+      }
+    }
+  ],
+  "meta": [
+    {
+      "zh": "硬件",
+      "en": "Hardware",
+      "value": "4 × Ascend 910B3 · 64 GB"
+    },
+    {
+      "zh": "配置",
+      "en": "Configuration",
+      "value": "TP4 · EP · EAGLE3 on"
+    },
+    {
+      "zh": "引擎",
+      "en": "Engine",
+      "value": "vLLM-Ascend"
+    },
+    {
+      "zh": "精度",
+      "en": "Precision",
+      "value": "W8A8"
+    }
+  ],
+  "methodIntro": {
+    "zh": "不同测试阶段的请求形状、样本量和统计口径单独记录。",
+    "en": "Workload shape, sample count, and statistics are stated separately by test phase."
+  },
+  "methodNotes": [
+    {
+      "zh": "主测点为单次观测；不同并发与到达模型的指标分开解读。",
+      "en": "Primary points are single observations; concurrency and arrival-model results must be interpreted separately."
+    }
+  ]
+}

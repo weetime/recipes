@@ -1,0 +1,175 @@
+{
+  "title": "Qwen3-32B BF16 · A100 · 4 × TP2 replicas",
+  "breadcrumb": "Qwen3-32B",
+  "kicker": "SERVING PERFORMANCE BENCHMARK",
+  "lede": {
+    "zh": "Qwen3-32B BF16 的 4 × TP2 replicas 在 A100 上的双门 SLO 测试。",
+    "en": "Dual-gate SLO measurements for Qwen3-32B BF16 using 4 × TP2 replicas on A100."
+  },
+  "chips": [
+    "8 × NVIDIA A100 · 80 GB",
+    "BF16",
+    "4 × TP2 replicas",
+    "vLLM 0.20.0 V1",
+    "Measured 2026-07-18"
+  ],
+  "snapshot": {
+    "zh": "独立实测 · 按负载与采样条件解读",
+    "en": "Independent measurement · interpret with workload and sampling"
+  },
+  "sections": [
+    {
+      "id": "slo",
+      "zh": "并发与 SLO 达标",
+      "en": "Concurrency and SLO attainment"
+    },
+    {
+      "id": "method",
+      "zh": "测试方法",
+      "en": "Method"
+    }
+  ],
+  "stats": [],
+  "overview": {
+    "heading": {
+      "zh": "测试结果",
+      "en": "Measured results"
+    },
+    "intro": {
+      "zh": "Qwen3-32B BF16 的 4 × TP2 replicas 在 A100 上的双门 SLO 测试。",
+      "en": "Dual-gate SLO measurements for Qwen3-32B BF16 using 4 × TP2 replicas on A100."
+    },
+    "note": {
+      "zh": "SLO 为 TTFT ≤16 秒且 TPOT ≤60 毫秒；改变门槛会改变达标率。",
+      "en": "The SLO requires TTFT ≤16 s and TPOT ≤60 ms; changing thresholds changes the pass rate."
+    }
+  },
+  "blocks": [
+    {
+      "id": "slo",
+      "label": {
+        "zh": "并发与 SLO 达标",
+        "en": "Concurrency and SLO attainment"
+      },
+      "heading": {
+        "zh": "并发与 SLO 达标",
+        "en": "Concurrency and SLO attainment"
+      },
+      "intro": {
+        "zh": "每点三轮取中位数；按逐请求的 TTFT 与 TPOT 双门槛统计。",
+        "en": "Median of three runs per point, using per-request TTFT and TPOT gates."
+      },
+      "table": {
+        "headers": {
+          "zh": [
+            "并发",
+            "双门达标率",
+            "TPOT 达标率"
+          ],
+          "en": [
+            "Concurrency",
+            "Dual-gate pass rate",
+            "TPOT pass rate"
+          ]
+        },
+        "rows": [
+          [
+            "C96",
+            "100%",
+            "100%"
+          ],
+          [
+            "C128",
+            "79%",
+            "79%"
+          ],
+          [
+            "C160",
+            "32%",
+            "32%"
+          ],
+          [
+            "C192",
+            "1%",
+            "19%"
+          ]
+        ]
+      },
+      "notes": [],
+      "chart": {
+        "type": "line",
+        "title": {
+          "zh": "双门 SLO 达标率",
+          "en": "Dual-gate SLO pass rate"
+        },
+        "hint": {
+          "zh": "仅显示本配置实测值；缺测点不补零。",
+          "en": "Measured values for this configuration only; missing points are not filled with zero."
+        },
+        "labels": {
+          "zh": [
+            "C96",
+            "C128",
+            "C160",
+            "C192"
+          ],
+          "en": [
+            "C96",
+            "C128",
+            "C160",
+            "C192"
+          ]
+        },
+        "yTitle": {
+          "zh": "%",
+          "en": "%"
+        },
+        "series": [
+          {
+            "zh": "双门 SLO 达标率",
+            "en": "Dual-gate SLO pass rate",
+            "color": "blue",
+            "values": [
+              100,
+              79,
+              32,
+              1
+            ]
+          }
+        ]
+      }
+    }
+  ],
+  "meta": [
+    {
+      "zh": "硬件",
+      "en": "Hardware",
+      "value": "8 × NVIDIA A100 · 80 GB"
+    },
+    {
+      "zh": "配置",
+      "en": "Configuration",
+      "value": "4 × TP2 replicas"
+    },
+    {
+      "zh": "引擎",
+      "en": "Engine",
+      "value": "vLLM 0.20.0 V1"
+    },
+    {
+      "zh": "精度",
+      "en": "Precision",
+      "value": "BF16"
+    }
+  ],
+  "methodIntro": {
+    "zh": "不同测试阶段的请求形状、样本量和统计口径单独记录。",
+    "en": "Workload shape, sample count, and statistics are stated separately by test phase."
+  },
+  "methodNotes": [
+    {
+      "zh": "SLO 为 TTFT ≤16 秒且 TPOT ≤60 毫秒；改变门槛会改变达标率。",
+      "en": "The SLO requires TTFT ≤16 s and TPOT ≤60 ms; changing thresholds changes the pass rate."
+    }
+  ]
+}

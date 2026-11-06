@@ -1,0 +1,182 @@
+{
+  "title": "MiniMax-M3 MXFP8 · 950DT · text95",
+  "breadcrumb": "MiniMax-M3",
+  "kicker": "SERVING PERFORMANCE BENCHMARK",
+  "lede": {
+    "zh": "MiniMax-M3 在 950DT 上 text95 配方的 128K 并发测试。",
+    "en": "MiniMax-M3 128K concurrency measurements on 950DT with the text95 configuration."
+  },
+  "chips": [
+    "8 × Ascend 950DT · 96 GB",
+    "MXFP8",
+    "TP4 / DP2 · text-only · 8 slots per DP",
+    "vLLM-Ascend 0.30.0rc2 + patches",
+    "Measured 2026-10-26"
+  ],
+  "snapshot": {
+    "zh": "独立实测 · 按负载与采样条件解读",
+    "en": "Independent measurement · interpret with workload and sampling"
+  },
+  "sections": [
+    {
+      "id": "capacity",
+      "zh": "128K / 256 并发 16",
+      "en": "128K / 256 at concurrency 16"
+    },
+    {
+      "id": "method",
+      "zh": "测试方法",
+      "en": "Method"
+    }
+  ],
+  "stats": [],
+  "overview": {
+    "heading": {
+      "zh": "测试结果",
+      "en": "Measured results"
+    },
+    "intro": {
+      "zh": "MiniMax-M3 在 950DT 上 text95 配方的 128K 并发测试。",
+      "en": "MiniMax-M3 128K concurrency measurements on 950DT with the text95 configuration."
+    },
+    "note": {
+      "zh": "这是 text-only、memory utilization 0.95、每 DP 8 槽、graph 最大 32 的独立配方；每轮仅 32 条，不提供尾延迟结论。",
+      "en": "This is a separate text-only configuration with memory utilization 0.95, eight slots per DP, and maximum graph size 32; 32 requests per start do not establish tail latency."
+    }
+  },
+  "blocks": [
+    {
+      "id": "capacity",
+      "label": {
+        "zh": "128K / 256 并发 16",
+        "en": "128K / 256 at concurrency 16"
+      },
+      "heading": {
+        "zh": "128K / 256 并发 16",
+        "en": "128K / 256 at concurrency 16"
+      },
+      "intro": {
+        "zh": "每次独立启动完成 32 条请求，分别记录延迟和输出吞吐。",
+        "en": "Each independent start completed 32 requests; latency and output throughput are reported separately."
+      },
+      "table": {
+        "headers": {
+          "zh": [
+            "独立启动",
+            "有效 / 目标",
+            "TTFT P50 (s)",
+            "Decode P50 (tok/s)",
+            "总输出 (tok/s)",
+            "最高 DP KV 样本"
+          ],
+          "en": [
+            "Independent start",
+            "Valid / target",
+            "TTFT P50 (s)",
+            "Decode P50 (tok/s)",
+            "Aggregate output (tok/s)",
+            "Peak sampled DP KV"
+          ]
+        },
+        "rows": [
+          [
+            "1",
+            "32 / 32",
+            "38.58",
+            "3.40",
+            "35.83",
+            "93.25%"
+          ],
+          [
+            "2",
+            "32 / 32",
+            "38.59",
+            "4.07",
+            "38.29",
+            "93.24%"
+          ],
+          [
+            "3",
+            "32 / 32",
+            "31.15",
+            "3.72",
+            "37.86",
+            "93.25%"
+          ]
+        ]
+      },
+      "notes": [],
+      "chart": {
+        "type": "line",
+        "title": {
+          "zh": "总输出吞吐",
+          "en": "Aggregate output throughput"
+        },
+        "hint": {
+          "zh": "仅显示本配置实测值；缺测点不补零。",
+          "en": "Measured values for this configuration only; missing points are not filled with zero."
+        },
+        "labels": {
+          "zh": [
+            "1",
+            "2",
+            "3"
+          ],
+          "en": [
+            "1",
+            "2",
+            "3"
+          ]
+        },
+        "yTitle": {
+          "zh": "tok/s",
+          "en": "tok/s"
+        },
+        "series": [
+          {
+            "zh": "总输出吞吐",
+            "en": "Aggregate output throughput",
+            "color": "blue",
+            "values": [
+              35.83,
+              38.29,
+              37.86
+            ]
+          }
+        ]
+      }
+    }
+  ],
+  "meta": [
+    {
+      "zh": "硬件",
+      "en": "Hardware",
+      "value": "8 × Ascend 950DT · 96 GB"
+    },
+    {
+      "zh": "配置",
+      "en": "Configuration",
+      "value": "TP4 / DP2 · text-only · 8 slots per DP"
+    },
+    {
+      "zh": "引擎",
+      "en": "Engine",
+      "value": "vLLM-Ascend 0.30.0rc2 + patches"
+    },
+    {
+      "zh": "精度",
+      "en": "Precision",
+      "value": "MXFP8"
+    }
+  ],
+  "methodIntro": {
+    "zh": "不同测试阶段的请求形状、样本量和统计口径单独记录。",
+    "en": "Workload shape, sample count, and statistics are stated separately by test phase."
+  },
+  "methodNotes": [
+    {
+      "zh": "这是 text-only、memory utilization 0.95、每 DP 8 槽、graph 最大 32 的独立配方；每轮仅 32 条，不提供尾延迟结论。",
+      "en": "This is a separate text-only configuration with memory utilization 0.95, eight slots per DP, and maximum graph size 32; 32 requests per start do not establish tail latency."
+    }
+  ]
+}

@@ -1,0 +1,234 @@
+{
+  "title": "MiniMax-H3 BF16 · RTX PRO 6000 · vllm-omni · 2 GPU · TP2 · SP1",
+  "breadcrumb": "MiniMax-H3",
+  "kicker": "SERVING PERFORMANCE BENCHMARK",
+  "lede": {
+    "zh": "MiniMax-H3 使用 vllm-omni 在 RTX PRO 6000 的 2 卡视频生成测试。",
+    "en": "MiniMax-H3 video-generation measurements using vllm-omni on 2 RTX PRO 6000 GPUs."
+  },
+  "chips": [
+    "2 × RTX PRO 6000 Blackwell · 96 GB",
+    "BF16",
+    "TP2 · SP1",
+    "vllm-omni",
+    "Measured 2026-09-01"
+  ],
+  "snapshot": {
+    "zh": "独立实测 · 按负载与采样条件解读",
+    "en": "Independent measurement · interpret with workload and sampling"
+  },
+  "sections": [
+    {
+      "id": "video",
+      "zh": "视频生成实测",
+      "en": "Video-generation measurements"
+    },
+    {
+      "id": "breakdown",
+      "zh": "Ref2VA 阶段耗时",
+      "en": "Ref2VA stage timings"
+    },
+    {
+      "id": "method",
+      "zh": "测试方法",
+      "en": "Method"
+    }
+  ],
+  "stats": [],
+  "overview": {
+    "heading": {
+      "zh": "测试结果",
+      "en": "Measured results"
+    },
+    "intro": {
+      "zh": "MiniMax-H3 使用 vllm-omni 在 RTX PRO 6000 的 2 卡视频生成测试。",
+      "en": "MiniMax-H3 video-generation measurements using vllm-omni on 2 RTX PRO 6000 GPUs."
+    },
+    "note": {
+      "zh": "耗时为客户端端到端时间；每点 3 次，单并发，不能由此推算 QPS。",
+      "en": "Timing uses client end-to-end latency; three runs per point at concurrency 1 do not establish QPS."
+    }
+  },
+  "blocks": [
+    {
+      "id": "video",
+      "label": {
+        "zh": "视频生成实测",
+        "en": "Video-generation measurements"
+      },
+      "heading": {
+        "zh": "视频生成实测",
+        "en": "Video-generation measurements"
+      },
+      "intro": {
+        "zh": "并发 1；按任务与分辨率列示生成耗时。",
+        "en": "Concurrency 1; render time is listed by task and resolution."
+      },
+      "table": {
+        "headers": {
+          "zh": [
+            "任务",
+            "分辨率",
+            "时长 / 帧",
+            "步数",
+            "耗时",
+            "峰值显存 / 卡"
+          ],
+          "en": [
+            "Task",
+            "Resolution",
+            "Duration / frames",
+            "Steps",
+            "Render time",
+            "Peak memory / GPU"
+          ]
+        },
+        "rows": [
+          [
+            "t2va",
+            "1344×768",
+            "5.0s / 124",
+            "50",
+            "317.6 s",
+            "80.8 GB"
+          ],
+          [
+            "t2va",
+            "832×480",
+            "5.0s / 124",
+            "50",
+            "92.0 s",
+            "—"
+          ],
+          [
+            "ref2va",
+            "1344×768",
+            "5.0s / 124",
+            "50",
+            "530.2 s",
+            "未记录"
+          ]
+        ]
+      },
+      "notes": [],
+      "chart": {
+        "type": "bar",
+        "title": {
+          "zh": "单条生成耗时",
+          "en": "Single-request render time"
+        },
+        "hint": {
+          "zh": "仅显示本配置实测值；缺测点不补零。",
+          "en": "Measured values for this configuration only; missing points are not filled with zero."
+        },
+        "labels": {
+          "zh": [
+            "t2va · 1344×768",
+            "t2va · 832×480",
+            "ref2va · 1344×768"
+          ],
+          "en": [
+            "t2va · 1344×768",
+            "t2va · 832×480",
+            "ref2va · 1344×768"
+          ]
+        },
+        "yTitle": {
+          "zh": "s",
+          "en": "s"
+        },
+        "series": [
+          {
+            "zh": "单条生成耗时",
+            "en": "Single-request render time",
+            "color": "blue",
+            "values": [
+              317.6,
+              92.0,
+              530.2
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "breakdown",
+      "label": {
+        "zh": "Ref2VA 阶段耗时",
+        "en": "Ref2VA stage timings"
+      },
+      "heading": {
+        "zh": "Ref2VA 阶段耗时",
+        "en": "Ref2VA stage timings"
+      },
+      "intro": {
+        "zh": "1344×768、5 秒、50 步；分别记录各阶段耗时。",
+        "en": "1344×768, 5 seconds and 50 steps; stage timings are reported individually."
+      },
+      "table": {
+        "headers": {
+          "zh": [
+            "阶段",
+            "耗时"
+          ],
+          "en": [
+            "Stage",
+            "Time"
+          ]
+        },
+        "rows": [
+          [
+            "2",
+            "TP2 · usp1"
+          ],
+          [
+            "4",
+            "TP2 × USP2"
+          ],
+          [
+            "8",
+            "TP2 × USP4"
+          ]
+        ]
+      },
+      "notes": [
+        {
+          "zh": "阶段耗时仅适用于本次测试配置。",
+          "en": "Stage timings apply to this test configuration only."
+        }
+      ]
+    }
+  ],
+  "meta": [
+    {
+      "zh": "硬件",
+      "en": "Hardware",
+      "value": "2 × RTX PRO 6000 Blackwell · 96 GB"
+    },
+    {
+      "zh": "配置",
+      "en": "Configuration",
+      "value": "TP2 · SP1"
+    },
+    {
+      "zh": "引擎",
+      "en": "Engine",
+      "value": "vllm-omni"
+    },
+    {
+      "zh": "精度",
+      "en": "Precision",
+      "value": "BF16"
+    }
+  ],
+  "methodIntro": {
+    "zh": "不同测试阶段的请求形状、样本量和统计口径单独记录。",
+    "en": "Workload shape, sample count, and statistics are stated separately by test phase."
+  },
+  "methodNotes": [
+    {
+      "zh": "耗时为客户端端到端时间；每点 3 次，单并发，不能由此推算 QPS。",
+      "en": "Timing uses client end-to-end latency; three runs per point at concurrency 1 do not establish QPS."
+    }
+  ]
+}
