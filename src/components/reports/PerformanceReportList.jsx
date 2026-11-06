@@ -199,7 +199,7 @@ export function PerformanceReportList({ reports }) {
                   <div className="text-[10px] leading-4 text-muted-foreground">{report.listMetric?.label || t("reports.singleStream")}</div>
                   {(report.listMetric || report.singleStream) && <div className="mt-1 line-clamp-2 text-[10px] leading-4 text-muted-foreground/80" title={(report.listMetric || report.singleStream).profile}>{(report.listMetric || report.singleStream).profile}</div>}
                   <div className="mt-2 flex items-baseline gap-1.5">
-                    {report.listMetric || report.singleStream ? <><span className="text-2xl font-medium tracking-[-.045em] tabular-nums">{Number((report.listMetric || report.singleStream).value).toLocaleString(undefined, { maximumFractionDigits: 2 })}</span><span className="text-[10px] text-muted-foreground">{(report.listMetric || report.singleStream).unit}</span></> : <span className="text-sm text-muted-foreground">{t("reports.singleUnavailable")}</span>}
+                    {report.listMetric || report.singleStream ? <><span className="text-2xl font-medium tracking-[-.045em] tabular-nums">{Number.isFinite(Number((report.listMetric || report.singleStream).value)) ? Number((report.listMetric || report.singleStream).value).toLocaleString(undefined, { maximumFractionDigits: 2 }) : (report.listMetric || report.singleStream).value}</span><span className="text-[10px] text-muted-foreground">{(report.listMetric || report.singleStream).unit}</span></> : <span className="text-sm text-muted-foreground">{t("reports.singleUnavailable")}</span>}
                   </div>
                 </div>
                 <MiniCurve curve={report.curve} />

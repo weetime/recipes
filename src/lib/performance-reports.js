@@ -798,7 +798,7 @@ function reportCurve(data, locale, slug) {
     const ttftIndex = headers.findIndex((header) => /TTFT.*(?:P50|median|mean|中位)/i.test(header));
     if (ttftIndex < 0) continue;
     const concurrencyIndex = headers.findIndex((header, index) => index !== ttftIndex && /concurrency|并发/i.test(header));
-    const contextIndex = headers.findIndex((header, index) => index !== ttftIndex && index !== concurrencyIndex && /context|input length|input \/ output|workload|profile|scenario|configuration|engine|上下文|输入长度|场景|负载|配置|引擎/i.test(header));
+    const contextIndex = headers.findIndex((header, index) => index !== ttftIndex && index !== concurrencyIndex && /context|input length|input\s*\/\s*output|workload|profile|scenario|configuration|engine|上下文|输入长度|输入\s*\/\s*输出|场景|负载|配置|引擎/i.test(header));
     const labelIndex = concurrencyIndex >= 0 ? concurrencyIndex : contextIndex;
     if (labelIndex < 0) continue;
     const header = headers[ttftIndex];
@@ -810,9 +810,11 @@ function reportCurve(data, locale, slug) {
       const rawValue = row[ttftIndex];
       groups.get(key).push({ label: String(row[labelIndex] ?? "").trim(), value: numberFrom(rawValue), unit: latencyUnit(rawValue, header) });
     }
-    const [groupLabel, candidates] = [...groups.entries()].sort((a, b) => b[1].filter((point) => point.label && point.value !== null).length - a[1].filter((point) => point.label && point.value !== null).length)[0] || [];
+    const distinctLabels = (points) => new Set(points.filter((point) => point.label && point.value !== null).map((point) => point.label)).size;
+    const [groupLabel, candidates] = [...groups.entries()].sort((a, b) => distinctLabels(b[1]) - distinctLabels(a[1]))[0] || [];
     const points = (candidates || []).filter((point) => point.label && point.value !== null);
-    if (points.length < 2) continue;
+    // Independent instances at the same concurrency are observations, not a trend.
+    if (points.length < 2 || distinctLabels(points) !== points.length) continue;
     const sourceUnits = [...new Set(points.map((point) => point.unit).filter(Boolean))];
     const unit = sourceUnits.includes("ms") ? "ms" : sourceUnits.includes("s") ? "s" : latencyUnit("", header) || "s";
     const context = groupLabel && groupLabel !== "__all__" ? ` · ${groupLabel}` : "";
@@ -826,6 +828,27 @@ function reportCurve(data, locale, slug) {
         ? point.unit === "s" ? point.value * 1000 : point.value / 1000
         : point.value),
       unit,
+    };
+  }
+  // Some isolated configurations have no TTFT series but do have a measured
+  // ordered concurrency or input-length curve. Show that metric with its
+  // original label and units rather than dropping the existing trend panel.
+  for (const block of data?.blocks || []) {
+    const chart = block.chart;
+    const labels = chart?.labels?.[locale] || chart?.labels?.en;
+    if (!Array.isArray(labels) || labels.length < 2) continue;
+    const ordered = labels.every((label) => /^(?:C\d+|\d+(?:\.\d+)?(?:K)?(?:\s*·\s*C\d+)?(?:\s*req\/s)?)$/i.test(String(label).trim()));
+    if (!ordered) continue;
+    const series = chart.series?.find((item) => Array.isArray(item.values) && item.values.length === labels.length && item.values.filter(Number.isFinite).length >= 2);
+    if (!series) continue;
+    const axis = `${chart.yTitle?.en || ""} ${chart.yTitle?.zh || ""}`;
+    const unit = axis.match(/tok\/s|req\/s|answers\/s|ms|秒|seconds?|\bs\b|%|×/i)?.[0] || "";
+    return {
+      title: chart.title?.[locale] || chart.title?.en || block.heading?.[locale] || "",
+      series: series[locale] || series.en || "",
+      labels,
+      values: series.values.map((value) => Number.isFinite(value) ? value : null),
+      unit: /秒|seconds?/i.test(unit) ? "s" : unit,
     };
   }
   return null;

@@ -32,6 +32,8 @@ public/*/
 public/reports/**
 !public/reports/**/
 !public/reports/**/*.html
+!public/reports/report-catalog.json
+!public/reports/report-identities.json
 !public/reports/assets/**
 !public/reports/data/**
 !public/reports/vendor/**

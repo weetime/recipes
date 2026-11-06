@@ -1,0 +1,447 @@
+{
+  "deepseek-v41-1017-a100": {
+    "model": "DeepSeek-V4.1-Flash-1017",
+    "precision": "Mixed precision",
+    "hardware": "8× NVIDIA A100 · 80 GB"
+  },
+  "deepseek-v41-flash-mixed-950dt": {
+    "model": "DeepSeek-V4.1-Flash",
+    "precision": "Mixed MXFP8 / MXFP4",
+    "hardware": "8× Ascend 950DT · 96 GB"
+  },
+  "minimax-m31-flash-950dt": {
+    "model": "MiniMax-M3.1-Flash",
+    "precision": "W8A8-MXFP8",
+    "hardware": "8× Ascend 950DT · 96 GB"
+  },
+  "minimax-m3-mxfp8-950dt": {
+    "model": "MiniMax-M3",
+    "precision": "MXFP8",
+    "hardware": "8× Ascend 950DT · 96 GB"
+  },
+  "glm-5-3-flash-rtx-pro-5000": {
+    "model": "GLM-5.3-Flash",
+    "precision": "NVFP4",
+    "hardware": "8× RTX PRO 5000 · 72 GB"
+  },
+  "qwen38-flash-next-rtx-pro-5000-fp8": {
+    "model": "Qwen3.8-Flash-Next",
+    "precision": "FP8",
+    "hardware": "4× RTX PRO 5000 · 72 GB"
+  },
+  "qwen38-flash-next-rtx-pro-5000-nvfp4": {
+    "model": "Qwen3.8-Flash-Next",
+    "precision": "NVFP4",
+    "hardware": "4× RTX PRO 5000 · 72 GB"
+  },
+  "qwen38-27b-mxfp8-950dt": {
+    "model": "Qwen3.8-27B",
+    "precision": "W8A8-MXFP8",
+    "hardware": "8× Ascend 950DT"
+  },
+  "qwen38-27b-rtx-pro-5000-nvfp4": {
+    "model": "Qwen3.8-27B",
+    "precision": "NVFP4",
+    "hardware": "8× RTX PRO 5000 · 72 GB"
+  },
+  "qwen38-27b-rtx-pro-5000-fp8": {
+    "model": "Qwen3.8-27B",
+    "precision": "FP8",
+    "hardware": "8× RTX PRO 5000 · 72 GB"
+  },
+  "qwen38-27b-rtx-pro-5000-bf16": {
+    "model": "Qwen3.8-27B",
+    "precision": "BF16",
+    "hardware": "8× RTX PRO 5000 · 72 GB"
+  },
+  "glm-5-3-flash-fp8-mi308x": {
+    "model": "GLM-5.3-Flash",
+    "precision": "FP8",
+    "hardware": "8× AMD MI308X · 192 GB"
+  },
+  "glm-5-3-flash-w8a8-mxfp8-950dt": {
+    "model": "GLM-5.3-Flash",
+    "precision": "W8A8-MXFP8",
+    "hardware": "8× Ascend 950DT · 64 GB"
+  },
+  "minimax-m27-w8a8-910b4": {
+    "model": "MiniMax-M2.7",
+    "precision": "W8A8 QuaRot",
+    "hardware": "8× Ascend 910B4 · 64 GB"
+  },
+  "qwen3-vl-8b-w8a8-ascend-910b3": {
+    "model": "Qwen3-VL-8B-Instruct",
+    "precision": "W8A8",
+    "hardware": "1× Ascend 910B3 · 64 GB"
+  },
+  "qwen36-27b-w8a8-concurrency-context-910b4": {
+    "model": "Qwen3.6-27B",
+    "precision": "W8A8",
+    "hardware": "8× Ascend 910B4 · 32 GB"
+  },
+  "qwen3-8b-bf16-arrival-model-910b3": {
+    "model": "Qwen3-8B",
+    "precision": "BF16",
+    "hardware": "1× Ascend 910B3 · 64 GB"
+  },
+  "minimax-h3-ascend-910b4": {
+    "model": "MiniMax-H3",
+    "precision": "BF16",
+    "hardware": "8× Ascend 910B4 · 64 GB"
+  },
+  "minimax-h3-ppu-zw810e": {
+    "model": "MiniMax-H3",
+    "precision": "BF16",
+    "hardware": "4× PPU ZW810E · 96 GB"
+  },
+  "qwen38-flash-next-mxfp8-950dt": {
+    "model": "Qwen3.8-Flash-Next",
+    "precision": "W8A8-MXFP8",
+    "hardware": "8× Ascend 950DT · 96 GB"
+  },
+  "deepseek-v4-flash-int8-ppu-sglang": {
+    "model": "DeepSeek-V4-Flash",
+    "precision": "INT8 · W8A8",
+    "hardware": "8× PPU ZW810E · 96 GB"
+  },
+  "qwen3-omni-30b-a3b-a100": {
+    "model": "Qwen3-Omni-30B-A3B",
+    "precision": "BF16",
+    "hardware": "3× A100 · 80 GB"
+  },
+  "qwen3-omni-30b-a3b-ascend-910b3": {
+    "model": "Qwen3-Omni-30B-A3B",
+    "precision": "BF16",
+    "hardware": "4× Ascend 910B3 · 64 GB"
+  },
+  "qwen3-32b-bf16-910b4-vllm": {
+    "model": "Qwen3-32B",
+    "precision": "BF16",
+    "hardware": "4 × Ascend 910B4"
+  },
+  "qwen3-32b-bf16-910b4-mindie": {
+    "model": "Qwen3-32B",
+    "precision": "BF16",
+    "hardware": "4 × Ascend 910B4"
+  },
+  "qwen3-32b-bf16-910b4-sglang": {
+    "model": "Qwen3-32B",
+    "precision": "BF16",
+    "hardware": "4 × Ascend 910B4"
+  },
+  "qwen3-8b-bf16-910b4-vllm-tp1": {
+    "model": "Qwen3-8B",
+    "precision": "BF16",
+    "hardware": "1 × Ascend 910B4 · 32 GB"
+  },
+  "qwen3-8b-bf16-910b4-vllm-tp4": {
+    "model": "Qwen3-8B",
+    "precision": "BF16",
+    "hardware": "4 × Ascend 910B4 · 32 GB"
+  },
+  "qwen3-8b-bf16-910b4-mindie-tp1": {
+    "model": "Qwen3-8B",
+    "precision": "BF16",
+    "hardware": "1 × Ascend 910B4 · 32 GB"
+  },
+  "qwen3-8b-bf16-910b4-mindie-tp4": {
+    "model": "Qwen3-8B",
+    "precision": "BF16",
+    "hardware": "4 × Ascend 910B4 · 32 GB"
+  },
+  "qwen3-8b-bf16-910b4-sglang-tp1": {
+    "model": "Qwen3-8B",
+    "precision": "BF16",
+    "hardware": "1 × Ascend 910B4 · 32 GB"
+  },
+  "qwen3-8b-bf16-910b4-sglang-tp4": {
+    "model": "Qwen3-8B",
+    "precision": "BF16",
+    "hardware": "4 × Ascend 910B4 · 32 GB"
+  },
+  "glm-5-2-w4a8-ppu-tp8": {
+    "model": "GLM-5.2",
+    "precision": "W4A8",
+    "hardware": "8 × PPU ZW810E"
+  },
+  "glm-5-2-w4a8-ppu-dp-attention-mrr16": {
+    "model": "GLM-5.2",
+    "precision": "W4A8",
+    "hardware": "8 × PPU ZW810E"
+  },
+  "glm-5-2-w4a8-ppu-dp-attention-mrr32": {
+    "model": "GLM-5.2",
+    "precision": "W4A8",
+    "hardware": "8 × PPU ZW810E"
+  },
+  "qwen36-27b-w8a8-910b4-dcp1": {
+    "model": "Qwen3.6-27B",
+    "precision": "W8A8",
+    "hardware": "8 × Ascend 910B4 · 32 GB"
+  },
+  "qwen36-27b-w8a8-910b4-dcp2": {
+    "model": "Qwen3.6-27B",
+    "precision": "W8A8",
+    "hardware": "8 × Ascend 910B4 · 32 GB"
+  },
+  "deepseek-v41-flash-mi308x-tp4": {
+    "model": "DeepSeek-V4.1-Flash",
+    "precision": "Mixed checkpoint",
+    "hardware": "8 × AMD MI308X · 192 GB"
+  },
+  "deepseek-v41-flash-mi308x-tp8": {
+    "model": "DeepSeek-V4.1-Flash",
+    "precision": "Mixed checkpoint",
+    "hardware": "8 × AMD MI308X · 192 GB"
+  },
+  "qwen38-27b-w8a8-910b3-mtp-old": {
+    "model": "Qwen3.8-27B",
+    "precision": "W8A8",
+    "hardware": "8 × Ascend 910B3 · 64 GB"
+  },
+  "qwen38-27b-w8a8-910b3-mtp-new": {
+    "model": "Qwen3.8-27B",
+    "precision": "W8A8",
+    "hardware": "8 × Ascend 910B3 · 64 GB"
+  },
+  "qwen36-27b-w8a8-910b4-mtp-off": {
+    "model": "Qwen3.6-27B",
+    "precision": "W8A8",
+    "hardware": "8 × Ascend 910B4 · 32 GB"
+  },
+  "qwen36-27b-w8a8-910b4-mtp1": {
+    "model": "Qwen3.6-27B",
+    "precision": "W8A8",
+    "hardware": "8 × Ascend 910B4 · 32 GB"
+  },
+  "qwen36-27b-w8a8-910b4-mtp3": {
+    "model": "Qwen3.6-27B",
+    "precision": "W8A8",
+    "hardware": "8 × Ascend 910B4 · 32 GB"
+  },
+  "qwen3-32b-a100-aggregated": {
+    "model": "Qwen3-32B",
+    "precision": "BF16",
+    "hardware": "8 × NVIDIA A100 · 80 GB"
+  },
+  "qwen3-32b-a100-2p2d": {
+    "model": "Qwen3-32B",
+    "precision": "BF16",
+    "hardware": "8 × NVIDIA A100 · 80 GB"
+  },
+  "qwen3-32b-a100-3p1d": {
+    "model": "Qwen3-32B",
+    "precision": "BF16",
+    "hardware": "8 × NVIDIA A100 · 80 GB"
+  },
+  "qwen3-32b-a100-4p2d": {
+    "model": "Qwen3-32B",
+    "precision": "BF16",
+    "hardware": "8 × NVIDIA A100 · 80 GB"
+  },
+  "qwen3-32b-a100-pool-off": {
+    "model": "Qwen3-32B",
+    "precision": "BF16",
+    "hardware": "8 × NVIDIA A100 · 80 GB"
+  },
+  "qwen3-32b-a100-pool-on": {
+    "model": "Qwen3-32B",
+    "precision": "BF16",
+    "hardware": "8 × NVIDIA A100 · 80 GB"
+  },
+  "qwen3-30b-a3b-w8a8-910b3-eagle3-off": {
+    "model": "Qwen3-30B-A3B",
+    "precision": "W8A8",
+    "hardware": "4 × Ascend 910B3 · 64 GB"
+  },
+  "qwen3-30b-a3b-w8a8-910b3-eagle3-on": {
+    "model": "Qwen3-30B-A3B",
+    "precision": "W8A8",
+    "hardware": "4 × Ascend 910B3 · 64 GB"
+  },
+  "qwen36-27b-w8a8-910b4-longctx-tp4x2": {
+    "model": "Qwen3.6-27B",
+    "precision": "W8A8",
+    "hardware": "8 × Ascend 910B4 · 32 GB"
+  },
+  "qwen36-27b-w8a8-910b4-longctx-tp8": {
+    "model": "Qwen3.6-27B",
+    "precision": "W8A8",
+    "hardware": "8 × Ascend 910B4 · 32 GB"
+  },
+  "qwen36-27b-w8a8-910b4-topology-tp4x2": {
+    "model": "Qwen3.6-27B",
+    "precision": "W8A8",
+    "hardware": "8 × Ascend 910B4 · 32 GB"
+  },
+  "qwen36-27b-w8a8-910b4-topology-tp8": {
+    "model": "Qwen3.6-27B",
+    "precision": "W8A8",
+    "hardware": "8 × Ascend 910B4 · 32 GB"
+  },
+  "qwen36-27b-w8a8-910b4-topology-tp2x4": {
+    "model": "Qwen3.6-27B",
+    "precision": "W8A8",
+    "hardware": "8 × Ascend 910B4 · 32 GB"
+  },
+  "qwen38-27b-w8a8-910b3-standard-tp2": {
+    "model": "Qwen3.8-27B",
+    "precision": "W8A8",
+    "hardware": "8 × Ascend 910B3 · 64 GB"
+  },
+  "qwen38-27b-w8a8-910b3-yarn2": {
+    "model": "Qwen3.8-27B",
+    "precision": "W8A8",
+    "hardware": "8 × Ascend 910B3 · 64 GB"
+  },
+  "qwen38-27b-w8a8-910b3-yarn4": {
+    "model": "Qwen3.8-27B",
+    "precision": "W8A8",
+    "hardware": "8 × Ascend 910B3 · 64 GB"
+  },
+  "deepseek-v4-flash-int8-ppu-mrr32": {
+    "model": "DeepSeek-V4-Flash",
+    "precision": "INT8 W8A8",
+    "hardware": "8 × PPU ZW810E · 96 GB"
+  },
+  "deepseek-v4-flash-int8-ppu-mrr48": {
+    "model": "DeepSeek-V4-Flash",
+    "precision": "INT8 W8A8",
+    "hardware": "8 × PPU ZW810E · 96 GB"
+  },
+  "deepseek-v4-flash-int8-ppu-mrr64": {
+    "model": "DeepSeek-V4-Flash",
+    "precision": "INT8 W8A8",
+    "hardware": "8 × PPU ZW810E · 96 GB"
+  },
+  "deepseek-v4-flash-int8-ppu-mrr96": {
+    "model": "DeepSeek-V4-Flash",
+    "precision": "INT8 W8A8",
+    "hardware": "8 × PPU ZW810E · 96 GB"
+  },
+  "deepseek-v4-flash-int8-ppu-mrr128": {
+    "model": "DeepSeek-V4-Flash",
+    "precision": "INT8 W8A8",
+    "hardware": "8 × PPU ZW810E · 96 GB"
+  },
+  "deepseek-v4-flash-int8-ppu-agent-8k": {
+    "model": "DeepSeek-V4-Flash",
+    "precision": "INT8 W8A8",
+    "hardware": "8 × PPU ZW810E · 96 GB"
+  },
+  "deepseek-v4-flash-int8-ppu-agent-64k": {
+    "model": "DeepSeek-V4-Flash",
+    "precision": "INT8 W8A8",
+    "hardware": "8 × PPU ZW810E · 96 GB"
+  },
+  "minimax-h3-rtx-pro-6000-vllm-omni-2gpu-tp2-sp1": {
+    "model": "MiniMax-H3",
+    "precision": "BF16",
+    "hardware": "2 × RTX PRO 6000 Blackwell · 96 GB"
+  },
+  "minimax-h3-rtx-pro-6000-vllm-omni-4gpu-tp2-sp2": {
+    "model": "MiniMax-H3",
+    "precision": "BF16",
+    "hardware": "4 × RTX PRO 6000 Blackwell · 96 GB"
+  },
+  "minimax-h3-rtx-pro-6000-vllm-omni-4gpu-tp4-sp1": {
+    "model": "MiniMax-H3",
+    "precision": "BF16",
+    "hardware": "4 × RTX PRO 6000 Blackwell · 96 GB"
+  },
+  "minimax-h3-rtx-pro-6000-vllm-omni-8gpu-tp2-sp4": {
+    "model": "MiniMax-H3",
+    "precision": "BF16",
+    "hardware": "8 × RTX PRO 6000 Blackwell · 96 GB"
+  },
+  "minimax-h3-rtx-pro-6000-sglang-2gpu-tp2-sp1": {
+    "model": "MiniMax-H3",
+    "precision": "BF16",
+    "hardware": "2 × RTX PRO 6000 Blackwell · 96 GB"
+  },
+  "minimax-h3-rtx-pro-6000-sglang-4gpu-tp2-sp2": {
+    "model": "MiniMax-H3",
+    "precision": "BF16",
+    "hardware": "4 × RTX PRO 6000 Blackwell · 96 GB"
+  },
+  "minimax-h3-rtx-pro-6000-sglang-8gpu-tp2-sp4": {
+    "model": "MiniMax-H3",
+    "precision": "BF16",
+    "hardware": "8 × RTX PRO 6000 Blackwell · 96 GB"
+  },
+  "deepseek-v41-flash-950dt-piecewise": {
+    "model": "DeepSeek-V4.1-Flash",
+    "precision": "Mixed MXFP8 / MXFP4",
+    "hardware": "8 × Ascend 950DT · 96 GB"
+  },
+  "qwen3-32b-w8a8-910b4-throughput": {
+    "model": "Qwen3-32B",
+    "precision": "W8A8",
+    "hardware": "4 × Ascend 910B4"
+  },
+  "qwen3-32b-w8a8-910b4-base": {
+    "model": "Qwen3-32B",
+    "precision": "W8A8",
+    "hardware": "4 × Ascend 910B4"
+  },
+  "qwen3-32b-w8a8-910b4-long-context": {
+    "model": "Qwen3-32B",
+    "precision": "W8A8",
+    "hardware": "4 × Ascend 910B4"
+  },
+  "qwen3-32b-w8a8-910b4-agent": {
+    "model": "Qwen3-32B",
+    "precision": "W8A8",
+    "hardware": "4 × Ascend 910B4"
+  },
+  "glm-5-2-w4a8-ppu-longctx-tp8-dp": {
+    "model": "GLM-5.2",
+    "precision": "W4A8",
+    "hardware": "8 × PPU ZW810E · 96 GB"
+  },
+  "glm-5-2-w4a8-ppu-longctx-tp16-mem085": {
+    "model": "GLM-5.2",
+    "precision": "W4A8",
+    "hardware": "16 × PPU ZW810E · 96 GB"
+  },
+  "glm-5-2-w4a8-ppu-longctx-tp16-mem092": {
+    "model": "GLM-5.2",
+    "precision": "W4A8",
+    "hardware": "16 × PPU ZW810E · 96 GB"
+  },
+  "glm-5-2-w4a8-ppu-longctx-tp16-ep16": {
+    "model": "GLM-5.2",
+    "precision": "W4A8",
+    "hardware": "16 × PPU ZW810E · 96 GB"
+  },
+  "minimax-m27-w8a8-910b4-batch8192": {
+    "model": "MiniMax-M2.7",
+    "precision": "W8A8 QuaRot",
+    "hardware": "8 × Ascend 910B4 · 64 GB"
+  },
+  "minimax-m3-mxfp8-950dt-text95": {
+    "model": "MiniMax-M3",
+    "precision": "MXFP8",
+    "hardware": "8 × Ascend 950DT · 96 GB"
+  },
+  "qwen38-27b-bf16-910b3-reasoning-none": {
+    "model": "Qwen3.8-27B",
+    "precision": "BF16",
+    "hardware": "8 × Ascend 910B3 · 64 GB"
+  },
+  "qwen38-27b-bf16-910b3-reasoning-low": {
+    "model": "Qwen3.8-27B",
+    "precision": "BF16",
+    "hardware": "8 × Ascend 910B3 · 64 GB"
+  },
+  "qwen38-27b-bf16-910b3-reasoning-medium": {
+    "model": "Qwen3.8-27B",
+    "precision": "BF16",
+    "hardware": "8 × Ascend 910B3 · 64 GB"
+  },
+  "qwen38-27b-bf16-910b3-reasoning-xhigh": {
+    "model": "Qwen3.8-27B",
+    "precision": "BF16",
+    "hardware": "8 × Ascend 910B3 · 64 GB"
+  }
+}
