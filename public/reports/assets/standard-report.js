@@ -5,6 +5,7 @@
   const languageKey = 'recipes-report-language';
   let language = localStorage.getItem(languageKey) === 'en' ? 'en' : 'zh';
   let report;
+  let identity;
   let charts = [];
   const html = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const L = value => typeof value === 'object' && value !== null ? (value[language] ?? value.en ?? value.zh ?? '') : (value ?? '');
@@ -60,6 +61,9 @@
     charts.forEach(chart => chart.destroy()); charts = [];
     document.title = `${report.title} · ${T('性能报告','Performance report')} · Model Index`;
     const blocks = report.blocks || [];
+    const identityHtml = identity ? `<div class="report-identity"><div class="report-identity-item"><span class="report-identity-label">${T('模型权重','CHECKPOINT')}</span><strong class="report-identity-value">${html(identity.model)} <span class="precision">· ${html(identity.precision)}</span></strong></div><div class="report-identity-item"><span class="report-identity-label">${T('测试硬件','HARDWARE')}</span><strong class="report-identity-value">${html(identity.hardware)}</strong></div></div>` : '';
+    const normalized = value => String(value || '').toLowerCase().replace(/\s/g, '');
+    const chips = (report.chips || []).filter(chip => !identity || ![identity.hardware, identity.precision].some(value => normalized(value) === normalized(chip)));
     const meta = (report.meta || []).map(item => `<div class="spec"><small>${html(L(item))}</small><b>${html(L(item.value))}</b></div>`).join('');
     const stats = (report.stats || []).map(stat => `<article class="kpi"><div class="klabel">${html(language === 'zh' ? stat.zhLabel : stat.enLabel)}</div><strong>${html(stat.value)}</strong><small>${html(language === 'zh' ? stat.zhNote : stat.enNote)}</small></article>`).join('');
     const navLinks = [`<a href="#overview" data-index="00">${T('概览','Overview')}</a>`,...blocks.map((b,i) => `<a href="#${html(slugId(b.id))}" data-index="${String(i+1).padStart(2,'0')}">${html(L(b.label) || titleFor(b))}</a>`),`<a href="#method" data-index="${String(blocks.length+1).padStart(2,'0')}">${T('测试方法','Method')}</a>`].join('');
@@ -75,7 +79,7 @@
       return `<section class="section" id="${html(id)}"><div class="section-head"><div><div class="section-num">${String(index+1).padStart(2,'0')} / ${html(L(block.label) || id)}</div><h2>${html(titleFor(block))}</h2></div><p>${html(L(block.intro))}</p></div>${chartHtml}${tableHtml}${side}${notes}</section>`;
     }).join('');
     const method = (report.methodNotes || []).map(note=>`<p class="note">${html(L(note))}</p>`).join('');
-    root.innerHTML = `<header class="hero"><div class="wrap"><div class="crumb"><a href="/">${T('模型目录','Model catalog')}</a>　/　<a href="/reports">${T('性能报告','Performance')}</a>　/　${html(report.breadcrumb || report.title)}</div><div class="titleline"><div><div class="eyebrow">${T('模型性能报告','MODEL PERFORMANCE REPORT')}</div><h1>${html(report.breadcrumb || report.title)}</h1><p class="desc">${html(L(report.lede))}</p></div></div><div class="badges">${(report.chips||[]).map(chip=>`<span class="badge">${html(chip)}</span>`).join('')}</div><div class="meta"><span>${html(L(report.snapshot))}</span></div></div></header><main class="wrap layout"><div class="content"><section class="section" id="overview"><div class="section-head"><div><div class="section-num">00 / EXECUTIVE SUMMARY</div><h2>${T('结果概览','Executive readout')}</h2></div><p>${html(L(report.overview?.intro))}</p></div>${stats ? `<div class="kpis">${stats}</div>` : ''}${L(report.overview?.note) ? `<div class="intro-note">${html(L(report.overview.note))}</div>` : ''}</section>${sections}<section class="section" id="method"><div class="section-head"><div><div class="section-num">${String(blocks.length+1).padStart(2,'0')} / TEST METHODOLOGY</div><h2>${T('测试配置与数据说明','Configuration and interpretation')}</h2></div><p>${html(L(report.methodIntro))}</p></div>${meta ? `<div class="specs">${meta}</div>` : ''}${method}</section><footer class="foot"><span>MODEL INDEX / PERFORMANCE REPORT</span><span><a href="/reports">${T('所有报告','All reports')}</a></span></footer></div></main>`;
+    root.innerHTML = `<header class="hero"><div class="wrap"><div class="crumb"><a href="/">${T('模型目录','Model catalog')}</a>　/　<a href="/reports">${T('性能报告','Performance')}</a>　/　${html(report.breadcrumb || report.title)}</div><div class="titleline"><div><div class="eyebrow">${T('模型性能报告','MODEL PERFORMANCE REPORT')}</div><h1>${html(report.breadcrumb || report.title)}</h1>${identityHtml}<p class="desc">${html(L(report.lede))}</p></div></div><div class="badges">${chips.map(chip=>`<span class="badge">${html(chip)}</span>`).join('')}</div><div class="meta"><span>${html(L(report.snapshot))}</span></div></div></header><main class="wrap layout"><div class="content"><section class="section" id="overview"><div class="section-head"><div><div class="section-num">00 / EXECUTIVE SUMMARY</div><h2>${T('结果概览','Executive readout')}</h2></div><p>${html(L(report.overview?.intro))}</p></div>${stats ? `<div class="kpis" data-count="${(report.stats || []).length}">${stats}</div>` : ''}${L(report.overview?.note) ? `<div class="intro-note">${html(L(report.overview.note))}</div>` : ''}</section>${sections}<section class="section" id="method"><div class="section-head"><div><div class="section-num">${String(blocks.length+1).padStart(2,'0')} / TEST METHODOLOGY</div><h2>${T('测试配置与数据说明','Configuration and interpretation')}</h2></div><p>${html(L(report.methodIntro))}</p></div>${meta ? `<div class="specs">${meta}</div>` : ''}${method}</section><footer class="foot"><span>MODEL INDEX / PERFORMANCE REPORT</span><span><a href="/reports">${T('所有报告','All reports')}</a></span></footer></div></main>`;
     nav.querySelector('.side-links').innerHTML = `<strong>${T('章节导航','IN THIS REPORT')}</strong>${navLinks}`;
     drawCharts();
   }
@@ -94,5 +98,8 @@
     }
   }
   applyLanguage();
-  fetch(`/reports/data/${encodeURIComponent(slug)}.json`,{cache:'no-store'}).then(response => { if (!response.ok) throw new Error('HTTP '+response.status); return response.json(); }).then(data => { report=data; render(); }).catch(() => { root.innerHTML = `<p class="note">${T('报告数据加载失败，请刷新页面重试。','Report data could not be loaded. Please refresh.')}</p>`; });
+  Promise.all([
+    fetch(`/reports/data/${encodeURIComponent(slug)}.json`, {cache:'no-store'}).then(response => { if (!response.ok) throw new Error('HTTP '+response.status); return response.json(); }),
+    fetch('/reports/report-identities.json', {cache:'no-store'}).then(response => response.ok ? response.json() : {}).catch(() => ({})),
+  ]).then(([data, identities]) => { report=data; identity=identities[slug]; render(); }).catch(() => { root.innerHTML = `<p class="note">${T('报告数据加载失败，请刷新页面重试。','Report data could not be loaded. Please refresh.')}</p>`; });
 })();

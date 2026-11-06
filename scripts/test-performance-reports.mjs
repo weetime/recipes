@@ -61,3 +61,26 @@ test("recipe-specific results do not mix the old and new MTP measurements", () =
     assert.ok(block.table.rows.every((row) => row[0].startsWith("NEW /")));
   }
 });
+
+test("list curves preserve one workload and use measured metrics", () => {
+  const reports = getPerformanceReports("en");
+  const deepseek = reports.find((report) => report.slug === "deepseek-v41-1017-a100");
+  assert.deepEqual(deepseek.curve.labels, ["1", "8", "16", "32", "48"]);
+  assert.deepEqual(deepseek.curve.values, [1180.62, 377.98, 424.24, 582.33, 753.42]);
+  assert.match(deepseek.curve.title, /8K\/512/);
+  const mtp = reports.find((report) => report.slug === "qwen36-27b-w8a8-910b4-mtp3");
+  assert.deepEqual(mtp.curve.values, [33.2, 327, 455, 467.4, 487.4]);
+  assert.equal(mtp.curve.unit, "tok/s");
+  const onePoint = reports.find((report) => report.slug === "glm-5-2-w4a8-ppu-longctx-tp8-dp");
+  assert.equal(onePoint.curve, null);
+});
+
+test("static catalog and report identity data match the application catalog", () => {
+  const reports = getPerformanceReports("en");
+  const catalog = JSON.parse(readFileSync(path.join(root, "report-catalog.json"), "utf8"));
+  const identities = JSON.parse(readFileSync(path.join(root, "report-identities.json"), "utf8"));
+  assert.deepEqual(catalog.en.map((report) => report.slug), reports.map((report) => report.slug));
+  for (const { slug, modelName, precision, hardware } of reports) {
+    assert.deepEqual(identities[slug], { model: modelName, precision, hardware });
+  }
+});
