@@ -497,6 +497,161 @@ guide: |
   official vLLM XPU image `vllm/vllm-openai-xpu:latest`. `--enforce-eager` is required on this
   backend. Select Arc Pro B60/B70 in the hardware picker above for the exact command.
 
+  ### Ascend 910B3 experimental deployment examples
+
+  The following are separate tested configurations, not interchangeable feature toggles.
+  On 2026-11-09 the local test checked that all six services started and returned HTTP 200
+  from `/v1/models`; the W8A8 SGLang/DFlash2 and long-context vLLM examples also
+  completed a short request. This startup check did not validate long inputs, concurrent
+  serving, task accuracy, or the other four examples end to end. Earlier performance tests
+  have their own stated workloads and software versions. The local model paths below are
+  placeholders; the available evidence does not establish that they match a particular
+  public checkpoint revision. Mount the exact compatible weights and confirm access to
+  the images before running. Each command uses its own container; do not overlap devices.
+
+  The observed vLLM W8A8 + DFlash2 + prefix-cache combination produced anomalous output.
+  SGLang partial prefix reuse changed tool arguments in a test, so both SGLang examples
+  disable radix caching. SGLang W8A8 MTP did not pass smoke testing. MRV2 is a pilot;
+  changing it to MRV1 requires separate validation. These examples are not automatically
+  represented by the command-builder selections.
+
+  #### 1. vLLM W8A8, MTP3, MRV2
+
+  Image: `quay.io/ascend/vllm-ascend@sha256:28351d337b7f9367073344240fa4e28d99794d549d577eaf317689950064150a`.
+  TP2 pilot; 8K input / 512 output with cold prefixes was measured. Validate task correctness before use.
+
+  ```bash
+  export MODEL=/models/Qwen3.8-27B-w8a8
+  export ASCEND_RT_VISIBLE_DEVICES=0,1
+  export VLLM_USE_V2_MODEL_RUNNER=1
+  export HCCL_BUFFSIZE=512
+  export PYTORCH_NPU_ALLOC_CONF=expandable_segments:True
+  source /usr/local/Ascend/ascend-toolkit/set_env.sh
+  source /usr/local/Ascend/nnal/atb/set_env.sh
+
+  vllm serve "$MODEL" --host 0.0.0.0 --port 8000 \
+    --served-model-name qwen38 --data-parallel-size 1 \
+    --tensor-parallel-size 2 --quantization ascend --dtype bfloat16 \
+    --trust-remote-code --reasoning-parser qwen3 \
+    --max-model-len 133120 --max-num-seqs 32 \
+    --max-num-batched-tokens 16384 --gpu-memory-utilization 0.85 \
+    --enable-prefix-caching \
+    --speculative-config '{"method":"qwen3_5_mtp","num_speculative_tokens":3}' \
+    --compilation-config '{"cudagraph_capture_sizes":[1,4,8,12,16,20,24,28,32,36,40,44,48,52,56,60,64,68,72,76,80,84,88,92,96,100,104,108,112,116,120,124,128],"cudagraph_mode":"FULL_DECODE_ONLY"}' \
+    --additional-config '{"enable_cpu_binding":true}'
+  ```
+
+  #### 2. vLLM W8A8, ordinary decoding, MRV2
+
+  Image: `quay.io/ascend/vllm-ascend@sha256:28351d337b7f9367073344240fa4e28d99794d549d577eaf317689950064150a`.
+  TP2 baseline without speculative decoding; use it as a separate comparison.
+
+  ```bash
+  export MODEL=/models/Qwen3.8-27B-w8a8
+  export ASCEND_RT_VISIBLE_DEVICES=0,1 VLLM_USE_V2_MODEL_RUNNER=1
+  export HCCL_BUFFSIZE=512 PYTORCH_NPU_ALLOC_CONF=expandable_segments:True
+  source /usr/local/Ascend/ascend-toolkit/set_env.sh
+  source /usr/local/Ascend/nnal/atb/set_env.sh
+
+  vllm serve "$MODEL" --host 0.0.0.0 --port 8000 \
+    --served-model-name qwen38 --data-parallel-size 1 \
+    --tensor-parallel-size 2 --quantization ascend --dtype bfloat16 \
+    --trust-remote-code --reasoning-parser qwen3 \
+    --max-model-len 133120 --max-num-seqs 32 \
+    --max-num-batched-tokens 16384 --gpu-memory-utilization 0.85 \
+    --enable-prefix-caching \
+    --compilation-config '{"cudagraph_capture_sizes":[1,4,8,12,16,20,24,28,32,36,40,44,48,52,56,60,64,68,72,76,80,84,88,92,96,100,104,108,112,116,120,124,128],"cudagraph_mode":"FULL_DECODE_ONLY"}' \
+    --additional-config '{"enable_cpu_binding":true}'
+  ```
+
+  #### 3. vLLM BF16, MTP8, MRV1
+
+  Image: `quay.io/ascend/vllm-ascend@sha256:27e9cbe89fb14ebfd8959d6b97627952a9fdb6482abc956082d9705d5ca3bc48`.
+  Original 2,048-token functional smoke configuration. It does not reproduce the separately patched 40K performance experiment.
+
+  ```bash
+  export MODEL=/models/Qwen3.8-27B-BF16
+  export ASCEND_RT_VISIBLE_DEVICES=0,1 VLLM_USE_V2_MODEL_RUNNER=0
+  source /usr/local/Ascend/ascend-toolkit/set_env.sh
+  source /usr/local/Ascend/nnal/atb/set_env.sh
+
+  vllm serve "$MODEL" --host 0.0.0.0 --port 8000 \
+    --served-model-name qwen38 --tensor-parallel-size 2 \
+    --dtype bfloat16 --trust-remote-code --max-num-seqs 1 \
+    --max-model-len 2048 --gpu-memory-utilization 0.9 \
+    --no-enable-prefix-caching --distributed-executor-backend mp \
+    --compilation-config '{"cudagraph_mode":"PIECEWISE","cudagraph_capture_sizes":[9]}' \
+    --speculative-config '{"method":"qwen3_5_mtp","num_speculative_tokens":8}'
+  ```
+
+  #### 4. SGLang BF16, DFlash2 K8
+
+  Image: `lmsysorg/sglang:v0.5.20-cann9.0.0-910b`.
+  TP2 with an external BF16 draft and prefix caching disabled. A small mathematics sample showed acceleration; business quality remains unassessed.
+
+  ```bash
+  export MODEL=/models/Qwen3.8-27B-BF16
+  export DRAFT=/models/Qwen3.8-27B-DFlash2
+  export ASCEND_RT_VISIBLE_DEVICES=0,1
+
+  python3 -m sglang.launch_server \
+    --model-path "$MODEL" --served-model-name qwen38 \
+    --host 0.0.0.0 --port 8000 --tp-size 2 \
+    --attention-backend ascend --mamba-ssm-dtype bfloat16 \
+    --mamba-radix-cache-strategy extra_buffer --disable-radix-cache \
+    --mem-fraction-static 0.85 --context-length 40960 \
+    --max-running-requests 16 \
+    --speculative-algorithm DFLASH \
+    --speculative-draft-model-path "$DRAFT" \
+    --speculative-num-draft-tokens 8
+  ```
+
+  #### 5. SGLang W8A8, DFlash2 K8
+
+  Image: `swr.cn-north-4.myhuaweicloud.com/runner/qwen38-b3-sglang:0.5.20-w8a8-dflash2-20261109`.
+  Experimental patched image, reported digest `sha256:f011c132f8708c01db7478ea7440348ccad6feb38545aa4d5e115a7d8c11fdec`. It requires a separate BF16 draft; check image access, quantized layer loading and task quality.
+
+  ```bash
+  export MODEL=/models/Qwen3.8-27B-w8a8
+  export DRAFT=/models/Qwen3.8-27B-DFlash2
+  export ASCEND_RT_VISIBLE_DEVICES=0,1
+
+  python3 -m sglang.launch_server \
+    --model-path "$MODEL" --served-model-name qwen38 \
+    --host 0.0.0.0 --port 8000 --tp-size 2 \
+    --attention-backend ascend --mamba-ssm-dtype bfloat16 \
+    --mamba-radix-cache-strategy extra_buffer --disable-radix-cache \
+    --mem-fraction-static 0.85 --context-length 40960 \
+    --max-running-requests 16 --quantization modelslim \
+    --speculative-algorithm DFLASH \
+    --speculative-draft-model-path "$DRAFT" \
+    --speculative-num-draft-tokens 8 \
+    --speculative-draft-model-quantization unquant
+  ```
+
+  #### 6. vLLM W8A8, TP4, YaRN4 long context
+
+  Image: `swr.cn-north-4.myhuaweicloud.com/runner/qwen38-b3-vllm:0.27.1-longctx-20261109-r2`.
+  Experimental patched image, reported digest `sha256:fb25e00076b0cde188d38a44fb0437f5bdd327fd29fd3b786e46d751989771d5`. Requires a separate YaRN4 model configuration (factor 4, original limit 262144) with a compatible MTP head. Near-1M is an extension, not the native window; image access, model configuration and quality require independent checks.
+
+  ```bash
+  export MODEL=/models/Qwen3.8-27B-w8a8-yarn4
+  export ASCEND_RT_VISIBLE_DEVICES=0,1,2,3 VLLM_USE_V2_MODEL_RUNNER=0
+  source /usr/local/Ascend/ascend-toolkit/set_env.sh
+  source /usr/local/Ascend/nnal/atb/set_env.sh
+
+  vllm serve "$MODEL" --host 0.0.0.0 --port 8000 \
+    --served-model-name qwen38 --data-parallel-size 1 \
+    --tensor-parallel-size 4 --quantization ascend --dtype bfloat16 \
+    --max-model-len 1000000 --gpu-memory-utilization 0.95 \
+    --enable-prefix-caching --distributed-executor-backend mp \
+    --seed 42 --reasoning-parser qwen3 \
+    --additional-config '{"weight_nz_mode":2,"enable_cpu_binding":true}' \
+    --max-num-batched-tokens 16384 --max-num-seqs 2 \
+    --compilation-config '{"cudagraph_mode":"FULL_AND_PIECEWISE","cudagraph_capture_sizes":[4,8]}' \
+    --speculative-config '{"method":"qwen3_5_mtp","num_speculative_tokens":3,"max_model_len":1000000}'
+  ```
+
   ### Huawei Ascend 950PR-w8a8 (vLLM Ascend)
 
   Verified on a single 950PR, TP1, vLLM Ascend 0.23.0 from the
@@ -532,7 +687,7 @@ guide: |
   `--reasoning-parser qwen3` is not optional in practice: the chat template opens every
   assistant turn with `<think>`, so without it the entire reasoning block lands in
   `message.content` and a 2048-token budget can be spent before the answer starts.
-  
+
   Measured single-stream decode: 64 tok/s (2048-token completion, one request, MTP on).
   Read MTP acceptance from `vllm:spec_decode_num_{accepted,draft}_tokens_total` before
   tuning `num_speculative_tokens` — throughput alone cannot tell a working drafter from
@@ -578,9 +733,9 @@ guide: |
     --mm-encoder-tp-mode data \
     --speculative-config '{"method": "qwen3_5_mtp", "num_speculative_tokens": 3, "enforce_eager": true}'
   ```
-  
+
   ### DFlash2 (opt-in)
-  
+
   DFlash2 is not a standalone model. Serve `Qwen/Qwen3.8-27B` and attach
   [incoai/Qwen3.8-27B-DFlash2](https://huggingface.co/incoai/Qwen3.8-27B-DFlash2)
   as the drafter. Requires vLLM >=0.28.0, which shipped
@@ -600,7 +755,7 @@ guide: |
   vllm serve Qwen/Qwen3.8-27B \
     --speculative-config '{"method":"dspark","model":"RedHatAI/Qwen3.8-27B-speculator.dspark","num_speculative_tokens":8}'
   ```
-  
+
   ## Client usage
 
   `generation_config.json` ships `temperature: 1.0`, `top_p: 0.95`, `top_k: 20`.
