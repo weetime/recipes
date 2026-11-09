@@ -49,6 +49,11 @@
       "en": "Capacity and failure boundaries"
     },
     {
+      "id": "text95-retest",
+      "zh": "text95 配置复测",
+      "en": "text95 configuration retest"
+    },
+    {
       "id": "method",
       "zh": "测试方法与环境",
       "en": "Method and environment"
@@ -620,6 +625,107 @@
             "默认/adaptive解析",
             "reasoning/content分离限制保留"
           ]
+        ]
+      }
+    },
+    {
+      "id": "text95-retest",
+      "label": {
+        "zh": "text95 配置复测",
+        "en": "text95 configuration retest"
+      },
+      "heading": {
+        "zh": "text95 配置复测",
+        "en": "text95 configuration retest"
+      },
+      "intro": {
+        "zh": "每次独立启动完成 32 条请求，分别记录延迟和输出吞吐。",
+        "en": "Each independent start completed 32 requests; latency and output throughput are reported separately."
+      },
+      "table": {
+        "headers": {
+          "zh": [
+            "独立启动",
+            "有效 / 目标",
+            "TTFT P50 (s)",
+            "Decode P50 (tok/s)",
+            "总输出 (tok/s)",
+            "最高 DP KV 样本"
+          ],
+          "en": [
+            "Independent start",
+            "Valid / target",
+            "TTFT P50 (s)",
+            "Decode P50 (tok/s)",
+            "Aggregate output (tok/s)",
+            "Peak sampled DP KV"
+          ]
+        },
+        "rows": [
+          [
+            "1",
+            "32 / 32",
+            "38.58",
+            "3.40",
+            "35.83",
+            "93.25%"
+          ],
+          [
+            "2",
+            "32 / 32",
+            "38.59",
+            "4.07",
+            "38.29",
+            "93.24%"
+          ],
+          [
+            "3",
+            "32 / 32",
+            "31.15",
+            "3.72",
+            "37.86",
+            "93.25%"
+          ]
+        ]
+      },
+      "notes": [],
+      "chart": {
+        "type": "line",
+        "title": {
+          "zh": "总输出吞吐",
+          "en": "Aggregate output throughput"
+        },
+        "hint": {
+          "zh": "仅显示本配置实测值；缺测点不补零。",
+          "en": "Measured values for this configuration only; missing points are not filled with zero."
+        },
+        "labels": {
+          "zh": [
+            "1",
+            "2",
+            "3"
+          ],
+          "en": [
+            "1",
+            "2",
+            "3"
+          ]
+        },
+        "yTitle": {
+          "zh": "tok/s",
+          "en": "tok/s"
+        },
+        "series": [
+          {
+            "zh": "总输出吞吐",
+            "en": "Aggregate output throughput",
+            "color": "blue",
+            "values": [
+              35.83,
+              38.29,
+              37.86
+            ]
+          }
         ]
       }
     }

@@ -29,6 +29,11 @@
       "en": "Open-loop capacity"
     },
     {
+      "id": "configuration",
+      "zh": "批次预算",
+      "en": "Batch budget"
+    },
+    {
       "id": "agent",
       "zh": "Agent 与投机",
       "en": "Agent & speculation"
@@ -425,6 +430,63 @@
           "zh": "复测的 TTFT P95 相对极差为 8.6%–22.9%，明显高于吞吐速率本身的波动。因此边界结论按两次复测是否一致制定，不能将单次 2.4 点读成稳定容量保证。",
           "en": "TTFT P95 relative range across repeats is 8.6%–22.9%, much higher than rate variation. The boundary conclusion uses agreement across both repeated runs; a single 2.4 point is not a stable capacity guarantee."
         }
+      }
+    },
+    {
+      "id": "configuration",
+      "label": {
+        "zh": "批次预算敏感性",
+        "en": "BATCH-BUDGET SENSITIVITY"
+      },
+      "heading": {
+        "zh": "调整批次预算会重排 ITL 延迟分布，未显著提高总吞吐",
+        "en": "Changing batch-token budget reshapes ITL distribution without materially raising aggregate throughput"
+      },
+      "intro": {
+        "zh": "同一权重与服务硬件，固定 32K 输入 / 128 输出、并发 16；对照 max-num-batched-tokens 8K / 16K / 32K。",
+        "en": "Same checkpoint and serving hardware, fixed 32K input / 128 output at concurrency 16; max-num-batched-tokens compared at 8K / 16K / 32K."
+      },
+      "notes": [
+        {
+          "zh": "该实验支持“延迟方差与中位数之间的分配旋钮”这一观察，不支持其作为提速选项；总吞吐与 ITL 均值在约 ±3.6% 内。",
+          "en": "The experiment supports viewing this as a trade-off between latency variance and median, not as a speed-up option; aggregate throughput and mean ITL stayed within about ±3.6%."
+        }
+      ],
+      "table": {
+        "headers": {
+          "zh": [
+            "max-num-batched-tokens",
+            "总吞吐差异",
+            "ITL 分布",
+            "观察"
+          ],
+          "en": [
+            "max-num-batched-tokens",
+            "Throughput delta",
+            "ITL distribution",
+            "Observation"
+          ]
+        },
+        "rows": [
+          [
+            "8,192",
+            "基准 / baseline",
+            "双峰，尾比约 30.7×",
+            "较长 ITL 尾部"
+          ],
+          [
+            "16,384",
+            "约 ±3.6%",
+            "中间状态",
+            "总量近似守恒"
+          ],
+          [
+            "32,768",
+            "约 ±3.6%",
+            "单峰，尾比约 1.3×",
+            "尾部分布收敛"
+          ]
+        ]
       }
     },
     {
