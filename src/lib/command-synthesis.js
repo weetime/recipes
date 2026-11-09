@@ -1197,6 +1197,19 @@ export function resolveCommand(recipe, variantKey, strategyName, hwProfileId, en
   const variant = recipe.variants?.[variantKey] || recipe.variants?.default || {};
   const strategy = strategies[strategyName] || {};
   const hwProfile = taxonomy.hardware_profiles?.[hwProfileId] || {};
+  // Apply hardware-specific variant restrictions and resolve conflicts before
+  // emitting either arguments or environment variables, including shared URLs.
+  enabledFeatures = (enabledFeatures || []).filter((key) => {
+    const feature = recipe.features?.[key];
+    if (!feature || !isModeSupported(feature, hwProfile, hwProfileId)) return false;
+    if (feature.only_hardware && !feature.only_hardware.includes(hwProfileId)) return false;
+    if (feature.only_variants && !feature.only_variants.includes(variantKey)) return false;
+    const override = hardwareKeyedValue(feature.hardware_overrides, hwProfile, hwProfileId);
+    return !override?.variants || override.variants.includes(variantKey);
+  });
+  const suppressedFeatures = new Set(enabledFeatures.flatMap((key) =>
+    hardwareKeyedValue(recipe.features[key]?.hardware_overrides, hwProfile, hwProfileId)?.conflicts || []));
+  enabledFeatures = enabledFeatures.filter((key) => !suppressedFeatures.has(key));
   const gen = normalizeGeneration(hwProfile.generation || hwProfile.gpu_generation);
   const gpuCount = typeof hwProfile.gpu_count === "number" ? hwProfile.gpu_count : 1;
   const totalGpus = gpuCount * Math.max(1, nodeCount);
@@ -1590,6 +1603,7 @@ export function resolveCommand(recipe, variantKey, strategyName, hwProfileId, en
     for (const f of enabledFeatures || []) {
       const feat = recipe.features?.[f];
       if (!feat) continue;
+      if (!isModeSupported(feat, hwProfile, hwProfileId) || (feat.only_variants && !feat.only_variants.includes(variantKey))) continue;
       if (!isFeatureAllowedForStrategy(feat, strategyName)) continue;
       // A companion-backed feature can't render its helper inside the
       // Mooncake deployment shell (companion tabs are a single-node-block
@@ -1613,6 +1627,14 @@ export function resolveCommand(recipe, variantKey, strategyName, hwProfileId, en
       const featHo = hardwareKeyedValue(feat.hardware_overrides, hwProfile, hwProfileId);
       const featArgs = featHo?.args ?? feat.args;
       if (featArgs) args.push(...featArgs);
+    }
+    // Conditional adjustments come after ordinary feature flags so they win
+    // regardless of the order in which the user enabled the features.
+    for (const f of enabledFeatures) {
+      const ho = hardwareKeyedValue(recipe.features[f]?.hardware_overrides, hwProfile, hwProfileId);
+      for (const [dependency, extra] of Object.entries(ho?.args_if_enabled || {})) {
+        if (enabledFeatures.includes(dependency)) args.push(...extra);
+      }
     }
 
     // 8. Composing KV offload (taxonomy.kv_offload.<key>) — the option's
@@ -1754,6 +1776,7 @@ export function resolveCommand(recipe, variantKey, strategyName, hwProfileId, en
     for (const f of enabledFeatures || []) {
       const feat = recipe.features?.[f];
       if (!feat) continue;
+      if (!isModeSupported(feat, hwProfile, hwProfileId) || (feat.only_variants && !feat.only_variants.includes(variantKey))) continue;
       if (!isFeatureAllowedForStrategy(feat, strategyName)) continue;
       if (kvComposing && feat.companion?.command) continue;
       if (feat.modes && typeof feat.modes === "object") {

@@ -1134,13 +1134,19 @@ export function CommandBuilder({ recipe, strategies, taxonomy }) {
   // variant TP number/map, a recipe-wide strategy override, or the auto-fit
   // from `variant.vram_minimum_gb` vs per-GPU VRAM.
   const hwGpuCount = typeof hwProfile.gpu_count === "number" ? hwProfile.gpu_count : 1;
-  const effectiveTp = resolveSingleNodeTp(
+  const baseTp = resolveSingleNodeTp(
     recipe,
     currentVariant,
     hwProfile,
     activeStrategy,
     hwId,
   );
+  const tpOverrideArgs = engine === "vllm" ? features.flatMap((key) => {
+    const override = recipe.features?.[key]?.hardware_overrides?.[hwId];
+    return override && (!override.variants || override.variants.includes(variant)) ? (override.args || []) : [];
+  }) : [];
+  const tpOverrideIndex = tpOverrideArgs.lastIndexOf("--tensor-parallel-size");
+  const effectiveTp = tpOverrideIndex >= 0 ? Number(tpOverrideArgs[tpOverrideIndex + 1]) : baseTp;
   const showTpUsageHint =
     engine === "vllm" && nodeCount === 1
     && activeStrategy === "single_node_tp"
@@ -1528,9 +1534,15 @@ export function CommandBuilder({ recipe, strategies, taxonomy }) {
     // text_only (skip vision encoder) and encoder_parallel (DP the encoder)
     // are mutually exclusive — enabling one clears the other.
     const mutex = { text_only: "encoder_parallel", encoder_parallel: "text_only" };
-    const on = !features.includes(f);
+    const selectedOverride = activeFeaturesMap[f]?.hardware_overrides?.[hwId];
+    const conflicts = selectedOverride?.variants && !selectedOverride.variants.includes(variant) ? [] : (selectedOverride?.conflicts || []);
+    const conflictingOwners = Object.entries(activeFeaturesMap).filter(([, feature]) => {
+      const override = feature?.hardware_overrides?.[hwId];
+      return (!override?.variants || override.variants.includes(variant)) && override?.conflicts?.includes(f);
+    }).map(([key]) => key);
+    const on = !features.includes(f) || conflictingOwners.some((key) => features.includes(key));
     const next = on
-      ? [...features.filter((x) => x !== mutex[f]), f]
+      ? [...features.filter((x) => x !== f && x !== mutex[f] && !conflicts.includes(x) && !conflictingOwners.includes(x)), f]
       : features.filter((x) => x !== f);
     setFeatures(next);
     syncUrl({ features: featuresToUrl(next, hwId, variant) });
@@ -1858,6 +1870,15 @@ export function CommandBuilder({ recipe, strategies, taxonomy }) {
 
   const dockerMeta = useMemo(() => {
     const meta = computeDockerMeta(recipe, currentVariant, hwProfile, hwId);
+    if (engine === "vllm") {
+      for (const key of features) {
+        const feature = recipe.features?.[key];
+        const override = feature?.hardware_overrides?.[hwId];
+        if (override?.docker_image && (!override.variants || override.variants.includes(variant)) && isFeatureAllowedForStrategy(feature, activeStrategy)) {
+          return { ...meta, image: override.docker_image };
+        }
+      }
+    }
     if (meta.brandKey !== "nvidia") return meta;
 
     // Explicit CUDA map (e.g. `{cu129: ..., cu130: ...}`) — pick the matching
@@ -1884,7 +1905,7 @@ export function CommandBuilder({ recipe, strategies, taxonomy }) {
       return { ...meta, image: next };
     }
     return meta;
-  }, [recipe, currentVariant, hwProfile, hwId, dockerCudaVariant, altCudaSuffix]);
+  }, [recipe, currentVariant, hwProfile, hwId, dockerCudaVariant, altCudaSuffix, engine, features, variant, activeStrategy]);
 
   // `installMode` carries the user's tab choice; `effectiveInstallMode` folds
   // in constraints that would hide a tab entirely (pip: recipe opt-out or TPU
@@ -1912,10 +1933,7 @@ export function CommandBuilder({ recipe, strategies, taxonomy }) {
       : installMode === "docker" && dockerEffectivelyHidden
         ? "pip"
         : installMode;
-  const commandNote = engine === "vllm" ? (recipe.hardware_notes?.[hwId] || null)
-    : currentVariant?.hardware_overrides?.[hwId]?.docker_image
-      ? { title: "SGLang image", body: `Use ${currentVariant.hardware_overrides[hwId].docker_image}. The W8A8 image contains experimental patches; verify checkpoint identity and task quality. The BF16 image is a separate build.` }
-      : null;
+  const commandNote = engine === "vllm" ? (recipe.hardware_notes?.[hwId] || null) : null;
 
   // The extra-install block is pip-scoped by default: nearly every recipe's
   // dependencies are pip installs the Docker image already bundles, so repeating
@@ -2835,19 +2853,27 @@ export function CommandBuilder({ recipe, strategies, taxonomy }) {
           {Object.keys(activeFeaturesMap).length > 0 && (
             <ConfigRow label="Features">
               <PillGroup>
-                {Object.entries(activeFeaturesMap).filter(([, f]) => !f.only_hardware || f.only_hardware.includes(hwId)).map(([key, f]) => {
+                {Object.entries(activeFeaturesMap).filter(([, f]) => (!f.only_hardware || f.only_hardware.includes(hwId)) && (!f.only_variants || f.only_variants.includes(variant))).map(([key, f]) => {
                   const kvBlocked = kvInstancesActive && !!f?.companion?.command;
                   const grpcBlocked = isSmgGrpc && key === "thinking_always_on";
-                  const allowed = isFeatureAllowedForStrategy(f, activeStrategy) && !kvBlocked && !grpcBlocked;
+                  const featureOverride = f?.hardware_overrides?.[hwId];
+                  const hardwareBlocked = !isModeSupported(f, hwProfile, hwId) || !!(featureOverride?.variants && !featureOverride.variants.includes(variant));
+                  const conflicting = Object.entries(activeFeaturesMap).some(([other, feature]) => {
+                    const override = feature?.hardware_overrides?.[hwId];
+                    return features.includes(other) && (!override?.variants || override.variants.includes(variant)) && override?.conflicts?.includes(key);
+                  });
+                  const allowed = isFeatureAllowedForStrategy(f, activeStrategy) && !hardwareBlocked && !kvBlocked && !grpcBlocked;
                   return (
                   <Pill
                     key={key}
-                    active={features.includes(key) && allowed}
+                    active={features.includes(key) && allowed && !conflicting}
                     disabled={!allowed}
                     onClick={() => allowed && toggleFeature(key)}
                     title={grpcBlocked ? "Set thinking_mode per request through chat_template_kwargs in gRPC mode."
                       : !allowed
-                      ? kvBlocked
+                      ? hardwareBlocked
+                        ? "This feature is unavailable for the selected hardware; choose a dedicated configuration if one is provided."
+                        : kvBlocked
                         ? "Needs its companion process, which isn't rendered inside a Mooncake deployment — set KV Offload to Off to use it."
                         : "Not available with this strategy"
                       : f?.description}
@@ -2968,41 +2994,6 @@ export function CommandBuilder({ recipe, strategies, taxonomy }) {
             </div>
           </details>
         </div>
-
-        {engine === "vllm" && dockerMeta.isAscend && (
-          <section className="border border-vllm-blue/30 bg-vllm-blue/[0.06] px-4 py-3.5" aria-label={t("command.ascendRuntimeTitle")}>
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <div>
-                <div className="text-[10px] font-semibold uppercase tracking-[0.16em] text-vllm-blue">
-                  {t("command.ascendRuntimeTitle")}
-                </div>
-                <p className="mt-1 text-sm font-medium">
-                  vLLM <span className="text-muted-foreground">+</span> vLLM-Ascend plugin
-                </p>
-              </div>
-              <span className="border border-vllm-blue/25 px-2 py-1 font-mono text-[10px] text-muted-foreground">
-                {hwProfile?.display_name || hwId}
-              </span>
-            </div>
-            <div className="mt-3 grid gap-3 border-t border-vllm-blue/15 pt-3 sm:grid-cols-2">
-              <div className="min-w-0">
-                <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{t("command.checkpoint")}</div>
-                <div className="mt-1 truncate font-mono text-xs" title={variantModelId || recipe.model?.model_id}>
-                  {variantModelId || recipe.model?.model_id || "—"}
-                </div>
-              </div>
-              <div className="min-w-0">
-                <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{t("command.ascendImage")}</div>
-                <div className="mt-1 break-all font-mono text-xs" title={dockerMeta.image || ""}>
-                  {dockerMeta.image || t("command.imageNotPinned")}
-                </div>
-              </div>
-            </div>
-            <p className="mt-3 text-[11px] leading-relaxed text-muted-foreground">
-              {t("command.ascendRuntimeHint")}
-            </p>
-          </section>
-        )}
 
         {/* ── Install (tabs: pip / docker — mirrors the command-card mode toggle
           so switching from either place keeps them in sync). */}

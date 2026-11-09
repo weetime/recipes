@@ -61,3 +61,17 @@ test('SGLang 910B uses its own checkpoint, engine flags, image and optional draf
   assert.match(computeDockerMeta(recipe, assembled.engines.sglang.variants.ascend_w8a8, profile, 'ascend_910b').image, /sglang:0\.5\.20-w8a8-dflash2/);
   assert.match(assembled.engines.sglang.guide, /SGLang on Ascend 910B3/);
 });
+
+test('910B YaRN feature keeps the W8A8 checkpoint and switches to MRV1 TP4', () => {
+  const result = resolveCommand(recipe, 'ascend_w8a8', 'single_node_tp', 'ascend_910b', ['long_context', 'mrv2', 'reasoning', 'spec_decoding'], strategies, taxonomy, [], 1, null, { spec_decoding: 'qwen3_5_mtp' }, null, null, 'python');
+  assert.equal(result.argv[2], 'Eco-Tech/Qwen3.8-27B-w8a8');
+  assert.equal(flag(result.argv, '--tensor-parallel-size'), '4');
+  assert.equal(flag(result.argv, '--max-model-len'), '1000000');
+  assert.equal(result.env.VLLM_USE_V2_MODEL_RUNNER, '0');
+  assert.equal(JSON.parse(flag(result.argv, '--speculative-config')).max_model_len, 1000000);
+  assert.equal(recipe.features.long_context.hardware_overrides.ascend_910b.docker_image, 'swr.cn-north-4.myhuaweicloud.com/runner/qwen38-b3-vllm:0.27.1-longctx-20261109-r2');
+  const withoutMtp = resolveCommand(recipe, 'ascend_w8a8', 'single_node_tp', 'ascend_910b', ['long_context'], strategies, taxonomy, [], 1, null, {}, null, null, 'python');
+  assert.ok(!withoutMtp.argv.includes('--speculative-config'));
+  const bf16 = resolveCommand(recipe, 'default', 'single_node_tp', 'ascend_910b', ['long_context'], strategies, taxonomy, [], 1, null, {}, null, null, 'python');
+  assert.notEqual(flag(bf16.argv, '--max-model-len'), '1000000');
+});
