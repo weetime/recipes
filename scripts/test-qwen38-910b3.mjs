@@ -15,7 +15,7 @@ const command = (features) => resolveCommand(recipe, 'ascend_w8a8', 'single_node
 
 test('910B W8A8 selects the MRV2 TP2 configuration and pinned image', () => {
   assert.equal(recipe.meta.hardware.ascend_910b, 'supported');
-  const result = command(['reasoning', 'spec_decoding']);
+  const result = command(['reasoning', 'spec_decoding', 'mrv2']);
   assert.equal(result.argv[2], 'Eco-Tech/Qwen3.8-27B-w8a8');
   assert.equal(flag(result.argv, '--tensor-parallel-size'), '2');
   assert.equal(flag(result.argv, '--quantization'), 'ascend');
@@ -27,7 +27,37 @@ test('910B W8A8 selects the MRV2 TP2 configuration and pinned image', () => {
 });
 
 test('ordinary decoding turns off MTP; unsafe vLLM drafts are unavailable on 910B', () => {
-  const result = command(['reasoning']);
+  const result = command(['reasoning', 'mrv2']);
   assert.ok(!result.argv.includes('--speculative-config'));
+  assert.equal(result.env.VLLM_USE_V2_MODEL_RUNNER, '1');
+  assert.equal(command(['reasoning']).env.VLLM_USE_V2_MODEL_RUNNER, '0');
   for (const mode of ['mtp', 'dflash', 'dspark']) assert.equal(isModeSupported(recipe.features.spec_decoding.modes[mode], profile, 'ascend_910b'), false);
+});
+
+test('SGLang 910B uses its own checkpoint, engine flags, image and optional draft', async () => {
+  const { attachEngines } = await import('../src/lib/engines/sglang-join.js');
+  const { resolveCommandForEngine } = await import('../src/lib/engines/index.js');
+  const assembled = attachEngines({ ...recipe, hf_id: 'Qwen/Qwen3.8-27B' });
+  const make = (variant, features) => resolveCommandForEngine('sglang', assembled, variant, 'single_node_tp', 'ascend_910b', features, strategies, taxonomy, [], 1, null);
+  for (const key of ['default', 'ascend_w8a8']) {
+    const plain = make(key, []);
+    assert.equal(plain.tp, 2);
+    assert.equal(plain.port, 8000);
+    assert.equal(flag(plain.argv, '--attention-backend'), 'ascend');
+    assert.ok(plain.argv.includes('--disable-radix-cache'));
+    assert.ok(!plain.argv.includes('--kv-cache-dtype'));
+    assert.ok(!plain.argv.includes('--speculative-algorithm'));
+    assert.ok(!plain.env.VLLM_USE_V2_MODEL_RUNNER);
+    const draft = make(key, ['dflash']);
+    assert.equal(flag(draft.argv, '--speculative-algorithm'), 'DFLASH');
+    assert.equal(flag(draft.argv, '--speculative-draft-model-path'), '/models/Qwen3.8-27B-DFlash2');
+    assert.equal(flag(draft.argv, '--speculative-num-draft-tokens'), '8');
+    assert.equal(draft.argv.includes('--speculative-draft-model-quantization'), key === 'ascend_w8a8');
+  }
+  const w8 = make('ascend_w8a8', ['dflash']);
+  assert.equal(flag(w8.argv, '--model-path'), 'Eco-Tech/Qwen3.8-27B-w8a8');
+  assert.equal(flag(w8.argv, '--quantization'), 'modelslim');
+  assert.equal(w8.env.SGLANG_USE_MODELSCOPE, 'True');
+  assert.match(computeDockerMeta(recipe, assembled.engines.sglang.variants.ascend_w8a8, profile, 'ascend_910b').image, /sglang:0\.5\.20-w8a8-dflash2/);
+  assert.match(assembled.engines.sglang.guide, /SGLang on Ascend 910B3/);
 });

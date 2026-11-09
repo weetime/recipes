@@ -47,12 +47,12 @@ function formatArgv(serveBinary, modelId, args) {
 // the TP flag, any per-hardware extra args, the strategy's templated extras,
 // then enabled feature args, then any advanced args. `rank` fills {RANK} for the
 // head (0) / worker (1) command.
-function buildArgs(block, tp, hwExtra, strategyExtra, rank, featureArgs, advancedArgs) {
+function buildArgs(block, tp, hwExtra, strategyExtra, rank, featureArgs, advancedArgs, baseArgs = block.base_args) {
   const filledExtra = (strategyExtra || []).map((tok) =>
     tok === "{NNODES}" ? String(rank.nnodes) : tok === "{RANK}" ? String(rank.rank) : tok
   );
   return [
-    ...(block.base_args || []),
+    ...(baseArgs || []),
     "--tp", String(tp),
     ...(hwExtra || []),
     ...filledExtra,
@@ -79,12 +79,15 @@ export function sglangCapabilities(block) {
 function synthesize(recipe, variantKey, strategyName, hwId, enabledFeatures, _strategies, taxonomy, advancedArgs = [], _nodeCount = 1, _pdNodes = null) {
   const block = recipe?.engines?.sglang;
   if (!block) throw new Error("sglang adapter: recipe has no engines.sglang block");
-  const modelId = block.model_id || recipe.model?.model_id || "unknown";
+  const variant = block.variants?.[variantKey] || block.variants?.default || {};
+  const modelId = variant.model_id || block.model_id || recipe.model?.model_id || "unknown";
   const serveBinary = block.serve_binary || "python3 -m sglang.launch_server";
 
   const featureArgs = [];
   for (const f of enabledFeatures || []) {
-    const fa = block.features?.[f]?.args;
+    const feature = block.features?.[f];
+    if (feature?.only_hardware && !feature.only_hardware.includes(hwId)) continue;
+    const fa = variant.hardware_overrides?.[hwId]?.feature_args?.[f] ?? feature?.hardware_overrides?.[hwId]?.args ?? feature?.args;
     if (fa) featureArgs.push(...fa);
   }
 
@@ -94,8 +97,10 @@ function synthesize(recipe, variantKey, strategyName, hwId, enabledFeatures, _st
   // (e.g. the INT8/NSA-CP/DeepEP/EAGLE config verified on PPU-ZW810E). Keyed by
   // hwId so other hardware is unaffected. env merges base_env then the override.
   const hwOverride = block.hardware_overrides?.[hwId] || {};
-  const hwExtra = hwOverride.extra_args || [];
-  const env = { ...(block.base_env || {}), ...(hwOverride.extra_env || {}) };
+  const variantOverride = variant.hardware_overrides?.[hwId] || {};
+  const hwExtra = [...(hwOverride.extra_args || []), ...(variantOverride.extra_args || [])];
+  const baseArgs = hwOverride.base_args ?? block.base_args;
+  const env = { ...(block.base_env || {}), ...(hwOverride.extra_env || {}), ...(variantOverride.extra_env || {}) };
 
   if (nodes > 1) {
     // Derived multi-node (nodes from deriveSglangNodes, not strategyName). A block
@@ -103,8 +108,8 @@ function synthesize(recipe, variantKey, strategyName, hwId, enabledFeatures, _st
     // upstream path); otherwise the adapter default applies, regardless of which
     // strategy name was passed. tp is the upstream value — never × nodes.
     const extra = block.strategies?.multi_node_tp?.extra ?? MULTI_NODE_EXTRA;
-    const headArgs = buildArgs(block, tp, hwExtra, extra, { nnodes: nodes, rank: 0 }, featureArgs, advancedArgs);
-    const workerArgs = buildArgs(block, tp, hwExtra, extra, { nnodes: nodes, rank: 1 }, featureArgs, advancedArgs);
+    const headArgs = buildArgs(block, tp, hwExtra, extra, { nnodes: nodes, rank: 0 }, featureArgs, advancedArgs, baseArgs);
+    const workerArgs = buildArgs(block, tp, hwExtra, extra, { nnodes: nodes, rank: 1 }, featureArgs, advancedArgs, baseArgs);
     return {
       deployType: "multi_node",
       nodeCount: nodes,
@@ -118,10 +123,11 @@ function synthesize(recipe, variantKey, strategyName, hwId, enabledFeatures, _st
   }
 
   const strat = block.strategies?.[strategyName] || block.strategies?.single_node_tp || {};
-  const args = buildArgs(block, tp, hwExtra, strat.extra, { nnodes: 1, rank: 0 }, featureArgs, advancedArgs);
+  const args = buildArgs(block, tp, hwExtra, strat.extra, { nnodes: 1, rank: 0 }, featureArgs, advancedArgs, baseArgs);
   return {
     deployType: "single_node",
     tp,
+    port: args.includes("--port") ? Number(args[args.lastIndexOf("--port") + 1]) : 30000,
     command: formatCommand(serveBinary, modelId, args),
     argv: formatArgv(serveBinary, modelId, args),
     env,
