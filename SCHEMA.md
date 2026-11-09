@@ -99,6 +99,7 @@ features:
     description: "…"
     args: ["--reasoning-parser", "<name>"]
     only_hardware: [ascend_910b]                   # optional — show this toggle only for these hardware profiles
+    only_variants: [ascend_w8a8]                   # optional — show this toggle only for these variants
   spec_decoding:                                  # USE spec_decoding, NOT mtp — unified key for MTP / Eagle3 / ERNIE-MTP
     description: "…"
     args: ["--speculative-config", '{"method":"mtp","num_speculative_tokens":1}']
@@ -109,6 +110,9 @@ features:
     env:                                          # optional — env set only while the feature is on
       VLLM_ALLOW_LONG_MAX_MODEL_LEN: "1"          # needed when the window exceeds max_position_embeddings
 
+  # Hardware overrides may also set variants, conflicts, docker_image and
+  # args_if_enabled: { <feature_key>: [flags...] }. Conditional flags are
+  # emitted last; conflicting features are excluded from generated commands.
 opt_in_features:                                  # features that default OFF (users tick them on)
   - spec_decoding                                 # spec decoding is opt-in unless docs insist
   - long_context                                  # always opt-in: static YaRN costs short-prompt quality

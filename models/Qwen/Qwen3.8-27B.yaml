@@ -94,6 +94,7 @@ features:
     label: "MRV2"
     description: "Use the V2 model runner for the 910B W8A8 pilot; disable for MRV1."
     only_hardware: [ascend_910b]
+    only_variants: [ascend_w8a8]
     default_mode: enabled
     modes:
       enabled:
@@ -191,7 +192,39 @@ features:
       - "--mm-encoder-tp-mode"
       - "data"
   long_context:
+    label: "YaRN4 / Long Context"
     description: "YaRN RoPE scaling past the native 262,144-token window to 1,000,000 tokens. Static YaRN holds the scaling factor constant regardless of input length, so leave this off unless you actually serve long prompts; for ~524K, halve the factor to 2.0."
+    hardware_overrides:
+      ascend_910b:
+        variants: [ascend_w8a8]
+        conflicts: [mrv2]
+        docker_image: "swr.cn-north-4.myhuaweicloud.com/runner/qwen38-b3-vllm:0.27.1-longctx-20261109-r2"
+        args:
+          - "--tensor-parallel-size"
+          - "4"
+          - "--max-model-len"
+          - "1000000"
+          - "--gpu-memory-utilization"
+          - "0.95"
+          - "--distributed-executor-backend"
+          - "mp"
+          - "--seed"
+          - "42"
+          - "--additional-config"
+          - '{"weight_nz_mode":2,"enable_cpu_binding":true}'
+          - "--max-num-seqs"
+          - "2"
+          - "--compilation-config"
+          - '{"cudagraph_mode":"FULL_AND_PIECEWISE","cudagraph_capture_sizes":[4,8]}'
+          - "--hf-overrides"
+          - '{"text_config":{"rope_parameters":{"mrope_interleaved":true,"mrope_section":[11,11,10],"rope_type":"yarn","rope_theta":10000000,"partial_rotary_factor":0.25,"factor":4.0,"original_max_position_embeddings":262144}}}'
+        args_if_enabled:
+          spec_decoding:
+            - "--speculative-config"
+            - '{"method":"qwen3_5_mtp","num_speculative_tokens":3,"max_model_len":1000000}'
+        env:
+          VLLM_USE_V2_MODEL_RUNNER: "0"
+          VLLM_ALLOW_LONG_MAX_MODEL_LEN: "1"
     args:
       - "--hf-overrides"
       - '{"text_config": {"rope_parameters": {"mrope_interleaved": true, "mrope_section": [11, 11, 10], "rope_type": "yarn", "rope_theta": 10000000, "partial_rotary_factor": 0.25, "factor": 4.0, "original_max_position_embeddings": 262144}}}'
@@ -442,11 +475,6 @@ hardware_overrides:
   xpu:
     extra_args:
       - "--enforce-eager"
-
-hardware_notes:
-  ascend_910b:
-    title: "910B3 W8A8: MRV2 pilot"
-    body: "Select W8A8 (Ascend) and the Python frontend for the TP2 MRV2 example. MTP3 uses the head in the main checkpoint; disable speculative decoding for the ordinary-decoding baseline. The public ModelScope checkpoint has not been verified byte-for-byte against the locally tested weights. The BF16 eager fallback is untested; the separately tested BF16 MTP8 MRV1 example is in the guide."
 
 strategy_overrides:
   single_node_tp:
