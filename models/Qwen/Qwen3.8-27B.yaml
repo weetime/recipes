@@ -16,6 +16,9 @@ meta:
   # TP4, NVFP4 at TP1 on vLLM 0.1.dev19754+g3a0914114, correct generations at 1M context,
   # and working tool calls. Everything else stays absent — the honest silent default.
   hardware:
+    # 910B3 W8A8 startup was tested with local ModelSlim weights. The public
+    # checkpoint below has not been verified byte-for-byte against that copy.
+    ascend_910b: supported
     gb300: verified
     # Blackwell B200, verified 2026-09-20: the RedHatAI MXFP4 variant (true W4A4, TP1) booted,
     # served and answered on 1x B200 — the same hardware used for the checkpoint's own eval.
@@ -113,6 +116,8 @@ features:
         # under `text_config`, so the depth cannot be inferred here — omit it and startup fails.
         description: "Native MTP head, 3 draft tokens."
         variants: [default, fp8, nvfp4, nvfp4_nvidia, int4, mxfp4]
+        hardware:
+          ascend_910b: unsupported
         args:
           - "--speculative-config"
           - '{"method":"mtp","num_speculative_tokens":3}'
@@ -135,10 +140,17 @@ features:
         args:
           - "--speculative-config"
           - '{"method":"qwen3_5_mtp","num_speculative_tokens":3,"enforce_eager":true}'
+        hardware_overrides:
+          ascend_910b:
+            args:
+              - "--speculative-config"
+              - '{"method":"qwen3_5_mtp","num_speculative_tokens":3}'
       dflash:
         label: "DFlash2"
         description: "External DFlash2 drafter (incoai/Qwen3.8-27B-DFlash2). method is dflash; DFlash2 is selected by the draft architecture. Needs vLLM >=0.28.0, which shipped vllm-project/vllm#52816. num_speculative_tokens must be 7 (block_size 8 minus one)."
         variants: [default]
+        hardware:
+          ascend_910b: unsupported
         args:
           - "--speculative-config"
           - '{"method":"dflash","model":"incoai/Qwen3.8-27B-DFlash2","num_speculative_tokens":7}'
@@ -146,6 +158,8 @@ features:
         label: "DSpark"
         description: "External DSpark drafter (RedHatAI/Qwen3.8-27B-speculator.dspark), with a Markov head and confidence head. The model card specifies 8 draft tokens."
         variants: [default]
+        hardware:
+          ascend_910b: unsupported
         args:
           - "--speculative-config"
           - '{"method":"dspark","model":"RedHatAI/Qwen3.8-27B-speculator.dspark","num_speculative_tokens":8}'
@@ -182,6 +196,22 @@ variants:
     vram_minimum_gb: 67
     description: "Full-precision BF16 — 51.7 GiB of weights: 1 GPU."
     hardware_overrides:
+      ascend_910b:
+        docker_image: "quay.io/ascend/vllm-ascend@sha256:27e9cbe89fb14ebfd8959d6b97627952a9fdb6482abc956082d9705d5ca3bc48"
+        extra_args:
+          - "--dtype"
+          - "bfloat16"
+          - "--trust-remote-code"
+          - "--max-model-len"
+          - "2048"
+          - "--max-num-seqs"
+          - "1"
+          - "--gpu-memory-utilization"
+          - "0.9"
+          - "--no-enable-prefix-caching"
+          - "--enforce-eager"
+        extra_env:
+          VLLM_USE_V2_MODEL_RUNNER: "0"
       rtx_pro_6000:
         extra_args:
           - "--max-num-seqs"
@@ -293,7 +323,9 @@ variants:
     # 32,128,768,176 B across 10 shards = 32.1 GB. ModelSlim keeps the vision tower in BF16
     # and stores FP32 per-channel scales, so this is not a uniform 8-bit build.
     vram_minimum_gb: 39
-    supported_hardware: [ascend_950pr]
+    supported_hardware: [ascend_950pr, ascend_910b]
+    tp:
+      ascend_910b: 2
     default_modes:
       spec_decoding: qwen3_5_mtp
     # `--quantization ascend` is what selects the ModelSlim scheme; without it the loader
@@ -316,6 +348,24 @@ variants:
     # `computeDockerMeta` has no Huawei brand, so a bare string `docker_image` would only pin
     # NVIDIA. The exact variant+hardware override lands regardless of brand.
     hardware_overrides:
+      ascend_910b:
+        docker_image: "quay.io/ascend/vllm-ascend@sha256:28351d337b7f9367073344240fa4e28d99794d549d577eaf317689950064150a"
+        extra_args:
+          - "--dtype"
+          - "bfloat16"
+          - "--trust-remote-code"
+          - "--max-model-len"
+          - "133120"
+          - "--max-num-seqs"
+          - "32"
+          - "--gpu-memory-utilization"
+          - "0.85"
+          - "--enable-prefix-caching"
+          - "--compilation-config"
+          - '{"cudagraph_capture_sizes":[1,4,8,12,16,20,24,28,32,36,40,44,48,52,56,60,64,68,72,76,80,84,88,92,96,100,104,108,112,116,120,124,128],"cudagraph_mode":"FULL_DECODE_ONLY"}'
+        extra_env:
+          VLLM_USE_V2_MODEL_RUNNER: "1"
+          VLLM_USE_MODELSCOPE: "True"
       ascend_950pr:
         docker_image: "quay.io/ascend/vllm-ascend:qwen3.8-a5"
     description: "ModelSlim INT8 W8A8 for Ascend NPU — 32.1 GB: 1 NPU. Requires --quantization ascend."
@@ -370,7 +420,15 @@ hardware_overrides:
     extra_args:
       - "--enforce-eager"
 
-strategy_overrides: {}
+hardware_notes:
+  ascend_910b:
+    title: "910B3 W8A8: MRV2 pilot"
+    body: "Select W8A8 (Ascend) and the Python frontend for the TP2 MRV2 example. MTP3 uses the head in the main checkpoint; disable speculative decoding for the ordinary-decoding baseline. The public ModelScope checkpoint has not been verified byte-for-byte against the locally tested weights. The BF16 eager fallback is untested; the separately tested BF16 MTP8 MRV1 example is in the guide."
+
+strategy_overrides:
+  single_node_tp:
+    tp:
+      ascend_910b: 2
 
 guide: |
   ## Overview
@@ -500,6 +558,13 @@ guide: |
   ### Ascend 910B3 experimental deployment examples
 
   The following are separate tested configurations, not interchangeable feature toggles.
+  In the command builder, select Ascend 910B, W8A8 (Ascend), and the Python frontend for the MRV2 TP2
+  configuration. `VLLM_USE_V2_MODEL_RUNNER=1` enables MRV2 and MTP3 is selectable;
+  switching speculative decoding off gives the ordinary-decoding configuration.
+  The public [ModelScope W8A8 checkpoint](https://www.modelscope.cn/models/Eco-Tech/Qwen3.8-27B-w8a8)
+  was identified as the intended source, but its index differs from the local test copy;
+  weight equivalence and inference with that specific public revision remain unverified.
+  The selector's BF16 eager fallback is not the tested BF16 MTP8 command below.
   On 2026-11-09 the local test checked that all six services started and returned HTTP 200
   from `/v1/models`; the W8A8 SGLang/DFlash2 and long-context vLLM examples also
   completed a short request. This startup check did not validate long inputs, concurrent
@@ -514,6 +579,10 @@ guide: |
   disable radix caching. SGLang W8A8 MTP did not pass smoke testing. MRV2 is a pilot;
   changing it to MRV1 requires separate validation. These examples are not automatically
   represented by the command-builder selections.
+  An earlier offline test used [z-lab/Qwen3.8-27B-DFlash2](https://huggingface.co/z-lab/Qwen3.8-27B-DFlash2)
+  revision `50307d4c4cde6860d4eee73e2547cd786fe8e8a4` as its external draft. The
+  November 9 startup report does not independently establish that its mounted draft
+  directory was the same revision; check it before reusing that identity.
 
   #### 1. vLLM W8A8, MTP3, MRV2
 
