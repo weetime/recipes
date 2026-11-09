@@ -49,6 +49,11 @@
       "en": "Graph execution validation"
     },
     {
+      "id": "piecewise-diagnostic",
+      "zh": "PIECEWISE 诊断",
+      "en": "PIECEWISE diagnostic"
+    },
+    {
       "id": "method",
       "zh": "测试方法与环境",
       "en": "Method and environment"
@@ -544,6 +549,85 @@
             "E2E P50 (s)",
             "4.96"
           ]
+        ]
+      }
+    },
+    {
+      "id": "piecewise-diagnostic",
+      "label": {
+        "zh": "PIECEWISE 诊断",
+        "en": "PIECEWISE diagnostic"
+      },
+      "heading": {
+        "zh": "PIECEWISE 诊断",
+        "en": "PIECEWISE diagnostic"
+      },
+      "intro": {
+        "zh": "1024 输入、256 输出、C1，共 4 条；该路径未捕获 decoder 图。",
+        "en": "1024 input, 256 output at C1, four requests; decoder graph capture did not occur on this path."
+      },
+      "table": {
+        "headers": {
+          "zh": [
+            "指标",
+            "PIECEWISE"
+          ],
+          "en": [
+            "Metric",
+            "PIECEWISE"
+          ]
+        },
+        "rows": [
+          [
+            "有效请求数",
+            "4"
+          ],
+          [
+            "Decoder图",
+            "未捕获"
+          ],
+          [
+            "平均 ITL P50 (ms)",
+            "234.17"
+          ],
+          [
+            "E2E P50 (s)",
+            "61.40"
+          ]
+        ]
+      },
+      "notes": [],
+      "chart": {
+        "type": "bar",
+        "title": {
+          "zh": "平均 ITL P50",
+          "en": "Mean ITL P50"
+        },
+        "hint": {
+          "zh": "仅显示该测试配置的已测数据。",
+          "en": "Only measured points for this configuration are shown."
+        },
+        "labels": {
+          "zh": [
+            "1024 / 256 · C1"
+          ],
+          "en": [
+            "1024 / 256 · C1"
+          ]
+        },
+        "yTitle": {
+          "zh": "ms",
+          "en": "ms"
+        },
+        "series": [
+          {
+            "zh": "平均 ITL P50",
+            "en": "Mean ITL P50",
+            "color": "blue",
+            "values": [
+              234.17
+            ]
+          }
         ]
       }
     }

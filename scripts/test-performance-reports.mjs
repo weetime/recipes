@@ -68,11 +68,19 @@ test("list curves preserve one workload and use measured metrics", () => {
   assert.deepEqual(deepseek.curve.labels, ["1", "8", "16", "32", "48"]);
   assert.deepEqual(deepseek.curve.values, [1180.62, 377.98, 424.24, 582.33, 753.42]);
   assert.match(deepseek.curve.title, /8K\/512/);
-  const mtp = reports.find((report) => report.slug === "qwen36-27b-w8a8-910b4-mtp3");
-  assert.deepEqual(mtp.curve.values, [33.2, 327, 455, 467.4, 487.4]);
-  assert.equal(mtp.curve.unit, "tok/s");
-  const onePoint = reports.find((report) => report.slug === "glm-5-2-w4a8-ppu-longctx-tp8-dp");
-  assert.equal(onePoint.curve, null);
+  const mtp = reports.find((report) => report.slug === "qwen36-27b-w8a8-mtp-tpdp-910b4");
+  assert.deepEqual(mtp.curve.values, [20.4, 225.7, 382.4, 565, 700.5]);
+});
+
+test("consolidated reports retain diagnostic and comparison measurements", () => {
+  const tuning = reportData("deepseek-v4-flash-int8-ppu-tuning");
+  assert.deepEqual(tuning.blocks.map((block) => block.id), ["chat", "low-load", "agent"]);
+  const graph = reportData("deepseek-v41-flash-mixed-950dt");
+  assert.equal(graph.blocks.find((block) => block.id === "piecewise-diagnostic").table.rows[2][1], "234.17");
+  const m3 = reportData("minimax-m3-mxfp8-950dt");
+  assert.equal(m3.blocks.find((block) => block.id === "text95-retest").table.rows.length, 3);
+  const m27 = reportData("minimax-m27-w8a8-910b4");
+  assert.ok(JSON.stringify(m27).includes("8K / 16K / 32K"));
 });
 
 test("static catalog and report identity data match the application catalog", () => {
