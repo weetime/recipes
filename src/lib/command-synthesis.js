@@ -917,6 +917,20 @@ function servedPort(tokens, fallback = 8000) {
   return fallback;
 }
 
+// SGLang images receive the Python launcher explicitly; their command is not
+// compatible with the vLLM image's `vllm serve` entrypoint.
+export function buildSglangDockerRun({ command, env, image, gpuFlags }) {
+  const model = command.match(/--model-path\s+(\S+)/)?.[1];
+  const draft = command.match(/--speculative-draft-model-path\s+(\S+)/)?.[1];
+  const paths = [...new Set([model, draft].filter((p) => p?.startsWith("/")))];
+  const mounts = paths.map((p) => `-v ${p}:${p}:ro`);
+  const envFlags = Object.entries(env || {}).map(([key, value]) => `-e ${key}=${value}`);
+  const launcherArgs = command.replace(/^python3\s+/, "");
+  const prerequisites = paths.map((p) => `# ${p} must exist on the host; it is mounted read-only.`).join("\n");
+  const options = [gpuFlags, "--privileged --net=host --shm-size=16g", "-v ~/.cache/huggingface:/root/.cache/huggingface", ...(env?.SGLANG_USE_MODELSCOPE ? ["-v ~/.cache/modelscope:/root/.cache/modelscope"] : []), ...mounts, ...envFlags, `--entrypoint python3 ${image}`];
+  return `${prerequisites ? `${prerequisites}\n` : ""}docker run ${options.join(" \\\n  ")} \\\n  ${launcherArgs}`;
+}
+
 // Wrap a `vllm serve MODEL <args>` command in `docker run`. The vllm/vllm-openai
 // image's entrypoint is `vllm serve`, so we pass MODEL and the trailing args as
 // CMD. `cmdPrefix` (e.g. "vllm serve") is restated before MODEL for images whose

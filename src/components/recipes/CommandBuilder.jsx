@@ -7,7 +7,7 @@ import { useRouter, usePathname } from "@/i18n/navigation";
 import { useT } from "@/components/i18n/I18nProvider";
 import { Copy, Check, Terminal, Gauge, Sparkles, ChevronDown, Package, Info, Zap, Globe, Wrench, Brain, ExternalLink } from "lucide-react";
 import { HuggingFaceIcon } from "@/components/icons/PlatformLogos";
-import { resolveCommand, recommendStrategy, isPrecisionCompatible, isHardwareSupported, isVariantHardwareSupported, fitsSingleNode, isHardwareScalable, isKvStoreBrandSupported, variantRunsOnHardware, variantVramMinimumGb, pickFittingVariant, pickDefaultHardware, resolveSingleNodeTp, computeDockerMeta, buildDockerRun, resolveOmniCommand, pdPoolModes, defaultModeFor, isModeSupported, isModeAllowedForVariant, resolveModeKey, isFeatureAllowedForStrategy, isKvOffloadAllowedForStrategy, isKvOffloadSupportedForRecipe, isKvOffloadBrandSupported, strategyAllowsKvOffload, MAX_NODES, nodesForStrategy, isStrategyReachable, isStrategySupportedOnHardware, effectiveCompatibleStrategies, needsMultiNode, multiNodeUnavailable, resolveFrontend, isFrontendSupported, isDynamoSupportedOnHardware, smgUnsupportedReason } from "@/lib/command-synthesis";
+import { resolveCommand, recommendStrategy, isPrecisionCompatible, isHardwareSupported, isVariantHardwareSupported, fitsSingleNode, isHardwareScalable, isKvStoreBrandSupported, variantRunsOnHardware, variantVramMinimumGb, pickFittingVariant, pickDefaultHardware, resolveSingleNodeTp, computeDockerMeta, buildDockerRun, buildSglangDockerRun, resolveOmniCommand, pdPoolModes, defaultModeFor, isModeSupported, isModeAllowedForVariant, resolveModeKey, isFeatureAllowedForStrategy, isKvOffloadAllowedForStrategy, isKvOffloadSupportedForRecipe, isKvOffloadBrandSupported, strategyAllowsKvOffload, MAX_NODES, nodesForStrategy, isStrategyReachable, isStrategySupportedOnHardware, effectiveCompatibleStrategies, needsMultiNode, multiNodeUnavailable, resolveFrontend, isFrontendSupported, isDynamoSupportedOnHardware, smgUnsupportedReason } from "@/lib/command-synthesis";
 import { resolveCommandForEngine } from "@/lib/engines/index.js";
 import { engineList, engineSources } from "@/lib/engine-ui";
 import { getEngineMeta } from "@/lib/engine-meta";
@@ -1869,7 +1869,8 @@ export function CommandBuilder({ recipe, strategies, taxonomy }) {
   const altCudaSuffix = "cu129";
 
   const dockerMeta = useMemo(() => {
-    const meta = computeDockerMeta(recipe, currentVariant, hwProfile, hwId);
+    const baseMeta = computeDockerMeta(recipe, currentVariant, hwProfile, hwId);
+    const meta = { ...baseMeta, sglangDocker: engine === "sglang" && baseMeta.isAscend && !!currentVariant?.hardware_overrides?.[hwId]?.docker_image };
     if (engine === "vllm") {
       for (const key of features) {
         const feature = recipe.features?.[key];
@@ -1912,21 +1913,17 @@ export function CommandBuilder({ recipe, strategies, taxonomy }) {
   // hardware; docker: recipe opt-out). This way switching to TPU flips both
   // the Install tab *and* the rendered command block to docker — they stay
   // in sync without requiring the user to re-click.
-  // These constraints are engine-aware: `model.install` and the TPU wheel gap
-  // are vLLM-only knobs. For any other engine (SGLang) pip is always available,
-  // and docker is force-hidden because the command-card docker wrapping
-  // (buildDockerRun) only understands `vllm serve …` — wrapping an SGLang
-  // launch command would emit a broken `docker run`. Forcing pip here also
-  // keeps effectiveInstallMode in sync with InstallBlock's tab set, so a click
-  // never snaps back.
+  // SGLang Ascend configurations with pinned images use their own Docker
+  // launcher. Other SGLang configurations retain their existing pip workflow.
   const installEngineIsVllm = engine === "vllm";
   const hwInstall = currentVariant?.hardware_overrides?.[hwId]?.install || recipe.hardware_overrides?.[hwId]?.install || null;
-  const pipEffectivelyHidden =
+  const pipEffectivelyHidden = dockerMeta.sglangDocker || (
     installEngineIsVllm &&
-    (recipe.model?.install?.pip === false || hwInstall?.pip === false || hwProfile?.generation === "tpu" || hwProfile?.generation === "xpu");
+    (recipe.model?.install?.pip === false || hwInstall?.pip === false || hwProfile?.generation === "tpu" || hwProfile?.generation === "xpu")
+  );
   const dockerEffectivelyHidden = installEngineIsVllm
     ? recipe.model?.install?.docker === false
-    : true;
+    : !dockerMeta.sglangDocker;
   const effectiveInstallMode =
     installMode === "pip" && pipEffectivelyHidden
       ? "docker"
@@ -3419,7 +3416,9 @@ function SingleCommandBlock({ command, env, companions, verifyCmd, benchCmd, sta
     ? ["source /opt/intel/oneapi/setvars.sh", preludeBase].filter(Boolean).join("\n")
     : preludeBase;
   const displayCommand = isDocker
-    ? buildDockerRun({ command, env, image: dockerMeta.image, gpuFlags: dockerMeta.gpuFlags, isNpu: dockerMeta.isNpu, cmdPrefix: dockerMeta.cmdPrefix })
+    ? dockerMeta.sglangDocker
+      ? buildSglangDockerRun({ command, env, image: dockerMeta.image, gpuFlags: dockerMeta.gpuFlags })
+      : buildDockerRun({ command, env, image: dockerMeta.image, gpuFlags: dockerMeta.gpuFlags, isNpu: dockerMeta.isNpu, cmdPrefix: dockerMeta.cmdPrefix })
     : command;
   // A companion process may ride along (`companions[]` from resolveCommand —
   // a feature's `companion:` or the active kv_offload option's, e.g.
@@ -3580,9 +3579,7 @@ function InstallBlock({ recipe, engine = "vllm", variant, dockerMeta, installMod
   // baseline); explicit picks pass through.
   const pipCudaTag = singleCudaBuild || (dockerCudaVariant === "default" ? "cu130" : dockerCudaVariant);
   const defaultPipCmd = !isVllm
-    ? (isAscend
-        ? `# Run the serving command inside the tested image:\ndocker pull ${dockerImage}`
-        : nightlyRequired
+    ? (nightlyRequired
         ? `# SGLang support for this model is on main (not yet in a tagged release):
 git clone https://github.com/sgl-project/sglang.git
 cd sglang && uv pip install -e python`
@@ -3626,8 +3623,6 @@ uv pip install -U vllm --torch-backend auto`;
   // override at `model.install.docker.command` still wins for recipes that
   // need a custom build step. The CUDA-version selector (below, next to Copy)
   // drives the tag suffix for NVIDIA; AMD / TPU pull a single image.
-  // Docker tab is vLLM-only (see InstallBlock tabs + dockerEffectivelyHidden);
-  // these defaults only render under vLLM.
   const defaultDockerCmd = `docker pull ${dockerImage}`;
   const dockerCmd = dockerCfg?.command || defaultDockerCmd;
   const defaultDockerNote = isTpu
@@ -3672,7 +3667,7 @@ uv pip install -U vllm --torch-backend auto`;
   // Vendor-stack accelerators (Hygon/Iluvatar/PPU) don't use standard vLLM
   // pip/docker — hide both tabs so the whole Install block drops out; the
   // `brand:`-filtered dependency above the command carries the real install.
-  const effectivePipHidden = pipHidden || isTpu || vendorOnly;
+  const effectivePipHidden = pipHidden || isTpu || vendorOnly || dockerMeta.sglangDocker;
   const dockerLabel = isTpu ? "Docker (TPU)" : isAmd ? "Docker (ROCm)" : isAscend ? "Docker (Ascend)" : "Docker";
   const tabs = [
     !effectivePipHidden && {
@@ -3681,7 +3676,7 @@ uv pip install -U vllm --torch-backend auto`;
       code: pipCmd,
       note: pipNote,
     },
-    isVllm && !dockerHidden && !vendorOnly && {
+    (isVllm || dockerMeta.sglangDocker) && !dockerHidden && !vendorOnly && {
       id: "docker",
       label: dockerLabel,
       code: dockerCmd,
