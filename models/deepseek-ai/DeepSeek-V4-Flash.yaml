@@ -24,6 +24,7 @@ meta:
     mi355x: verified
     ascend_910b: verified
     ascend_910c: verified
+    ascend_950dt: supported
     cambricon_mlu590: verified
   # Per-engine hardware verification (restricted hardware only). vLLM uses
   # `hardware` above; other engines gate on this. PPU-ZW810E was verified with
@@ -120,6 +121,7 @@ features:
         variants:
           - default
           - dspark
+          - ascend_mxfp4_mxfp8_950dt
         args:
           - "--speculative-config"
           - '{"method":"dspark","num_speculative_tokens":7,"draft_sample_method":"probabilistic"}'
@@ -128,6 +130,10 @@ features:
             args:
               - "--speculative-config"
               - '{"method":"dspark","num_speculative_tokens":5,"draft_sample_method":"probabilistic","attention_backend":"B12X_MLA_SPARSE"}'
+          ascend_950dt:
+            args:
+              - "--speculative-config"
+              - '{"num_speculative_tokens":5,"method":"dspark"}'
       dflash:
         label: "DFlash"
         description: "DFlash speculative decoding with an externally trained draft model; the served checkpoint is unchanged."
@@ -429,15 +435,14 @@ variants:
           - "--moe-backend"
           - "deep_gemm_mega_moe"
   ascend_w8a8:
-    # W8A8 quantized checkpoint for Atlas 800 A3 (16× Ascend 910C, 64 GB each).
-    # TP8 shards the 284B weights across 8 NPUs (35.5 GB each), fitting within
-    # the 64 GB per-NPU limit. DP2 uses all 16 NPUs (2 replicas × 8 NPUs each).
+    # W8A8 quantized MTP checkpoint documented for Atlas 800 A2 and A3.
+    # The A2 profile uses PCP8 on one node; the A3 profile uses DP2+TP8.
     model_id: "Eco-Tech/DeepSeek-V4-Flash-w8a8-mtp"
-    label: "W8A8 (Ascend A3)"
+    label: "W8A8 MTP (Ascend A2/A3)"
     precision: int8
     vram_minimum_gb: 341
-    description: "ModelSlim INT8 W8A8 checkpoint for one Atlas 800 A3 node (16× Ascend 910C), using DP2+TP8. Requires --quantization ascend."
-    supported_hardware: [ascend_910c]
+    description: "ModelSlim INT8 W8A8 MTP checkpoint. Atlas 800 A2 uses one node with PCP8; Atlas 800 A3 uses DP2+TP8 across 16 NPUs. Requires --quantization ascend."
+    supported_hardware: [ascend_910b, ascend_910c]
     tp:
       ascend_910c: 8
     min_vllm_version: "0.23.0"
@@ -481,6 +486,61 @@ variants:
         # Ascend recommends Docker; no official pip wheel for NPU.
         install:
           pip: false
+      ascend_910b:
+        docker_image: "quay.io/ascend/vllm-ascend:v0.23.0"
+        install:
+          pip: false
+        extra_args:
+          - "--data-parallel-size"
+          - "1"
+          - "--tensor-parallel-size"
+          - "1"
+          - "--prefill-context-parallel-size"
+          - "8"
+          - "--max-model-len"
+          - "133120"
+          - "--max-num-batched-tokens"
+          - "8192"
+          - "--max-num-seqs"
+          - "32"
+          - "--gpu-memory-utilization"
+          - "0.9"
+          - "--no-enable-prefix-caching"
+          - "--model-loader-extra-config"
+          - '{"enable_multithread_load":true,"num_threads":128}'
+          - "--block-size"
+          - "128"
+          - "--attention_config.indexer_kv_dtype"
+          - "int8"
+          - "--compilation-config"
+          - '{"cudagraph_mode":"FULL_DECODE_ONLY"}'
+          - "--additional-config"
+          - '{"ascend_compilation_config":{"enable_npugraph_ex":true,"enable_static_kernel":false},"enable_cpu_binding":true,"multistream_overlap_shared_expert":true}'
+        extra_env:
+          ASCEND_RT_VISIBLE_DEVICES: "0,1,2,3,4,5,6,7"
+          HCCL_BUFFSIZE: "1024"
+          HCCL_OP_EXPANSION_MODE: "AIV"
+          TASK_QUEUE_ENABLE: "1"
+          OMP_PROC_BIND: "false"
+          OMP_NUM_THREADS: "10"
+
+  ascend_mxfp4_mxfp8_950dt:
+    model_id: "deepseek-ai/DeepSeek-V4-Flash-0731"
+    label: "MXFP4 + MXFP8 (Ascend 950DT)"
+    precision: mxfp4
+    vram_minimum_gb: 200
+    supported_hardware: [ascend_950dt]
+    min_vllm_version: "0.30.0"
+    default_modes:
+      spec_decoding: dspark
+    description: "Original DeepSeek 0731 mixed MXFP4/MXFP8 checkpoint, supported directly on one 8-NPU Ascend 950DT node; no Ascend weight conversion."
+    hardware_overrides:
+      ascend_950dt:
+        docker_image: "quay.io/ascend/vllm-ascend:v0.30.0rc2-a5"
+        install:
+          pip: false
+        extra_env:
+          ASCEND_RT_VISIBLE_DEVICES: "0,1,2,3,4,5,6,7"
 
 compatible_strategies:
   - single_node_tp
@@ -511,12 +571,14 @@ strategy_hardware:
   # hardware; this makes the Strategy row agree. multi_node_dep needs no entry:
   # the Nodes row is pinned to 1 here, which already hides every multi_node
   # strategy.
-  # The builder only exposes the validated A3 DP configuration for this NPU
-  # recipe; other NPU topologies need their own checkpoint and evidence.
+  # A2/A3 use the documented Ascend checkpoints; 950DT has its own native
+  # mixed-precision variant and single-node DEP profile below.
   single_node_tp:
     npu: unsupported
   single_node_tep:
     npu: unsupported
+  single_node_dep:
+    ascend_950dt: supported
   multi_node_dep:
     npu: unsupported
   pd_cluster:
@@ -650,6 +712,81 @@ strategy_overrides:
           - '{"cudagraph_mode":"FULL_DECODE_ONLY"}'
           - "--additional-config"
           - '{"enable_cpu_binding": true, "multistream_overlap_shared_expert": true, "enable_shared_expert_dp": true}'
+      ascend_910b:
+        extra_env:
+          PYTORCH_NPU_ALLOC_CONF: "expandable_segments:True"
+          OMP_PROC_BIND: "false"
+          OMP_NUM_THREADS: "10"
+          HCCL_BUFFSIZE: "1024"
+          HCCL_OP_EXPANSION_MODE: "AIV"
+          TASK_QUEUE_ENABLE: "1"
+          ASCEND_RT_VISIBLE_DEVICES: "0,1,2,3,4,5,6,7"
+        extra_args:
+          - "--data-parallel-size"
+          - "1"
+          - "--tensor-parallel-size"
+          - "1"
+          - "--prefill-context-parallel-size"
+          - "8"
+          - "--max-model-len"
+          - "133120"
+          - "--max-num-batched-tokens"
+          - "8192"
+          - "--max-num-seqs"
+          - "32"
+          - "--gpu-memory-utilization"
+          - "0.9"
+          - "--no-enable-prefix-caching"
+          - "--model-loader-extra-config"
+          - '{"enable_multithread_load":true,"num_threads":128}'
+          - "--block-size"
+          - "128"
+          - "--attention_config.indexer_kv_dtype"
+          - "int8"
+          - "--compilation-config"
+          - '{"cudagraph_mode":"FULL_DECODE_ONLY"}'
+          - "--additional-config"
+          - '{"ascend_compilation_config":{"enable_npugraph_ex":true,"enable_static_kernel":false},"enable_cpu_binding":true,"multistream_overlap_shared_expert":true}'
+      ascend_950dt:
+        extra_env:
+          PYTORCH_NPU_ALLOC_CONF: "expandable_segments:True"
+          OMP_PROC_BIND: "false"
+          OMP_NUM_THREADS: "10"
+          HCCL_BUFFSIZE: "1024"
+          HCCL_OP_EXPANSION_MODE: "CCU_SCHED"
+          TASK_QUEUE_ENABLE: "1"
+          VLLM_USE_V2_MODEL_RUNNER: "1"
+          VLLM_USE_FASTOKENS: "1"
+          ASCEND_RT_VISIBLE_DEVICES: "0,1,2,3,4,5,6,7"
+        extra_args:
+          - "--data-parallel-size"
+          - "8"
+          - "--prefill-context-parallel-size"
+          - "1"
+          - "--enable-chunked-prefill"
+          - "--max-model-len"
+          - "1048576"
+          - "--max-num-batched-tokens"
+          - "16384"
+          - "--max-num-seqs"
+          - "32"
+          - "--gpu-memory-utilization"
+          - "0.9"
+          - "--block-size"
+          - "32"
+          - "--safetensors-load-strategy"
+          - "prefetch"
+          - "--tokenizer-mode"
+          - "deepseek_v4"
+          - "--attention_config.indexer_kv_dtype"
+          - "fp8"
+          - "--no-disable-hybrid-kv-cache-manager"
+          - "--api-server-count"
+          - "1"
+          - "--compilation-config"
+          - '{"cudagraph_mode":"FULL_DECODE_ONLY"}'
+          - "--additional-config"
+          - '{"enable_cpu_binding":true,"multistream_overlap_shared_expert":true,"enable_shared_expert_dp":true}'
   multi_node_dep:
     extra_args:
       - "--compilation-config"
@@ -721,6 +858,18 @@ hardware_notes:
     link:
       label: "Ascend 910C A3 reference"
       href: "https://docs.vllm.ai/projects/ascend/en/latest/tutorials/models/DeepSeek-V4-Flash.html"
+  ascend_910b:
+    title: "vLLM-Ascend A2 image required"
+    body: "Select the W8A8 MTP variant and single-node DEP strategy. The documented A2 profile uses all eight NPUs with DP1/TP1/PCP8, a 133120-token context limit, and one MTP token. The image is quay.io/ascend/vllm-ascend:v0.23.0; this upstream profile is not a local validation claim for every 910B generation."
+    link:
+      label: "Ascend A2 reference"
+      href: "https://docs.vllm.ai/projects/ascend/zh-cn/latest/tutorials/models/DeepSeek-V4-Flash.html"
+  ascend_950dt:
+    title: "vLLM-Ascend 950DT image required"
+    body: "Select the MXFP4 + MXFP8 (Ascend 950DT) checkpoint and the single-node DEP strategy. The documented profile uses all eight NPUs with DP8/EP and prefill context parallel size 1; it is upstream-documented, not a local hardware validation claim."
+    link:
+      label: "Ascend 950DT reference"
+      href: "https://docs.vllm.ai/projects/ascend/zh-cn/latest/tutorials/models/DeepSeek-V4-Flash.html"
 
 guide: |
   ## Overview

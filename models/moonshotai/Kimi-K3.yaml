@@ -23,6 +23,7 @@ meta:
     mi355x: verified
     ascend_910c: verified
     ascend_910b: supported
+    ascend_950dt: supported
 
 model:
   model_id: "moonshotai/Kimi-K3"
@@ -88,6 +89,10 @@ features:
         args:
           - "--speculative-config"
           - '{"method":"dspark","model":"RedHatAI/Kimi-K3-speculator.dspark","num_speculative_tokens":7,"enforce_eager":true}'
+      ascend_950dt:
+        args:
+          - "--speculative-config"
+          - '{"method":"dspark","model":"Inferact/Kimi-K3-DSpark-Block5","num_speculative_tokens":7,"draft_tensor_parallel_size":8,"draft_sample_method":"greedy","enforce_eager":true}'
   text_only:
     description: "Skip the vision encoder for text-only workloads. Mutually exclusive with encoder_parallel."
     args:
@@ -155,7 +160,7 @@ variants:
     precision: int4
     label: "W4A8 (Ascend)"
     vram_minimum_gb: 1711
-    supported_hardware: [ascend_910b, ascend_910c]
+    supported_hardware: [ascend_910b, ascend_910c, ascend_950dt]
     extra_args:
       - "--quantization"
       - "ascend"
@@ -224,7 +229,43 @@ variants:
           - '{"vision_chunk": 2}'
           - "--allowed-local-media-path"
           - "/"
-    description: "ModelSlim INT4 W4A8 checkpoint. A3 uses the model-specific A3 image and multimodal TP16·DP4 recipe; A2 uses the A2 image and documented language-only TP8·DP8 recipe. Both are upstream-documented, not local hardware validation."
+      ascend_950dt:
+        docker_image: "quay.io/ascend/vllm-ascend:v0.23.0-a5-openeuler"
+        extra_args:
+          - "--tensor-parallel-size"
+          - "8"
+          - "--data-parallel-size"
+          - "4"
+          - "--data-parallel-size-local"
+          - "1"
+          - "--enable-expert-parallel"
+          - "--max-num-seqs"
+          - "16"
+          - "--max-model-len"
+          - "131072"
+          - "--max-num-batched-tokens"
+          - "24576"
+          - "--gpu-memory-utilization"
+          - "0.9"
+          - "--compilation-config"
+          - '{"cudagraph_mode":"FULL_DECODE_ONLY"}'
+          - "--mm-processor-cache-gb"
+          - "0"
+          - "--additional-config"
+          - '{"enable_cpu_binding":true,"enable_flashcomm1":true}'
+          - "--mm-encoder-tp-mode"
+          - "data"
+          - "--limit-mm-per-prompt"
+          - '{"vision_chunk":2}'
+          - "--allowed-local-media-path"
+          - "/"
+        extra_env:
+          HCCL_BUFFSIZE: "800"
+          HCCL_IF_IP: "$LOCAL_IP"
+          HCCL_SOCKET_IFNAME: "$NIC_NAME"
+          GLOO_SOCKET_IFNAME: "$NIC_NAME"
+          PYTORCH_NPU_ALLOC_CONF: "expandable_segments:True"
+    description: "ModelSlim W4A8 checkpoint. A3 uses the model-specific A3 image and TP16·DP4 recipe; A2 uses the A2 image and documented language-only TP8·DP8 recipe; 950DT uses the v0.23.0 A5 image and documented four-node TP8·DP4 mixed deployment. These are upstream-documented profiles, not local hardware validation."
 
   fp8:
     model_id: "RedHatAI/Kimi-K3-FP8-BLOCK"
@@ -239,6 +280,7 @@ compatible_strategies:
   - multi_node_tp_pp
   - multi_node_dep
   - pd_cluster
+  - multi_node_tp_dp
 
 # TP-per-node + DP-across-nodes only makes sense where one node holds a full
 # replica and the cluster fabric fits the DP pattern: H200 (TP8·DP2 from 2
@@ -252,6 +294,7 @@ strategy_hardware:
     gb300: supported
     ascend_910c: supported
     ascend_910b: supported
+    ascend_950dt: supported
   multi_node_dep:
     h100: unsupported
     h200: unsupported
@@ -269,6 +312,7 @@ strategy_hardware:
   pd_cluster:
     ascend_910c: unsupported
     ascend_910b: unsupported
+    ascend_950dt: unsupported
 
 default_strategy: single_node_tp
 
@@ -294,6 +338,7 @@ strategy_min_gpus:
     multi_node_tp: 16
   ascend_910c: 64
   ascend_910b: 64
+  ascend_950dt: 32
 
 
 hardware_overrides:
@@ -485,6 +530,14 @@ guide: |
   ## Overview
 
   Kimi K3 is a 2.8-trillion-parameter Mixture-of-Experts model (16 of 896 experts active per token) built on the Kimi Delta Attention (KDA) and Attention Residuals (AttnRes), with a 1M-token context window and native vision. 
+
+  ## Huawei Ascend
+
+  The current [vLLM-Ascend Kimi-K3 guide](https://docs.vllm.ai/projects/ascend/zh-cn/latest/tutorials/models/Kimi-K3.html) documents the ModelSlim W4A8 checkpoint `Eco-Tech/Kimi-K3-w4a8` on A2, A3, and 950DT. The 950DT mixed serving profile uses four nodes with eight NPUs per node (TP8 per node, DP4 across nodes, EP32), image `quay.io/ascend/vllm-ascend:v0.23.0-a5-openeuler`, max model length 131072, max batched tokens 24576, and max sequences 16. The recipe's 950DT hardware option reflects this documented topology; it is upstream-documented, not locally validated.
+
+  Start the DP coordinator on node 0, then join nodes 1–3 with unique `--data-parallel-start-rank` values. Set `HCCL_IF_IP` and `HCCL_SOCKET_IFNAME` to each node's actual interface and IP; the UI command cannot infer these addresses. Keep `HCCL_OP_EXPANSION_MODE` unset for the mixed deployment. The upstream guide also describes eight-node PD and 1M-context layouts, but this recipe's generic PD builder does not yet encode their role-specific Mooncake and node settings, so it does not offer them as selectable 950DT strategies.
+
+  For 950DT DSpark, the documented draft checkpoint is `Inferact/Kimi-K3-DSpark-Block5`, with draft TP8, greedy drafting, and 7 speculative tokens. This is opt-in and remains disabled unless speculative decoding is selected.
 
   ## Prerequisites
 

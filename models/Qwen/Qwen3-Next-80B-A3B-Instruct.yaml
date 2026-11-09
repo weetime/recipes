@@ -4,7 +4,7 @@ meta:
   provider: "Qwen"
   description: "Advanced Qwen3-Next MoE model (80B total / 3B active) with hybrid attention, highly sparse experts, and multi-token prediction."
   date_added: 2025-09-11
-  date_updated: 2026-10-25
+  date_updated: 2026-10-27
   difficulty: intermediate
   tasks:
     - text
@@ -137,6 +137,20 @@ variants:
     vram_minimum_gb: 48
     description: "RedHatAI NVFP4 quantization"
 
+hardware_notes:
+  ascend_910b:
+    title: "Historical vLLM-Ascend profile"
+    body: "This A2 profile pins vLLM-Ascend v0.23.0. Upstream discontinued Qwen3-Next in v0.30.0; this is a historical deployment path with no later support or fixes. Keep the vLLM-Ascend and CANN stack matched to the pinned image."
+    link:
+      label: "Historical v0.23.0 guide"
+      href: "https://docs.vllm.ai/projects/ascend/en/v0.23.0/tutorials/models/Qwen3-Next.html"
+  ascend_910c:
+    title: "Historical vLLM-Ascend profile"
+    body: "This A3 profile pins vLLM-Ascend v0.23.0-a3. Upstream discontinued Qwen3-Next in v0.30.0; this is a historical deployment path with no later support or fixes. Keep the vLLM-Ascend and CANN stack matched to the pinned image."
+    link:
+      label: "Historical v0.23.0 guide"
+      href: "https://docs.vllm.ai/projects/ascend/en/v0.23.0/tutorials/models/Qwen3-Next.html"
+
 compatible_strategies:
   - single_node_tp
   - single_node_tep
@@ -169,13 +183,14 @@ guide: |
 
   ## Ascend
 
-  vLLM-Ascend documents Qwen3-Next from v0.10.2rc1 and reports stable support
-  from v0.16.0. The current A2/A3 image examples use v0.23.0 and v0.23.0-a3.
-  The default hardware profile pins the upstream TP4 launch settings: 32K
-  maximum model length, 4,096 batched tokens, 0.8 memory utilization, and
-  decode-only graph capture. The backend currently uses experimental Triton
-  Ascend kernels, so behavior and performance may change across releases. This
-  is documented support, not a local end-to-end verification.
+  The upstream guide documents Qwen3-Next support from v0.10.2rc1 and stable
+  operation from v0.16.0. However, the current vLLM-Ascend documentation marks
+  this model discontinued since v0.30.0. The A2/A3 profiles below are therefore
+  historical configurations pinned to v0.23.0 / v0.23.0-a3; do not upgrade the
+  serving image independently. Their TP4, 32K context, 4,096 batched tokens,
+  0.8 memory utilization, and decode-only graph settings match the historical
+  upstream guide. Triton Ascend was experimental, and this recipe has no local
+  end-to-end validation on Ascend.
 
   ## Prerequisites
 
@@ -269,3 +284,5 @@ guide: |
   - [Model card](https://huggingface.co/Qwen/Qwen3-Next-80B-A3B-Instruct)
   - [FP8 checkpoint](https://huggingface.co/Qwen/Qwen3-Next-80B-A3B-Instruct-FP8)
   - [Qwen3-Next blog](https://qwen.ai/blog?id=4074cca80393150c248e508aa62983f9cb7d27cd)
+  - [Historical vLLM-Ascend v0.23.0 deployment guide](https://docs.vllm.ai/projects/ascend/en/v0.23.0/tutorials/models/Qwen3-Next.html)
+  - [Current vLLM-Ascend lifecycle notice](https://docs.vllm.ai/projects/ascend/zh-cn/latest/tutorials/models/Qwen3-Next.html)
