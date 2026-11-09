@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import yaml from 'js-yaml';
-import { computeDockerMeta, isModeSupported, resolveCommand } from '../src/lib/command-synthesis.js';
+import { buildSglangDockerRun, computeDockerMeta, isModeSupported, resolveCommand } from '../src/lib/command-synthesis.js';
 import { loadStrategies } from '../src/lib/strategies.js';
 import { loadTaxonomy } from '../src/lib/taxonomy.js';
 
@@ -58,7 +58,14 @@ test('SGLang 910B uses its own checkpoint, engine flags, image and optional draf
   assert.equal(flag(w8.argv, '--model-path'), 'Eco-Tech/Qwen3.8-27B-w8a8');
   assert.equal(flag(w8.argv, '--quantization'), 'modelslim');
   assert.equal(w8.env.SGLANG_USE_MODELSCOPE, 'True');
-  assert.match(computeDockerMeta(recipe, assembled.engines.sglang.variants.ascend_w8a8, profile, 'ascend_910b').image, /sglang:0\.5\.20-w8a8-dflash2/);
+  const docker = computeDockerMeta(recipe, assembled.engines.sglang.variants.ascend_w8a8, profile, 'ascend_910b');
+  assert.match(docker.image, /sglang:0\.5\.20-w8a8-dflash2/);
+  const dockerRun = buildSglangDockerRun({ command: w8.command, env: w8.env, image: docker.image, gpuFlags: docker.gpuFlags });
+  assert.match(dockerRun, /--entrypoint python3 .*sglang:0\.5\.20-w8a8-dflash2/);
+  assert.match(dockerRun, /-m sglang\.launch_server --model-path Eco-Tech\/Qwen3\.8-27B-w8a8/);
+  assert.match(dockerRun, /-v \/models\/Qwen3\.8-27B-DFlash2:\/models\/Qwen3\.8-27B-DFlash2:ro/);
+  assert.match(dockerRun, /-e SGLANG_USE_MODELSCOPE=True/);
+  assert.ok(!dockerRun.includes('vllm serve MODEL'));
   assert.match(assembled.engines.sglang.guide, /SGLang on Ascend 910B3/);
 });
 
