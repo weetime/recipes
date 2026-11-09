@@ -98,6 +98,7 @@ features:
   reasoning:
     description: "…"
     args: ["--reasoning-parser", "<name>"]
+    only_hardware: [ascend_910b]                   # optional — show this toggle only for these hardware profiles
   spec_decoding:                                  # USE spec_decoding, NOT mtp — unified key for MTP / Eagle3 / ERNIE-MTP
     description: "…"
     args: ["--speculative-config", '{"method":"mtp","num_speculative_tokens":1}']

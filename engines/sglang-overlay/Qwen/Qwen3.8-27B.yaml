@@ -1,0 +1,66 @@
+# Local 910B3 configurations; merged over the generated SGLang cookbook block.
+tp_by_hardware:
+  ascend_910b: 2
+hardware_overrides:
+  ascend_910b:
+    base_args: []
+    extra_args:
+      - '--host'
+      - '0.0.0.0'
+      - '--attention-backend'
+      - 'ascend'
+      - '--mamba-ssm-dtype'
+      - 'bfloat16'
+      - '--mamba-radix-cache-strategy'
+      - 'extra_buffer'
+      - '--disable-radix-cache'
+      - '--mem-fraction-static'
+      - '0.85'
+      - '--context-length'
+      - '40960'
+      - '--max-running-requests'
+      - '16'
+      - '--port'
+      - '8000'
+variants:
+  default:
+    label: 'BF16'
+    description: 'BF16 on 910B3 uses the CANN SGLang image and optional DFlash2 draft.'
+    hardware_overrides:
+      ascend_910b:
+        docker_image: 'lmsysorg/sglang:v0.5.20-cann9.0.0-910b'
+  ascend_w8a8:
+    precision: int8
+    label: 'W8A8 (Ascend)'
+    model_id: 'Eco-Tech/Qwen3.8-27B-w8a8'
+    supported_hardware: [ascend_910b]
+    description: 'Experimental 910B3 ModelSlim W8A8 image. The public checkpoint and draft revision require independent verification.'
+    hardware_overrides:
+      ascend_910b:
+        docker_image: 'swr.cn-north-4.myhuaweicloud.com/runner/qwen38-b3-sglang:0.5.20-w8a8-dflash2-20261109'
+        extra_args: ['--quantization', 'modelslim']
+        extra_env:
+          SGLANG_USE_MODELSCOPE: 'True'
+        feature_args:
+          dflash:
+            - '--speculative-algorithm'
+            - 'DFLASH'
+            - '--speculative-draft-model-path'
+            - '/models/Qwen3.8-27B-DFlash2'
+            - '--speculative-num-draft-tokens'
+            - '8'
+            - '--speculative-draft-model-quantization'
+            - 'unquant'
+features:
+  dflash:
+    label: 'DFlash2 K8'
+    description: 'Experimental external BF16 draft; use the matched checkpoint and verify task quality.'
+    only_hardware: [ascend_910b]
+    args:
+      - '--speculative-algorithm'
+      - 'DFLASH'
+      - '--speculative-draft-model-path'
+      - '/models/Qwen3.8-27B-DFlash2'
+      - '--speculative-num-draft-tokens'
+      - '8'
+opt_in_features: [reasoning, tool_calling, dflash]

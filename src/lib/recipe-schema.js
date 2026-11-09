@@ -72,6 +72,7 @@ export function buildRecipeSchema({ taxonomy, strategies }) {
 
   const feature = obj({
     description: { type: "string" },
+    only_hardware: { type: "array", items: gpuId },
     label: { type: "string" },
     args: strings,
     env: envMap,

@@ -863,7 +863,7 @@ export function CommandBuilder({ recipe, strategies, taxonomy }) {
   const [dockerCudaVariant, setDockerCudaVariant] = useState("default");
 
   // ── Derived ──
-  const currentVariant = recipe.variants?.[variant] || recipe.variants?.default || {};
+  const currentVariant = activeVariantsMap[variant] || activeVariantsMap.default || {};
 
   // The HF repo this variant serves — the variant's own checkpoint when it
   // overrides `model_id` (nvidia/*-NVFP4, deepseek-ai/*-0813), otherwise the
@@ -877,6 +877,7 @@ export function CommandBuilder({ recipe, strategies, taxonomy }) {
   const hwByBrand = useMemo(() => {
     const NVIDIA_ORDER = ["h100", "h200", "b200", "gb200", "b300", "gb300", "rtx_pro_5000", "rtx_pro_6000", "dgx_spark_gb10", "rtx_4090_2x", "rtx_5090_2x", "dgx_station_gb300"];
     const AMD_ORDER = ["mi300x", "mi325x", "mi355x"];
+    const HUAWEI_ORDER = ["ascend_950pr", "ascend_950dt", "ascend_910c", "ascend_910b4", "ascend_910b"];
     const rankIn = (list, id) => {
       const i = list.indexOf(id);
       return i === -1 ? 9999 : i;
@@ -898,7 +899,7 @@ export function CommandBuilder({ recipe, strategies, taxonomy }) {
       groups[brand].push([id, p]);
     }
     for (const [brand, profiles] of Object.entries(groups)) {
-      const list = brand === "NVIDIA" ? NVIDIA_ORDER : brand === "AMD" ? AMD_ORDER : [];
+      const list = brand === "NVIDIA" ? NVIDIA_ORDER : brand === "AMD" ? AMD_ORDER : brand === "Huawei" ? HUAWEI_ORDER : [];
       profiles.sort((a, b) => {
         const ra = rankIn(list, a[0]);
         const rb = rankIn(list, b[0]);
@@ -1237,6 +1238,10 @@ export function CommandBuilder({ recipe, strategies, taxonomy }) {
 
   const selectVariant = (key) => {
     setVariant(key);
+    if (engine !== "vllm") {
+      syncUrl({ variant: key });
+      return;
+    }
     // Swap hardware when precision or an explicit variant allowlist requires
     // it. VRAM alone is not a blocker because scalable profiles can add nodes.
     const v = recipe.variants?.[key] || {};
@@ -1283,7 +1288,7 @@ export function CommandBuilder({ recipe, strategies, taxonomy }) {
     const oldHwOptIn = new Set(recipe.hardware_opt_in_features?.[hwId] || []);
     const newHwOptIn = new Set(recipe.hardware_opt_in_features?.[id] || []);
     const baseOptIn = new Set(recipe.opt_in_features || []);
-    const next = features.filter((f) => !newHwOptIn.has(f));
+    let next = features.filter((f) => !newHwOptIn.has(f));
     for (const f of oldHwOptIn) {
       if (!newHwOptIn.has(f) && !baseOptIn.has(f) && !next.includes(f)) next.push(f);
     }
@@ -1291,6 +1296,27 @@ export function CommandBuilder({ recipe, strategies, taxonomy }) {
     setHwId(id);
     setStrategyOverride("");
     const newProfile = taxonomy.hardware_profiles?.[id] || {};
+    const preferredKey = engine === "vllm" ? recipe.meta?.default_variant?.[id] : null;
+    if (preferredKey && recipe.variants?.[preferredKey]) {
+      setVariant(preferredKey);
+      next = defaultFeaturesFor(id, preferredKey);
+      setFeatures(next);
+      setFrontend("python");
+      setKvOffload("");
+      setAdvanced([]);
+      syncUrl({ hardware: id, variant: preferredKey, features: featuresToUrl(next, id, preferredKey), frontend: "python", kv_offload: "", advanced: "" });
+      return;
+    }
+    if (engine !== "vllm") {
+      const options = recipe.engines?.[engine]?.variants || {};
+      const chosen = options[variant];
+      const nextVariant = chosen && isVariantHardwareSupported(chosen, id, newProfile) ? variant : "default";
+      setVariant(nextVariant);
+      const nextFeatures = defaultFeaturesFor(id, nextVariant).filter((key) => !activeFeaturesMap[key]?.only_hardware || activeFeaturesMap[key].only_hardware.includes(id));
+      setFeatures(nextFeatures);
+      syncUrl({ hardware: id, variant: nextVariant, features: featuresToUrl(nextFeatures, id, nextVariant) });
+      return;
+    }
     // A selected spec-mode may be gated to specific hardware (e.g. a DFlash
     // draft that only ships for Blackwell). If the new GPU doesn't support it,
     // fall back to the first mode that does so the command stays valid.
@@ -1542,7 +1568,7 @@ export function CommandBuilder({ recipe, strategies, taxonomy }) {
 
   // Default client port for curl/bench. PD clients hit the router (30000);
   // otherwise it's the served port — vLLM defaults to 8000, SGLang to 30000.
-  const clientPort = isPd ? 30000 : engine === "vllm" ? 8000 : 30000;
+  const clientPort = isPd ? 30000 : engine === "vllm" ? 8000 : (result.port || 30000);
 
   // curl/bench target. PD → router host:port; everyone else → the vllm-serve
   // node (head node for multi-node TP). Defaults to localhost so the
@@ -1886,7 +1912,10 @@ export function CommandBuilder({ recipe, strategies, taxonomy }) {
       : installMode === "docker" && dockerEffectivelyHidden
         ? "pip"
         : installMode;
-  const commandNote = recipe.hardware_notes?.[hwId] || null;
+  const commandNote = engine === "vllm" ? (recipe.hardware_notes?.[hwId] || null)
+    : currentVariant?.hardware_overrides?.[hwId]?.docker_image
+      ? { title: "SGLang image", body: `Use ${currentVariant.hardware_overrides[hwId].docker_image}. The W8A8 image contains experimental patches; verify checkpoint identity and task quality. The BF16 image is a separate build.` }
+      : null;
 
   // The extra-install block is pip-scoped by default: nearly every recipe's
   // dependencies are pip installs the Docker image already bundles, so repeating
@@ -2308,7 +2337,7 @@ export function CommandBuilder({ recipe, strategies, taxonomy }) {
                 // disabled instead of emitting a command that can't run.
                 // (vLLM-only: SGLang blocks don't carry VRAM/precision metadata
                 // so we never gate them.)
-                const disabled = engine === "vllm" && !variantRunsOnHardware(hwProfile, v, hwId);
+                const disabled = engine === "vllm" ? !variantRunsOnHardware(hwProfile, v, hwId) : !isVariantHardwareSupported(v, hwId, hwProfile);
                 const hardwareRestricted = engine === "vllm" && !isVariantHardwareSupported(v, hwId);
                 const currentHardwareOk = engine !== "vllm" || variantRunsOnHardware(hwProfile, v, hwId);
                 const fallbackHwId = currentHardwareOk ? hwId : pickDefaultHardware(taxonomy.hardware_profiles, v, recipe);
@@ -2365,7 +2394,7 @@ export function CommandBuilder({ recipe, strategies, taxonomy }) {
                 )}
                 {variantModelId && (
                   <a
-                    href={`https://huggingface.co/${variantModelId}`}
+                    href={variantModelId.startsWith("Eco-Tech/") ? `https://www.modelscope.cn/models/${variantModelId}` : `https://huggingface.co/${variantModelId}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-1.5 text-[11px] font-mono text-muted-foreground hover:text-vllm-blue transition-colors"
@@ -2806,7 +2835,7 @@ export function CommandBuilder({ recipe, strategies, taxonomy }) {
           {Object.keys(activeFeaturesMap).length > 0 && (
             <ConfigRow label="Features">
               <PillGroup>
-                {Object.entries(activeFeaturesMap).map(([key, f]) => {
+                {Object.entries(activeFeaturesMap).filter(([, f]) => !f.only_hardware || f.only_hardware.includes(hwId)).map(([key, f]) => {
                   const kvBlocked = kvInstancesActive && !!f?.companion?.command;
                   const grpcBlocked = isSmgGrpc && key === "thinking_always_on";
                   const allowed = isFeatureAllowedForStrategy(f, activeStrategy) && !kvBlocked && !grpcBlocked;
@@ -3551,7 +3580,7 @@ function InstallBlock({ recipe, engine = "vllm", variant, dockerMeta, installMod
   // new-cookbook blocks need SGLang main, so nightly_required is set on them).
   const nightlyRequired = isVllm
     ? (recipe.model?.nightly_required === true || variant?.nightly_required === true)
-    : (engineBlock?.nightly_required === true);
+    : (!isAscend && engineBlock?.nightly_required === true);
   const cudaMapKeys = cudaMap ? ["cu130", "cu129"].filter((key) => key in cudaMap) : null;
   const singleCudaBuild = cudaMapKeys?.length === 1 ? cudaMapKeys[0] : null;
   const singleCudaLabel = singleCudaBuild === "cu129" ? "CUDA 12.9 (cu129)" : "CUDA 13 (cu130)";
@@ -3560,7 +3589,9 @@ function InstallBlock({ recipe, engine = "vllm", variant, dockerMeta, installMod
   // baseline); explicit picks pass through.
   const pipCudaTag = singleCudaBuild || (dockerCudaVariant === "default" ? "cu130" : dockerCudaVariant);
   const defaultPipCmd = !isVllm
-    ? (nightlyRequired
+    ? (isAscend
+        ? `# Run the serving command inside the tested image:\ndocker pull ${dockerImage}`
+        : nightlyRequired
         ? `# SGLang support for this model is on main (not yet in a tagged release):
 git clone https://github.com/sgl-project/sglang.git
 cd sglang && uv pip install -e python`

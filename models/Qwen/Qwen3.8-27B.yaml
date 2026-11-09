@@ -10,6 +10,11 @@ meta:
     - multimodal
     - text
   performance_headline: "Fits one Blackwell GPU in every precision: NVFP4 in 24.6 GiB, 6.6M KV tokens at 1M context"
+  default_variant:
+    ascend_910b: ascend_w8a8
+  engine_hardware:
+    sglang:
+      ascend_910b: supported
   related_recipes:
     - "Qwen/Qwen3.8-2.4T-A95B"
   # `verified` = run end-to-end on that GPU. gb300 earned it on 2026-08-14: BF16 and FP8 at
@@ -57,7 +62,7 @@ model:
   # wants the gated-delta-net speculative fix (vllm-project/vllm#51812 / #51674), which no
   # released tag carries yet.
   min_vllm_version: "0.17.0"
-  default_frontend: rust
+  default_frontend: python
   # NVIDIA only. The rocm tag with the same name is an AMD build of the 2.4T *text* model
   # (no `ai.vllm.build.commit` label) and has never been exercised on the 27B; naming it
   # here would imply a tested AMD path that does not exist. Non-NVIDIA hardware falls back
@@ -85,6 +90,19 @@ dependencies:
     command: 'uv pip install -U "transformers>=5.8.0"'
 
 features:
+  mrv2:
+    label: "MRV2"
+    description: "Use the V2 model runner for the 910B W8A8 pilot; disable for MRV1."
+    only_hardware: [ascend_910b]
+    default_mode: enabled
+    modes:
+      enabled:
+        label: "MRV2"
+        args: []
+        hardware_overrides:
+          ascend_910b:
+            env:
+              VLLM_USE_V2_MODEL_RUNNER: "1"
   tool_calling:
     description: "Enable automatic tool choice. The default parser is qwen3_coder."
     args:
@@ -135,7 +153,7 @@ features:
         # vLLM Ascend documents `qwen3_5_mtp` for this head (it aliases to `mtp` and logs a
         # deprecation warning). `enforce_eager` applies to the DRAFT model only: the target
         # model still replays its FULL_DECODE_ONLY graph.
-        description: "Same in-checkpoint MTP head, spelled as vLLM Ascend documents it, with the draft head run eager."
+        description: "In-checkpoint MTP head using the Ascend method. The draft runs eager except on 910B, where the measured MRV2 configuration uses graph execution."
         variants: [ascend_w8a8, ascend_w8a8_mxfp8, fp8]
         args:
           - "--speculative-config"
@@ -183,9 +201,13 @@ features:
       VLLM_ALLOW_LONG_MAX_MODEL_LEN: "1"
 
 opt_in_features:
+  - mrv2
   - spec_decoding
   - text_only
   - long_context
+
+hardware_opt_in_features:
+  ascend_910b: [tool_calling, encoder_parallel]
 
 # vram_minimum_gb is ceil(real safetensors bytes in GB x 1.2) for every variant, not
 # params x bytes_per_param: the quantized builds are not uniformly 4-bit.
@@ -328,6 +350,7 @@ variants:
       ascend_910b: 2
     default_modes:
       spec_decoding: qwen3_5_mtp
+      mrv2: enabled
     # `--quantization ascend` is what selects the ModelSlim scheme; without it the loader
     # treats the checkpoint as float. ACLGraph replays decode only. CPU binding cuts
     # cross-core scheduling overhead on the Kunpeng host.
@@ -364,7 +387,7 @@ variants:
           - "--compilation-config"
           - '{"cudagraph_capture_sizes":[1,4,8,12,16,20,24,28,32,36,40,44,48,52,56,60,64,68,72,76,80,84,88,92,96,100,104,108,112,116,120,124,128],"cudagraph_mode":"FULL_DECODE_ONLY"}'
         extra_env:
-          VLLM_USE_V2_MODEL_RUNNER: "1"
+          VLLM_USE_V2_MODEL_RUNNER: "0"
           VLLM_USE_MODELSCOPE: "True"
       ascend_950pr:
         docker_image: "quay.io/ascend/vllm-ascend:qwen3.8-a5"
@@ -557,7 +580,7 @@ guide: |
 
   ### Ascend 910B3 experimental deployment examples
 
-  The following are separate tested configurations, not interchangeable feature toggles.
+  The following are separate vLLM configurations, not interchangeable feature toggles.
   In the command builder, select Ascend 910B, W8A8 (Ascend), and the Python frontend for the MRV2 TP2
   configuration. `VLLM_USE_V2_MODEL_RUNNER=1` enables MRV2 and MTP3 is selectable;
   switching speculative decoding off gives the ordinary-decoding configuration.
@@ -566,23 +589,18 @@ guide: |
   weight equivalence and inference with that specific public revision remain unverified.
   The selector's BF16 eager fallback is not the tested BF16 MTP8 command below.
   On 2026-11-09 the local test checked that all six services started and returned HTTP 200
-  from `/v1/models`; the W8A8 SGLang/DFlash2 and long-context vLLM examples also
-  completed a short request. This startup check did not validate long inputs, concurrent
-  serving, task accuracy, or the other four examples end to end. Earlier performance tests
+  from `/v1/models`; the long-context vLLM example also completed a short request.
+  This startup check did not validate long inputs, concurrent serving, task accuracy,
+  or the other vLLM examples end to end. Earlier performance tests
   have their own stated workloads and software versions. The local model paths below are
   placeholders; the available evidence does not establish that they match a particular
   public checkpoint revision. Mount the exact compatible weights and confirm access to
   the images before running. Each command uses its own container; do not overlap devices.
 
   The observed vLLM W8A8 + DFlash2 + prefix-cache combination produced anomalous output.
-  SGLang partial prefix reuse changed tool arguments in a test, so both SGLang examples
-  disable radix caching. SGLang W8A8 MTP did not pass smoke testing. MRV2 is a pilot;
-  changing it to MRV1 requires separate validation. These examples are not automatically
-  represented by the command-builder selections.
-  An earlier offline test used [z-lab/Qwen3.8-27B-DFlash2](https://huggingface.co/z-lab/Qwen3.8-27B-DFlash2)
-  revision `50307d4c4cde6860d4eee73e2547cd786fe8e8a4` as its external draft. The
-  November 9 startup report does not independently establish that its mounted draft
-  directory was the same revision; check it before reusing that identity.
+  MRV2 is a pilot; changing it to MRV1 requires separate validation. The W8A8
+  MRV2/MTP3 and ordinary-decoding settings are selectable above; the BF16 MTP8
+  and YaRN4 patched configurations remain separate examples below.
 
   #### 1. vLLM W8A8, MTP3, MRV2
 
@@ -651,51 +669,6 @@ guide: |
     --no-enable-prefix-caching --distributed-executor-backend mp \
     --compilation-config '{"cudagraph_mode":"PIECEWISE","cudagraph_capture_sizes":[9]}' \
     --speculative-config '{"method":"qwen3_5_mtp","num_speculative_tokens":8}'
-  ```
-
-  #### 4. SGLang BF16, DFlash2 K8
-
-  Image: `lmsysorg/sglang:v0.5.20-cann9.0.0-910b`.
-  TP2 with an external BF16 draft and prefix caching disabled. A small mathematics sample showed acceleration; business quality remains unassessed.
-
-  ```bash
-  export MODEL=/models/Qwen3.8-27B-BF16
-  export DRAFT=/models/Qwen3.8-27B-DFlash2
-  export ASCEND_RT_VISIBLE_DEVICES=0,1
-
-  python3 -m sglang.launch_server \
-    --model-path "$MODEL" --served-model-name qwen38 \
-    --host 0.0.0.0 --port 8000 --tp-size 2 \
-    --attention-backend ascend --mamba-ssm-dtype bfloat16 \
-    --mamba-radix-cache-strategy extra_buffer --disable-radix-cache \
-    --mem-fraction-static 0.85 --context-length 40960 \
-    --max-running-requests 16 \
-    --speculative-algorithm DFLASH \
-    --speculative-draft-model-path "$DRAFT" \
-    --speculative-num-draft-tokens 8
-  ```
-
-  #### 5. SGLang W8A8, DFlash2 K8
-
-  Image: `swr.cn-north-4.myhuaweicloud.com/runner/qwen38-b3-sglang:0.5.20-w8a8-dflash2-20261109`.
-  Experimental patched image, reported digest `sha256:f011c132f8708c01db7478ea7440348ccad6feb38545aa4d5e115a7d8c11fdec`. It requires a separate BF16 draft; check image access, quantized layer loading and task quality.
-
-  ```bash
-  export MODEL=/models/Qwen3.8-27B-w8a8
-  export DRAFT=/models/Qwen3.8-27B-DFlash2
-  export ASCEND_RT_VISIBLE_DEVICES=0,1
-
-  python3 -m sglang.launch_server \
-    --model-path "$MODEL" --served-model-name qwen38 \
-    --host 0.0.0.0 --port 8000 --tp-size 2 \
-    --attention-backend ascend --mamba-ssm-dtype bfloat16 \
-    --mamba-radix-cache-strategy extra_buffer --disable-radix-cache \
-    --mem-fraction-static 0.85 --context-length 40960 \
-    --max-running-requests 16 --quantization modelslim \
-    --speculative-algorithm DFLASH \
-    --speculative-draft-model-path "$DRAFT" \
-    --speculative-num-draft-tokens 8 \
-    --speculative-draft-model-quantization unquant
   ```
 
   #### 6. vLLM W8A8, TP4, YaRN4 long context
