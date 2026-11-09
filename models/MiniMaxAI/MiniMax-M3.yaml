@@ -2,9 +2,9 @@ meta:
   title: "MiniMax-M3"
   slug: "minimax-m3"
   provider: "MiniMax"
-  description: "MiniMax M3 vision-language MoE (427B total / 26B active) for frontier coding, agent toolchains, and 1M-token reasoning via MSA sparse attention — native multimodal (image + video + computer use); BF16 plus MXFP8, NVIDIA Blackwell NVFP4, and AMD MI355X MXFP4 variants. Runs on NVIDIA (Hopper/Blackwell) and AMD CDNA4/CDNA3."
+  description: "MiniMax M3 vision-language MoE (427B total / 26B active) for frontier coding, agent toolchains, and 1M-token reasoning via MSA sparse attention — native multimodal (image + video + computer use); BF16 plus MXFP8, NVIDIA Blackwell NVFP4, AMD MI355X MXFP4, and Ascend A3/A5 variants."
   date_added: 2026-06-12
-  date_updated: 2026-10-06
+  date_updated: 2026-10-27
   difficulty: advanced
   tasks:
     - text
@@ -18,6 +18,10 @@ meta:
     mi300x: verified
     mi355x: verified
     ascend_910c: supported
+    # Official single-node MXFP8 path is documented in vLLM-Ascend v0.27.1rc1.
+    # The local performance run used a later patched image, so this is
+    # documented support rather than verification of the pinned image below.
+    ascend_950dt: supported
 
 model:
   model_id: "MiniMaxAI/MiniMax-M3"
@@ -66,6 +70,8 @@ features:
       eagle3:
         label: "MHA"
         description: "Standard Eagle3 draft head (Multi-Head Attention, 64 KV heads)."
+        hardware:
+          ascend_950dt: unsupported
         args:
           - "--speculative-config"
           - '{"method": "eagle3", "model": "Inferact/MiniMax-M3-EAGLE3", "num_speculative_tokens": 3, "attention_backend": "FLASH_ATTN"}'
@@ -77,6 +83,8 @@ features:
       eagle3_gqa:
         label: "GQA"
         description: "GQA Eagle3 draft head (Grouped Query Attention, 4 KV heads vs 64) — 16× smaller draft KV cache. Prefer for long-context or large-batch deployments where draft KV memory is the constraint."
+        hardware:
+          ascend_950dt: supported
         args:
           - "--speculative-config"
           - '{"method": "eagle3", "model": "Inferact/MiniMax-M3-EAGLE3-GQA", "num_speculative_tokens": 3, "attention_backend": "FLASH_ATTN"}'
@@ -85,6 +93,10 @@ features:
             args:
               - "--speculative-config"
               - '{"method": "eagle3", "model": "Inferact/MiniMax-M3-EAGLE3-GQA", "num_speculative_tokens": 3, "attention_backend": "TRITON_ATTN"}'
+          ascend_950dt:
+            args:
+              - "--speculative-config"
+              - '{"method":"eagle3","model":"Inferact/MiniMax-M3-EAGLE3-GQA","num_speculative_tokens":3,"kv_cache_dtype":"bfloat16"}'
   text_only:
     description: "Skip loading the vision encoder for text-only workloads — frees VRAM for KV cache. Mutually exclusive with encoder_parallel."
     args:
@@ -150,7 +162,7 @@ variants:
     # comfortably, ~4 GPUs for weights alone on Blackwell (B200/B300) or AMD MI350X/MI355X (gfx950)).
     vram_minimum_gb: 513
     description: "NVIDIA-quantized MXFP8 weights — Blackwell (B200/B300) for native MX tensor cores, and AMD CDNA4 (MI350X/MI355X, gfx950) for native MXFP8 Matrix Cores."
-    supported_hardware: [h100, h200, b200, b300, mi300x, mi355x]
+    supported_hardware: [h100, h200, b200, b300, mi300x, mi355x, ascend_950dt]
     extra_args:
       - "--attention_config.indexer_kv_dtype"
       - "fp8"
@@ -182,6 +194,41 @@ variants:
           - "--enable-prefix-caching"
         extra_env:
           VLLM_MARLIN_USE_ATOMIC_ADD: "1"
+      ascend_950dt:
+        docker_image: "quay.io/ascend/vllm-ascend:v0.27.1rc1-a5-openeuler"
+        extra_args:
+          - "--quantization"
+          - "mxfp8"
+          - "--data-parallel-size"
+          - "2"
+          - "--dtype"
+          - "bfloat16"
+          - "--max-model-len"
+          - "140000"
+          - "--max-num-batched-tokens"
+          - "16384"
+          - "--kv-cache-dtype"
+          - "fp8"
+          - "--max-num-seqs"
+          - "500"
+          - "--enable-chunked-prefill"
+          - "--enable-prefix-caching"
+          - "--async-scheduling"
+          - "--limit-mm-per-prompt"
+          - '{"image":1,"video":0}'
+          - "--reasoning-parser"
+          - "minimax_m3"
+          - "--safetensors-load-strategy"
+          - "prefetch"
+          - "--compilation-config"
+          - '{"cudagraph_mode":"FULL_DECODE_ONLY"}'
+          - "--additional-config"
+          - '{"enable_cpu_binding":true,"enable_flashcomm1":true,"ascend_compilation_config":{"fuse_qknorm_rope":false,"fuse_norm_quant":false},"multistream_overlap_shared_expert":true,"enable_shared_expert_dp":true}'
+        extra_env:
+          VLLM_USE_V2_MODEL_RUNNER: "1"
+          HCCL_BUFFSIZE: "512"
+          HCCL_OP_EXPANSION_MODE: "AIV"
+          PYTORCH_NPU_ALLOC_CONF: "expandable_segments:True"
       mi300x:
         docker_image: "vllm/vllm-openai-rocm:nightly"
         extra_args:
@@ -257,14 +304,15 @@ variants:
     precision: int8
     label: "W8A8 (Ascend A3)"
     vram_minimum_gb: 440
-    min_vllm_version: "0.23.0"
+    min_vllm_version: "0.27.1rc1"
     supported_hardware: [ascend_910c]
     description: "Official ModelSlim W8A8 checkpoint for one Atlas 800I A3 node; TP4×DP4 on 16 NPUs, 133K context."
     hardware_overrides:
       ascend_910c:
-        docker_image: "quay.io/ascend/vllm-ascend:v0.23.0-a3"
+        docker_image: "quay.io/ascend/vllm-ascend:v0.27.1rc1-a3-openeuler"
         extra_env:
           VLLM_USE_V2_MODEL_RUNNER: "1"
+          VLLM_USE_MODELSCOPE: "True"
           HCCL_OP_EXPANSION_MODE: "AIV"
           PYTORCH_NPU_ALLOC_CONF: "expandable_segments:True"
     extra_args:
@@ -329,6 +377,7 @@ strategy_overrides:
   single_node_tep:
     tp:
       ascend_910c: 4
+      ascend_950dt: 4
   pd_cluster:
     hardware_overrides:
       blackwell:
@@ -343,20 +392,31 @@ strategy_overrides:
 strategy_hardware:
   single_node_tp:
     ascend_910c: unsupported
+    ascend_950dt: unsupported
   single_node_tep:
     ascend_910c: supported
+    ascend_950dt: supported
   single_node_dep:
     ascend_910c: unsupported
+    ascend_950dt: unsupported
   multi_node_tp:
     ascend_910c: unsupported
+    ascend_950dt: unsupported
   multi_node_tp_pp:
     ascend_910c: unsupported
+    ascend_950dt: unsupported
   multi_node_tep:
     ascend_910c: unsupported
+    ascend_950dt: unsupported
   multi_node_dep:
     ascend_910c: unsupported
+    ascend_950dt: unsupported
   pd_cluster:
     ascend_910c: unsupported
+    # The upstream 950DT path is a specialized two-node 1P1D deployment with
+    # Mooncake/UBOE mounts; it is documented but not represented by this generic
+    # recipe command builder.
+    ascend_950dt: unsupported
 
 guide: |
   ## Overview
@@ -1031,6 +1091,30 @@ guide: |
   in draft KV state makes it preferable when draft memory is the binding constraint
   (long-context serving or large batch sizes).
 
+  ## Huawei Ascend
+
+  The A3 W8A8 checkpoint and 950DT MXFP8 path use separate ModelScope/Hugging Face
+  weights and Ascend-specific runtime images. The command builder exposes the documented
+  950DT single-node layout as TP4 × DP2 across eight NPUs, with expert parallelism.
+  It pins `v0.27.1rc1-a5-openeuler`, uses `--quantization mxfp8`, and enables the FP8
+  KV cache. The separate two-node prefill/decode deployment requires Mooncake/UBOE host
+  resources and is not emitted by this single-node builder profile.
+
+  The local 950DT performance report used a later `v0.30.0rc2-a5-openeuler` image with
+  additional runtime patches. Its measured performance therefore does not validate the
+  pinned v0.27.1rc1 recipe command.
+
+  Before launching the 950DT command, set `GLOO_SOCKET_IFNAME` and
+  `HCCL_SOCKET_IFNAME` to the node's actual NPU-facing NIC. The upstream 950DT
+  example also adds the CANN 9.1 experimental transformer operator directory to
+  `LD_LIBRARY_PATH`; confirm that directory exists in the selected image and add it
+  to the path when required by the installed CANN package. These host-specific values
+  are intentionally not guessed by the command builder.
+
+  Ascend speculative decoding uses the GQA EAGLE3 draft checkpoint. The MHA draft mode
+  is disabled for 950DT; the upstream guide specifies three draft tokens and BF16 draft
+  KV cache. The command builder applies that configuration when this mode is selected.
+
   ## References
 
   - [Model card](https://huggingface.co/MiniMaxAI/MiniMax-M3)
@@ -1039,6 +1123,8 @@ guide: |
   - [AMD MXFP4 variant](https://huggingface.co/amd/MiniMax-M3-MXFP4)
   - [EAGLE3 draft head (MHA)](https://huggingface.co/Inferact/MiniMax-M3-EAGLE3)
   - [EAGLE3 draft head (GQA)](https://huggingface.co/Inferact/MiniMax-M3-EAGLE3-GQA)
+  - [vLLM-Ascend MiniMax-M3 guide (v0.27.1rc1)](https://docs.vllm.ai/projects/ascend/zh-cn/v0.27.1rc1/tutorials/models/MiniMax-M3.html)
+  - [vLLM-Ascend v0.27.1rc1 release notes](https://github.com/vllm-project/vllm-ascend/releases/tag/v0.27.1rc1)
   - [MiniMax](https://www.minimax.io/)
   - [MiniMax Agent](https://agent.minimax.io/)
   - [MiniMax Platform](https://platform.minimax.io/)
